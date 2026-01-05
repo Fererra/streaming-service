@@ -1,0 +1,9 @@
+services:
+  app:
+    build:
+      context: .
+      target: test
+    environment:
+      NODE_ENV: test
+    env_file:
+      - .env.test.local
