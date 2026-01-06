@@ -23,6 +23,7 @@ describe('AuthService', () => {
 
   const tokenServiceMock = {
     generateAuthTokens: jest.fn(),
+    invalidateRefreshToken: jest.fn(),
   };
 
   const userMock = {
@@ -120,6 +121,22 @@ describe('AuthService', () => {
 
       await expect(service.login(loginDto)).rejects.toBeInstanceOf(
         ForbiddenException,
+      );
+    });
+  });
+
+  describe('logout', () => {
+    it('invalidates refresh token', async () => {
+      const refreshToken = 'rt';
+      const userId = 'user-id';
+
+      tokenServiceMock.invalidateRefreshToken.mockResolvedValue(undefined);
+
+      await service.logout(refreshToken, userId);
+
+      expect(tokenServiceMock.invalidateRefreshToken).toHaveBeenCalledWith(
+        refreshToken,
+        userId,
       );
     });
   });

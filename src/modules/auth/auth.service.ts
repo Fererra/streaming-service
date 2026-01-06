@@ -64,4 +64,8 @@ export class AuthService {
       role: user.role,
     });
   }
+
+  logout(refreshToken: string, userId: string): Promise<void> {
+    return this.tokenService.invalidateRefreshToken(refreshToken, userId);
+  }
 }
