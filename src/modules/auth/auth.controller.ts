@@ -1,10 +1,20 @@
-import { Controller, Post, Body, Res, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Res,
+  HttpCode,
+  UseGuards,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpDto } from './dto/sign-up.dto';
 import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponse } from './types/auth-response.type';
+import { JwtGuard } from './jwt.guard';
+import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
+import { RefreshToken } from 'src/common/decorators/refresh-token.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -28,7 +38,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
-  public async login(
+  async login(
     @Body() options: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<AuthResponse> {
@@ -39,7 +49,31 @@ export class AuthController {
     return { accessToken };
   }
 
-  private setRefreshTokenCookie(response: Response, token: string) {
+  @Post('logout')
+  @UseGuards(JwtGuard)
+  @HttpCode(200)
+  async logout(
+    @RefreshToken() refreshToken: string,
+    @CurrentUserId() userId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<{ message: string }> {
+    await this.authService.logout(refreshToken, userId);
+
+    this.clearRefreshTokenCookie(response);
+
+    return { message: 'Logged out successfully' };
+  }
+
+  private clearRefreshTokenCookie(response: Response): void {
+    response.clearCookie('refresh_token', {
+      httpOnly: true,
+      path: '/',
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
+      sameSite: 'strict',
+    });
+  }
+
+  private setRefreshTokenCookie(response: Response, token: string): void {
     response.cookie('refresh_token', token, {
       httpOnly: true,
       path: '/',

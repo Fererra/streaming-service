@@ -4,13 +4,20 @@ import { AuthService } from 'src/modules/auth/auth.service';
 import { ConfigService } from '@nestjs/config';
 import type { SignUpDto } from 'src/modules/auth/dto/sign-up.dto';
 import type { LoginDto } from 'src/modules/auth/dto/login.dto';
+import { CanActivate, ExecutionContext } from '@nestjs/common';
+import { JwtGuard } from 'src/modules/auth/jwt.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;
 
+  const JwtGuardMock: CanActivate = {
+    canActivate: jest.fn((_context: ExecutionContext) => true),
+  };
+
   const authServiceMock = {
     signUp: jest.fn(),
     login: jest.fn(),
+    logout: jest.fn(),
   };
 
   const configServiceMock = {
@@ -19,7 +26,16 @@ describe('AuthController', () => {
 
   const responseMock = {
     cookie: jest.fn(),
+    clearCookie: jest.fn(),
   } as any;
+
+  const setupAuthReturn = (
+    access = 'access-token',
+    refresh = 'refresh-token',
+  ) => ({
+    accessToken: access,
+    refreshToken: refresh,
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -30,7 +46,10 @@ describe('AuthController', () => {
         { provide: AuthService, useValue: authServiceMock },
         { provide: ConfigService, useValue: configServiceMock },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtGuard)
+      .useValue(JwtGuardMock)
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
   });
@@ -41,10 +60,7 @@ describe('AuthController', () => {
 
   describe('signup', () => {
     it('sets refresh token cookie and returns access token', async () => {
-      authServiceMock.signUp.mockResolvedValue({
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-      });
+      authServiceMock.signUp.mockResolvedValue(setupAuthReturn());
 
       const result = await controller.signUp({} as SignUpDto, responseMock);
 
@@ -66,10 +82,7 @@ describe('AuthController', () => {
 
   describe('login', () => {
     it('sets refresh token cookie and returns access token', async () => {
-      authServiceMock.login.mockResolvedValue({
-        accessToken: 'access-token',
-        refreshToken: 'refresh-token',
-      });
+      authServiceMock.login.mockResolvedValue(setupAuthReturn());
 
       const result = await controller.login({} as LoginDto, responseMock);
 
@@ -86,6 +99,20 @@ describe('AuthController', () => {
         },
       );
       expect(result).toEqual({ accessToken: 'access-token' });
+    });
+  });
+
+  describe('logout', () => {
+    it('calls authService.logout and clears refresh token cookie', async () => {
+      await controller.logout('rt', 'user-id', responseMock);
+
+      expect(authServiceMock.logout).toHaveBeenCalled();
+      expect(responseMock.clearCookie).toHaveBeenCalledWith('refresh_token', {
+        httpOnly: true,
+        path: '/',
+        secure: false,
+        sameSite: 'strict',
+      });
     });
   });
 });
