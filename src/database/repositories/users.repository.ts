@@ -15,6 +15,10 @@ export class UsersRepository {
     });
   }
 
+  existsById(userId: string): Promise<boolean> {
+    return this.repository.existsBy({ id: userId });
+  }
+
   createUser(data: Partial<UserEntity>): Promise<UserEntity> {
     const user = this.repository.create(data);
     return this.repository.save(user);

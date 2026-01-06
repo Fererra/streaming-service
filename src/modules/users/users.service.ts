@@ -10,6 +10,10 @@ export class UsersService {
     return this.usersRepository.findByEmail(email);
   }
 
+  existsById(userId: string): Promise<boolean> {
+    return this.usersRepository.existsById(userId);
+  }
+
   createUser(data: Partial<UserEntity>): Promise<UserEntity> {
     return this.usersRepository.createUser(data);
   }

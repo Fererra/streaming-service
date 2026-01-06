@@ -23,6 +23,7 @@ describe('UsersService', () => {
   beforeEach(async () => {
     repoMock = {
       findByEmail: jest.fn().mockResolvedValue(null),
+      existsById: jest.fn().mockResolvedValue(false),
       createUser: jest.fn().mockResolvedValue(mockUser),
     };
 
@@ -52,6 +53,24 @@ describe('UsersService', () => {
 
     expect(repoMock.findByEmail).toHaveBeenCalledWith('unknown@example.com');
     expect(result).toBeNull();
+  });
+
+  it('should check if user exists by ID', async () => {
+    (repoMock.existsById as jest.Mock).mockResolvedValue(true);
+
+    const result = await service.existsById('user-1');
+
+    expect(repoMock.existsById).toHaveBeenCalledWith('user-1');
+    expect(result).toBe(true);
+  });
+
+  it('should return false if user does not exist by ID', async () => {
+    (repoMock.existsById as jest.Mock).mockResolvedValue(false);
+
+    const result = await service.existsById('user-2');
+
+    expect(repoMock.existsById).toHaveBeenCalledWith('user-2');
+    expect(result).toBe(false);
   });
 
   it('should create a new user', async () => {
