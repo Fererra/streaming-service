@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { AuthTokens } from './types/auth-tokens.type';
@@ -11,6 +11,7 @@ import { TokenType } from './types/token-types.enum';
 import type { TokenSignOptions } from './types/token-sign-options.type';
 import ms from 'ms';
 import { StoreRefreshTokenParams } from './types/store-refresh-token.params';
+import { RefreshTokenEntity } from 'src/database/entities/refresh-token.entity';
 
 @Injectable()
 export class TokenService {
@@ -81,5 +82,57 @@ export class TokenService {
       `${token}_EXPIRATION_TIME`,
     );
     return { secret, expiresIn };
+  }
+
+  async invalidateRefreshToken(
+    refreshToken: string,
+    userId: string,
+  ): Promise<void> {
+    const record = await this.validateRefreshToken(refreshToken, userId);
+
+    const rowsAffected = await this.refreshTokenRepository.revoke(
+      record.id,
+      userId,
+    );
+
+    if (!rowsAffected)
+      throw new UnauthorizedException('Refresh token revoked or not found');
+  }
+
+  private async validateRefreshToken(
+    presentedRefreshToken: string,
+    presentedUserId: string,
+  ): Promise<RefreshTokenEntity> {
+    const { secret: refreshSecret } = this.getTokenSignOptions(
+      TokenType.REFRESH_TOKEN,
+    );
+
+    const payload = await this.jwtService
+      .verifyAsync(presentedRefreshToken, {
+        secret: refreshSecret,
+      })
+      .catch(() => {
+        throw new UnauthorizedException('Invalid refresh token');
+      });
+
+    const { sub, jti } = payload;
+
+    if (sub !== presentedUserId)
+      throw new UnauthorizedException('Token does not belong to user');
+
+    if (!jti) throw new UnauthorizedException('Invalid refresh token');
+
+    const record = await this.refreshTokenRepository.findByIdAndUserId(
+      jti,
+      presentedUserId,
+    );
+    if (!record) throw new UnauthorizedException('Refresh token not found');
+
+    if (record.revokedAt)
+      throw new UnauthorizedException('Refresh token revoked');
+    if (record.expiresAt && record.expiresAt < new Date())
+      throw new UnauthorizedException('Refresh token expired');
+
+    return record;
   }
 }
