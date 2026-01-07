@@ -11,7 +11,7 @@ const AppDataSource = new DataSource({
   database: process.env.DB_NAME,
   ssl: isProduction ? { rejectUnauthorized: false } : false,
   entities: [__dirname + '/entities/*.entity{.ts,.js}'],
-  migrations: [__dirname + '/migrations/*.entity{.ts,.js}'],
+  migrations: [__dirname + '/migrations/*{.ts,.js}'],
   migrationsRun: isProduction,
   synchronize: !isProduction,
   logging: !isProduction,
