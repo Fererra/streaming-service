@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   Entity,
   JoinColumn,
@@ -21,6 +22,7 @@ export class UserEntity {
   @Column({ name: 'last_name', type: 'varchar', length: 255 })
   lastName: string;
 
+  @Check('"date_of_birth" <= CURRENT_DATE')
   @Column({ name: 'date_of_birth', type: 'date' })
   dateOfBirth: Date;
 
