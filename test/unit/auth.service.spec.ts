@@ -19,11 +19,13 @@ describe('AuthService', () => {
   const usersServiceMock = {
     findByEmail: jest.fn(),
     createUser: jest.fn(),
+    resolveAuthUser: jest.fn(),
   };
 
   const tokenServiceMock = {
     generateAuthTokens: jest.fn(),
     invalidateRefreshToken: jest.fn(),
+    rotateAuthTokens: jest.fn(),
   };
 
   const userMock = {
@@ -90,7 +92,7 @@ describe('AuthService', () => {
     it('throws ConflictException if email exists', async () => {
       usersServiceMock.findByEmail.mockResolvedValue(userMock);
 
-      await expect(service.signUp(signUpDto)).rejects.toBeInstanceOf(
+      await expect(service.signUp(signUpDto)).rejects.toThrow(
         ConflictException,
       );
     });
@@ -110,18 +112,33 @@ describe('AuthService', () => {
     it('throws ForbiddenException if user not found', async () => {
       usersServiceMock.findByEmail.mockResolvedValue(null);
 
-      await expect(service.login(loginDto)).rejects.toBeInstanceOf(
-        ForbiddenException,
-      );
+      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
     });
 
     it('throws ForbiddenException if password invalid', async () => {
       usersServiceMock.findByEmail.mockResolvedValue(userMock);
       (verify as jest.Mock).mockResolvedValue(false);
 
-      await expect(service.login(loginDto)).rejects.toBeInstanceOf(
-        ForbiddenException,
+      await expect(service.login(loginDto)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  describe('rotateAuthTokens', () => {
+    it('rotates and returns new tokens', async () => {
+      usersServiceMock.resolveAuthUser.mockResolvedValue({
+        id: userMock.id,
+        role: userMock.role,
+      });
+      tokenServiceMock.rotateAuthTokens.mockResolvedValue(tokensMock);
+
+      const result = await service.rotateAuthTokens('refresh-token', 'user-id');
+
+      expect(usersServiceMock.resolveAuthUser).toHaveBeenCalledWith('user-id');
+      expect(tokenServiceMock.rotateAuthTokens).toHaveBeenCalledWith(
+        'refresh-token',
+        { id: userMock.id, role: userMock.role },
       );
+      expect(result).toEqual(tokensMock);
     });
   });
 

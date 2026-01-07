@@ -6,6 +6,7 @@ import type { SignUpDto } from 'src/modules/auth/dto/sign-up.dto';
 import type { LoginDto } from 'src/modules/auth/dto/login.dto';
 import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { RefreshTokenGuard } from 'src/modules/auth/refresh-token.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;
@@ -17,6 +18,7 @@ describe('AuthController', () => {
   const authServiceMock = {
     signUp: jest.fn(),
     login: jest.fn(),
+    rotateAuthTokens: jest.fn(),
     logout: jest.fn(),
   };
 
@@ -28,6 +30,14 @@ describe('AuthController', () => {
     cookie: jest.fn(),
     clearCookie: jest.fn(),
   } as any;
+
+  const cookieOptions = {
+    httpOnly: true,
+    path: '/',
+    secure: false,
+    sameSite: 'strict',
+    maxAge: 1000,
+  };
 
   const setupAuthReturn = (
     access = 'access-token',
@@ -49,6 +59,8 @@ describe('AuthController', () => {
     })
       .overrideGuard(JwtGuard)
       .useValue(JwtGuardMock)
+      .overrideGuard(RefreshTokenGuard)
+      .useValue(JwtGuardMock)
       .compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -68,13 +80,7 @@ describe('AuthController', () => {
       expect(responseMock.cookie).toHaveBeenCalledWith(
         'refresh_token',
         'refresh-token',
-        {
-          httpOnly: true,
-          path: '/',
-          secure: false,
-          sameSite: 'strict',
-          maxAge: 1000,
-        },
+        cookieOptions,
       );
       expect(result).toEqual({ accessToken: 'access-token' });
     });
@@ -90,13 +96,30 @@ describe('AuthController', () => {
       expect(responseMock.cookie).toHaveBeenCalledWith(
         'refresh_token',
         'refresh-token',
-        {
-          httpOnly: true,
-          path: '/',
-          secure: false,
-          sameSite: 'strict',
-          maxAge: 1000,
-        },
+        cookieOptions,
+      );
+      expect(result).toEqual({ accessToken: 'access-token' });
+    });
+  });
+
+  describe('refresh', () => {
+    it('sets new refresh token cookie and returns new access token', async () => {
+      authServiceMock.rotateAuthTokens.mockResolvedValue(setupAuthReturn());
+
+      const result = await controller.refresh(
+        'old-refresh-token',
+        'user-id',
+        responseMock,
+      );
+
+      expect(authServiceMock.rotateAuthTokens).toHaveBeenCalledWith(
+        'old-refresh-token',
+        'user-id',
+      );
+      expect(responseMock.cookie).toHaveBeenCalledWith(
+        'refresh_token',
+        'refresh-token',
+        cookieOptions,
       );
       expect(result).toEqual({ accessToken: 'access-token' });
     });
