@@ -3,6 +3,7 @@ import { UsersService } from 'src/modules/users/users.service';
 import { UsersRepository } from 'src/database/repositories/users.repository';
 import { UserEntity } from 'src/database/entities/user.entity';
 import { UserRoles } from 'src/modules/users/user-roles.enum';
+import { UnauthorizedException } from '@nestjs/common';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -16,7 +17,7 @@ describe('UsersService', () => {
     password: 'hashed',
     dateOfBirth: new Date('1990-01-01'),
     role: UserRoles.USER,
-    country: { code: 'USA', countryName: 'United States', users: [] },
+    country: { code: 'US', countryName: 'United States', users: [] },
     refreshTokens: [],
   } as UserEntity;
 
@@ -25,6 +26,7 @@ describe('UsersService', () => {
       findByEmail: jest.fn().mockResolvedValue(null),
       existsById: jest.fn().mockResolvedValue(false),
       createUser: jest.fn().mockResolvedValue(mockUser),
+      resolveAuthUser: jest.fn().mockResolvedValue(null),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -83,5 +85,27 @@ describe('UsersService', () => {
 
     expect(repoMock.createUser).toHaveBeenCalledWith(userData);
     expect(result).toEqual(mockUser);
+  });
+
+  it('should resolve auth user', async () => {
+    const mockAuthUser = {
+      id: 'user-1',
+      email: 'john@example.com',
+    };
+    (repoMock.resolveAuthUser as jest.Mock).mockResolvedValue(mockAuthUser);
+
+    const result = await service.resolveAuthUser('user-1');
+
+    expect(repoMock.resolveAuthUser).toHaveBeenCalledWith('user-1');
+    expect(result).toEqual(mockAuthUser);
+  });
+
+  it('should throw UnauthorizedException if auth user not found', async () => {
+    (repoMock.resolveAuthUser as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.resolveAuthUser('user-2')).rejects.toThrow(
+      UnauthorizedException,
+    );
+    expect(repoMock.resolveAuthUser).toHaveBeenCalledWith('user-2');
   });
 });
