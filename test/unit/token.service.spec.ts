@@ -39,6 +39,13 @@ describe('TokenService', () => {
     refreshToken: 'refresh-token',
   };
 
+  const refreshTokenMock = {
+    id: 'jti-123',
+    userId: 'user-id',
+    tokenHash: 'hashed-refresh-token',
+    expiresAt: expect.any(Date),
+  };
+
   const createRefreshTokenRecord = (overrides = {}) => ({
     id: 'jti-123',
     userId: 'user-id',
@@ -102,14 +109,7 @@ describe('TokenService', () => {
     const result = await service.generateAuthTokens(userMock);
     expect(result).toEqual(tokensMock);
     expectSignCalls();
-    expect(refreshTokenRepoMock.store).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'jti-123',
-        userId: 'user-id',
-        tokenHash: 'hashed-refresh-token',
-        expiresAt: expect.any(Date),
-      }),
-    );
+    expect(refreshTokenRepoMock.store).toHaveBeenCalledWith(refreshTokenMock);
   });
 
   describe('computeExpiration', () => {
@@ -149,6 +149,24 @@ describe('TokenService', () => {
       expect(() =>
         (service as any).getTokenSignOptions(TokenType.ACCESS_TOKEN),
       ).toThrow('not found');
+    });
+  });
+
+  describe('rotateAuthTokens', () => {
+    it('should generate new tokens and revoke old refresh token', async () => {
+      setupValidRefreshToken();
+      refreshTokenRepoMock.revoke.mockResolvedValue(1);
+      const result = await service.rotateAuthTokens('old-refresh-token', {
+        id: 'user-id',
+        role: UserRoles.USER,
+      });
+      expect(result).toEqual(tokensMock);
+      expectSignCalls();
+      expect(refreshTokenRepoMock.revoke).toHaveBeenCalledWith(
+        'jti-123',
+        'user-id',
+      );
+      expect(refreshTokenRepoMock.store).toHaveBeenCalledWith(refreshTokenMock);
     });
   });
 
