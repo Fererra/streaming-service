@@ -12,6 +12,7 @@ import type { TokenSignOptions } from './types/token-sign-options.type';
 import ms from 'ms';
 import { StoreRefreshTokenParams } from './types/store-refresh-token.params';
 import { RefreshTokenEntity } from 'src/database/entities/refresh-token.entity';
+import type { AuthUser } from '../auth/types/auth-user.type';
 
 @Injectable()
 export class TokenService {
@@ -82,6 +83,14 @@ export class TokenService {
       `${token}_EXPIRATION_TIME`,
     );
     return { secret, expiresIn };
+  }
+
+  async rotateAuthTokens(
+    refreshToken: string,
+    user: AuthUser,
+  ): Promise<AuthTokens> {
+    await this.invalidateRefreshToken(refreshToken, user.id);
+    return this.generateAuthTokens({ userId: user.id, role: user.role });
   }
 
   async invalidateRefreshToken(

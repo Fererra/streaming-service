@@ -65,6 +65,15 @@ export class AuthService {
     });
   }
 
+  async rotateAuthTokens(
+    refreshToken: string,
+    userId: string,
+  ): Promise<AuthTokens> {
+    const authUser = await this.usersService.resolveAuthUser(userId);
+
+    return this.tokenService.rotateAuthTokens(refreshToken, authUser);
+  }
+
   logout(refreshToken: string, userId: string): Promise<void> {
     return this.tokenService.invalidateRefreshToken(refreshToken, userId);
   }

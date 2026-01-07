@@ -15,6 +15,7 @@ import { AuthResponse } from './types/auth-response.type';
 import { JwtGuard } from './jwt.guard';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { RefreshToken } from 'src/common/decorators/refresh-token.decorator';
+import { RefreshTokenGuard } from './refresh-token.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -49,6 +50,32 @@ export class AuthController {
     return { accessToken };
   }
 
+  @Post('refresh')
+  @UseGuards(RefreshTokenGuard)
+  @HttpCode(200)
+  async refresh(
+    @RefreshToken() refreshToken: string,
+    @CurrentUserId() userId: string,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<AuthResponse> {
+    const { accessToken, refreshToken: newRefreshToken } =
+      await this.authService.rotateAuthTokens(refreshToken, userId);
+
+    this.setRefreshTokenCookie(response, newRefreshToken);
+
+    return { accessToken };
+  }
+
+  private setRefreshTokenCookie(response: Response, token: string): void {
+    response.cookie('refresh_token', token, {
+      httpOnly: true,
+      path: '/',
+      secure: this.configService.get<string>('NODE_ENV') === 'production',
+      sameSite: 'strict',
+      maxAge: this.configService.get<number>('COOKIE_MAX_AGE'),
+    });
+  }
+
   @Post('logout')
   @UseGuards(JwtGuard)
   @HttpCode(200)
@@ -70,16 +97,6 @@ export class AuthController {
       path: '/',
       secure: this.configService.get<string>('NODE_ENV') === 'production',
       sameSite: 'strict',
-    });
-  }
-
-  private setRefreshTokenCookie(response: Response, token: string): void {
-    response.cookie('refresh_token', token, {
-      httpOnly: true,
-      path: '/',
-      secure: this.configService.get<string>('NODE_ENV') === 'production',
-      sameSite: 'strict',
-      maxAge: this.configService.get<number>('COOKIE_MAX_AGE'),
     });
   }
 }

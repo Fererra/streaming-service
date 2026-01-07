@@ -1,6 +1,7 @@
 import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import type { AuthUser } from 'src/modules/auth/types/auth-user.type';
 
 export class UsersRepository {
   constructor(
@@ -22,5 +23,12 @@ export class UsersRepository {
   createUser(data: Partial<UserEntity>): Promise<UserEntity> {
     const user = this.repository.create(data);
     return this.repository.save(user);
+  }
+
+  resolveAuthUser(userId: string): Promise<AuthUser | null> {
+    return this.repository.findOne({
+      select: ['id', 'role'],
+      where: { id: userId },
+    });
   }
 }
