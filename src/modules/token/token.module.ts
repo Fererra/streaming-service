@@ -4,7 +4,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { DatabaseModule } from 'src/database/database.module';
 
 @Module({
-  imports: [DatabaseModule, JwtModule],
+  imports: [DatabaseModule, JwtModule.register({ global: true })],
   providers: [TokenService],
   exports: [TokenService],
 })
