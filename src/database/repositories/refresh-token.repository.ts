@@ -30,4 +30,37 @@ export class RefreshTokenRepository {
 
     return record.affected ?? 0;
   }
+
+  async rotateToken(
+    oldJti: string,
+    userId: string,
+    newJti: string,
+    newTokenHash: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    await this.repository.manager.transaction(async (manager) => {
+      await manager.update(
+        RefreshTokenEntity,
+        { id: oldJti, userId },
+        { revokedAt: new Date() },
+      );
+
+      const newToken = manager.create(RefreshTokenEntity, {
+        id: newJti,
+        userId,
+        tokenHash: newTokenHash,
+        expiresAt,
+      });
+
+      await manager.save(newToken);
+
+      await manager.update(
+        RefreshTokenEntity,
+        { id: oldJti, userId },
+        {
+          replacedByTokenId: newJti,
+        },
+      );
+    });
+  }
 }

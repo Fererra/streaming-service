@@ -1,11 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { AuthTokens } from './types/auth-tokens.type';
 import { GenerateTokensParams } from './types/generate-token.params';
 import { randomUUID } from 'crypto';
 import { RefreshTokenRepository } from 'src/database/repositories/refresh-token.repository';
-import { hash } from 'argon2';
+import { hash, verify } from 'argon2';
 import type { StringValue } from 'ms';
 import { TokenType } from './types/token-types.enum';
 import type { TokenSignOptions } from './types/token-sign-options.type';
@@ -23,38 +27,49 @@ export class TokenService {
   ) {}
 
   async generateAuthTokens(params: GenerateTokensParams): Promise<AuthTokens> {
-    const { secret: accessSecret, expiresIn: accessExpires } =
-      this.getTokenSignOptions(TokenType.ACCESS_TOKEN);
-    const { secret: refreshSecret, expiresIn: refreshExpires } =
-      this.getTokenSignOptions(TokenType.REFRESH_TOKEN);
-
     const jti = randomUUID();
 
-    const [accessToken, refreshToken] = await Promise.all([
-      this.jwtService.signAsync(
-        { sub: params.userId, role: params.role },
-        { secret: accessSecret, expiresIn: accessExpires },
-      ),
-      this.jwtService.signAsync(
-        { sub: params.userId, jti },
-        { secret: refreshSecret, expiresIn: refreshExpires },
-      ),
-    ]);
+    const refreshToken = await this.generateRefreshToken(params.userId, jti);
 
     await this.storeRefreshToken({
       userId: params.userId,
       jti,
       token: refreshToken,
-      expiresIn: refreshExpires,
     });
 
+    const accessToken = await this.generateAccessToken(
+      params.userId,
+      params.role,
+    );
+
     return { accessToken, refreshToken };
+  }
+
+  private generateAccessToken(userId: string, role: string): Promise<string> {
+    const { secret: accessSecret, expiresIn: accessExpires } =
+      this.getTokenSignOptions(TokenType.ACCESS_TOKEN);
+
+    return this.jwtService.signAsync(
+      { sub: userId, role },
+      { secret: accessSecret, expiresIn: accessExpires },
+    );
+  }
+
+  private generateRefreshToken(userId: string, jti: string): Promise<string> {
+    const { secret: refreshSecret, expiresIn: refreshExpires } =
+      this.getTokenSignOptions(TokenType.REFRESH_TOKEN);
+
+    return this.jwtService.signAsync(
+      { sub: userId, jti },
+      { secret: refreshSecret, expiresIn: refreshExpires },
+    );
   }
 
   private async storeRefreshToken(
     params: StoreRefreshTokenParams,
   ): Promise<void> {
-    const expiresAt = this.computeExpiration(params.expiresIn);
+    const { expiresIn } = this.getTokenSignOptions(TokenType.REFRESH_TOKEN);
+    const expiresAt = this.computeExpiration(expiresIn);
 
     await this.refreshTokenRepository.store({
       id: params.jti,
@@ -65,14 +80,11 @@ export class TokenService {
   }
 
   private computeExpiration(expiresIn: StringValue | number): Date {
-    if (typeof expiresIn === 'number')
-      return new Date(Date.now() + expiresIn * 1000);
+    const msVal =
+      typeof expiresIn === 'number' ? expiresIn * 1000 : ms(expiresIn);
 
-    const n = Number(expiresIn);
-    if (!Number.isNaN(n)) return new Date(Date.now() + n * 1000);
-
-    const msVal = ms(expiresIn as StringValue);
-    if (!msVal) throw new Error('Invalid expiration format');
+    if (!msVal)
+      throw new InternalServerErrorException('Invalid expiration format');
 
     return new Date(Date.now() + msVal);
   }
@@ -89,8 +101,29 @@ export class TokenService {
     refreshToken: string,
     user: AuthUser,
   ): Promise<AuthTokens> {
-    await this.invalidateRefreshToken(refreshToken, user.id);
-    return this.generateAuthTokens({ userId: user.id, role: user.role });
+    const { id: oldJti } = await this.validateRefreshToken(
+      refreshToken,
+      user.id,
+    );
+
+    const jti = randomUUID();
+    const newRefreshToken = await this.generateRefreshToken(user.id, jti);
+
+    const tokenHash = await hash(newRefreshToken);
+    const { expiresIn } = this.getTokenSignOptions(TokenType.REFRESH_TOKEN);
+    const expiresAt = this.computeExpiration(expiresIn);
+
+    await this.refreshTokenRepository.rotateToken(
+      oldJti,
+      user.id,
+      jti,
+      tokenHash,
+      expiresAt,
+    );
+
+    const accessToken = await this.generateAccessToken(user.id, user.role);
+
+    return { accessToken, refreshToken: newRefreshToken };
   }
 
   async invalidateRefreshToken(
@@ -135,7 +168,12 @@ export class TokenService {
       jti,
       presentedUserId,
     );
+
     if (!record) throw new UnauthorizedException('Refresh token not found');
+
+    const isValid = await verify(record.tokenHash, presentedRefreshToken);
+
+    if (!isValid) throw new UnauthorizedException('Invalid refresh token');
 
     if (record.revokedAt)
       throw new UnauthorizedException('Refresh token revoked');
