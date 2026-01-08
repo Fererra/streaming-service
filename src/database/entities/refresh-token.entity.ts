@@ -39,4 +39,8 @@ export class RefreshTokenEntity {
   })
   @JoinColumn({ name: 'user_id' })
   user: UserEntity;
+
+  @ManyToOne(() => RefreshTokenEntity, { nullable: true })
+  @JoinColumn({ name: 'replaced_by_token_id' })
+  replacedByToken: RefreshTokenEntity | null;
 }
