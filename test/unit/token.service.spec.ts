@@ -4,23 +4,26 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { RefreshTokenRepository } from 'src/database/repositories/refresh-token.repository';
 import { TokenType } from 'src/modules/token/types/token-types.enum';
-import { hash } from 'argon2';
+import { hash, verify } from 'argon2';
 import { randomUUID } from 'crypto';
 import { UserRoles } from 'src/modules/users/user-roles.enum';
 import { UnauthorizedException } from '@nestjs/common';
 
-jest.mock('argon2', () => ({ hash: jest.fn() }));
+jest.mock('argon2', () => ({ hash: jest.fn(), verify: jest.fn() }));
 jest.mock('crypto', () => ({ randomUUID: jest.fn() }));
 
 describe('TokenService', () => {
   let service: TokenService;
 
   const jwtServiceMock = { signAsync: jest.fn(), verifyAsync: jest.fn() };
+
   const refreshTokenRepoMock = {
     store: jest.fn(),
     revoke: jest.fn(),
     findByIdAndUserId: jest.fn(),
+    rotateToken: jest.fn(),
   };
+
   const configServiceMock = {
     getOrThrow: jest.fn(
       (key: string) =>
@@ -34,6 +37,7 @@ describe('TokenService', () => {
   };
 
   const userMock = { userId: 'user-id', role: UserRoles.USER };
+
   const tokensMock = {
     accessToken: 'access-token',
     refreshToken: 'refresh-token',
@@ -63,8 +67,8 @@ describe('TokenService', () => {
 
   const setupSignMocks = () => {
     jwtServiceMock.signAsync
-      .mockResolvedValueOnce('access-token')
-      .mockResolvedValueOnce('refresh-token');
+      .mockResolvedValueOnce('refresh-token')
+      .mockResolvedValueOnce('access-token');
   };
 
   const setupValidRefreshToken = (overrides = {}) => {
@@ -77,13 +81,13 @@ describe('TokenService', () => {
   const expectSignCalls = () => {
     expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
       1,
-      { sub: 'user-id', role: UserRoles.USER },
-      { secret: 'access-secret', expiresIn: '15m' },
+      { sub: 'user-id', jti: 'jti-123' },
+      { secret: 'refresh-secret', expiresIn: '7d' },
     );
     expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
       2,
-      { sub: 'user-id', jti: 'jti-123' },
-      { secret: 'refresh-secret', expiresIn: '7d' },
+      { sub: 'user-id', role: UserRoles.USER },
+      { secret: 'access-secret', expiresIn: '15m' },
     );
   };
 
@@ -91,7 +95,7 @@ describe('TokenService', () => {
     jest.clearAllMocks();
     (randomUUID as jest.Mock).mockReturnValue('jti-123');
     (hash as jest.Mock).mockResolvedValue('hashed-refresh-token');
-    setupSignMocks();
+    (verify as jest.Mock).mockResolvedValue(true);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -106,9 +110,10 @@ describe('TokenService', () => {
   });
 
   it('should generate access and refresh tokens and store refresh token', async () => {
+    setupSignMocks();
     const result = await service.generateAuthTokens(userMock);
+
     expect(result).toEqual(tokensMock);
-    expectSignCalls();
     expect(refreshTokenRepoMock.store).toHaveBeenCalledWith(refreshTokenMock);
   });
 
@@ -153,20 +158,35 @@ describe('TokenService', () => {
   });
 
   describe('rotateAuthTokens', () => {
-    it('should generate new tokens and revoke old refresh token', async () => {
+    it('should generate new tokens and rotate refresh token', async () => {
       setupValidRefreshToken();
-      refreshTokenRepoMock.revoke.mockResolvedValue(1);
+
+      const newTokensMock = {
+        accessToken: 'new-access-token',
+        refreshToken: 'new-refresh-token',
+      };
+
+      jwtServiceMock.signAsync
+        .mockResolvedValueOnce(newTokensMock.refreshToken)
+        .mockResolvedValueOnce(newTokensMock.accessToken);
+
+      (hash as jest.Mock).mockResolvedValue('hashed-refresh-token');
+
       const result = await service.rotateAuthTokens('old-refresh-token', {
         id: 'user-id',
         role: UserRoles.USER,
       });
-      expect(result).toEqual(tokensMock);
+
+      expect(result).toEqual(newTokensMock);
       expectSignCalls();
-      expect(refreshTokenRepoMock.revoke).toHaveBeenCalledWith(
+      expect(hash).toHaveBeenCalledWith(newTokensMock.refreshToken);
+      expect(refreshTokenRepoMock.rotateToken).toHaveBeenCalledWith(
         'jti-123',
         'user-id',
+        expect.any(String),
+        'hashed-refresh-token',
+        expect.any(Date),
       );
-      expect(refreshTokenRepoMock.store).toHaveBeenCalledWith(refreshTokenMock);
     });
   });
 
@@ -191,7 +211,7 @@ describe('TokenService', () => {
   });
 
   describe('validateRefreshToken', () => {
-    it('should throw if token invalid', async () => {
+    it('should throw if token invalid (JWT verification fails)', async () => {
       jwtServiceMock.verifyAsync.mockRejectedValue(new Error());
       await expect(
         (service as any).validateRefreshToken('token', 'user-id'),
@@ -214,9 +234,17 @@ describe('TokenService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw if record not found', async () => {
+    it('should throw if record not found in DB', async () => {
       jwtServiceMock.verifyAsync.mockResolvedValue(createJwtPayload());
       refreshTokenRepoMock.findByIdAndUserId.mockResolvedValue(null);
+      await expect(
+        (service as any).validateRefreshToken('token', 'user-id'),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('should throw if token hash does not match', async () => {
+      setupValidRefreshToken();
+      (verify as jest.Mock).mockResolvedValue(false);
       await expect(
         (service as any).validateRefreshToken('token', 'user-id'),
       ).rejects.toThrow(UnauthorizedException);
@@ -229,14 +257,14 @@ describe('TokenService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw if expired', async () => {
+    it('should throw if token expired', async () => {
       setupValidRefreshToken({ expiresAt: new Date(Date.now() - 1000) });
       await expect(
         (service as any).validateRefreshToken('token', 'user-id'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should return record if valid', async () => {
+    it('should return record if token is valid', async () => {
       const record = createRefreshTokenRecord();
       setupValidRefreshToken();
       const result = await (service as any).validateRefreshToken(
