@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -8,7 +9,6 @@ import { JwtService } from '@nestjs/jwt';
 import type { AuthTokens } from './types/auth-tokens.type';
 import { GenerateTokensParams } from './types/generate-token.params';
 import { randomUUID } from 'crypto';
-import { RefreshTokenRepository } from 'src/database/repositories/refresh-token.repository';
 import { hash, verify } from 'argon2';
 import type { StringValue } from 'ms';
 import { TokenType } from './types/token-types.enum';
@@ -17,13 +17,16 @@ import ms from 'ms';
 import { StoreRefreshTokenParams } from './types/store-refresh-token.params';
 import { RefreshTokenEntity } from 'src/database/entities/refresh-token.entity';
 import type { AuthUser } from '../auth/types/auth-user.type';
+import { REFRESH_TOKEN_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
+import type { IRefreshTokenRepository } from 'src/database/repositories/interfaces/refresh-token-repository.interface';
 
 @Injectable()
 export class TokenService {
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
-    private readonly refreshTokenRepository: RefreshTokenRepository,
+    @Inject(REFRESH_TOKEN_REPOSITORY)
+    private readonly refreshTokenRepository: IRefreshTokenRepository,
   ) {}
 
   async generateAuthTokens(params: GenerateTokensParams): Promise<AuthTokens> {

@@ -1,11 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UserEntity } from 'src/database/entities/user.entity';
-import { UsersRepository } from 'src/database/repositories/users.repository';
 import type { AuthUser } from '../auth/types/auth-user.type';
+import type { IUsersRepository } from 'src/database/repositories/interfaces/users-repository.interface';
+import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    @Inject(USERS_REPOSITORY)
+    private readonly usersRepository: IUsersRepository,
+  ) {}
 
   findByEmail(email: string): Promise<UserEntity | null> {
     return this.usersRepository.findByEmail(email);

@@ -4,6 +4,7 @@ import { UsersRepository } from 'src/database/repositories/users.repository';
 import { UserEntity } from 'src/database/entities/user.entity';
 import { UserRoles } from 'src/modules/users/user-roles.enum';
 import { UnauthorizedException } from '@nestjs/common';
+import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -32,7 +33,7 @@ describe('UsersService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
-        { provide: UsersRepository, useValue: repoMock },
+        { provide: USERS_REPOSITORY, useValue: repoMock },
       ],
     }).compile();
 

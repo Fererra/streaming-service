@@ -8,6 +8,7 @@ import { hash, verify } from 'argon2';
 import { randomUUID } from 'crypto';
 import { UserRoles } from 'src/modules/users/user-roles.enum';
 import { UnauthorizedException } from '@nestjs/common';
+import { REFRESH_TOKEN_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
 jest.mock('argon2', () => ({ hash: jest.fn(), verify: jest.fn() }));
 jest.mock('crypto', () => ({ randomUUID: jest.fn() }));
@@ -102,7 +103,7 @@ describe('TokenService', () => {
         TokenService,
         { provide: JwtService, useValue: jwtServiceMock },
         { provide: ConfigService, useValue: configServiceMock },
-        { provide: RefreshTokenRepository, useValue: refreshTokenRepoMock },
+        { provide: REFRESH_TOKEN_REPOSITORY, useValue: refreshTokenRepoMock },
       ],
     }).compile();
 
