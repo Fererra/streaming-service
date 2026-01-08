@@ -2,8 +2,9 @@ import { Repository } from 'typeorm';
 import { UserEntity } from '../entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import type { AuthUser } from 'src/modules/auth/types/auth-user.type';
+import type { IUsersRepository } from './interfaces/users-repository.interface';
 
-export class UsersRepository {
+export class UsersRepository implements IUsersRepository {
   constructor(
     @InjectRepository(UserEntity)
     private readonly repository: Repository<UserEntity>,

@@ -1,8 +1,9 @@
 import { IsNull, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshTokenEntity } from '../entities/refresh-token.entity';
+import type { IRefreshTokenRepository } from './interfaces/refresh-token-repository.interface';
 
-export class RefreshTokenRepository {
+export class RefreshTokenRepository implements IRefreshTokenRepository {
   constructor(
     @InjectRepository(RefreshTokenEntity)
     private readonly repository: Repository<RefreshTokenEntity>,
