@@ -40,6 +40,10 @@ describe('UsersService', () => {
     service = module.get(UsersService);
   });
 
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
   it('should find user by email', async () => {
     (repoMock.findByEmail as jest.Mock).mockResolvedValue(mockUser);
 
