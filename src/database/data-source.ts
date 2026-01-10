@@ -1,4 +1,10 @@
 import { DataSource } from 'typeorm';
+import { resolve } from 'path';
+import { config } from 'dotenv';
+
+config({
+  path: resolve(`.env.${process.env.NODE_ENV || 'development'}.local`),
+});
 
 const isProduction = process.env.NODE_ENV === 'production';
 
