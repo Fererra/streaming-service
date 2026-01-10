@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { RefreshTokenEntity } from './refresh-token.entity';
-import { UserRole } from 'src/modules/users/user-role.enum';
+import { UserRole } from '../../modules/users/user-role.enum';
 import { CountryEntity } from './country.entity';
 
 @Entity('users')
