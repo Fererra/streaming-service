@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { RefreshTokenEntity } from './refresh-token.entity';
-import { UserRoles } from 'src/modules/users/user-roles.enum';
+import { UserRole } from 'src/modules/users/user-role.enum';
 import { CountryEntity } from './country.entity';
 
 @Entity('users')
@@ -28,11 +28,11 @@ export class UserEntity {
 
   @Column({
     type: 'enum',
-    enum: UserRoles,
-    default: UserRoles.USER,
-    enumName: 'user_roles',
+    enum: UserRole,
+    default: UserRole.USER,
+    enumName: 'user_role',
   })
-  role: UserRoles;
+  role: UserRole;
 
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;

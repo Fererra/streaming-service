@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from 'src/modules/users/users.service';
 import { UsersRepository } from 'src/database/repositories/users.repository';
 import { UserEntity } from 'src/database/entities/user.entity';
-import { UserRoles } from 'src/modules/users/user-roles.enum';
+import { UserRole } from 'src/modules/users/user-role.enum';
 import { UnauthorizedException } from '@nestjs/common';
 import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
@@ -17,7 +17,7 @@ describe('UsersService', () => {
     email: 'john@example.com',
     password: 'hashed',
     dateOfBirth: new Date('1990-01-01'),
-    role: UserRoles.USER,
+    role: UserRole.USER,
     country: { code: 'US', countryName: 'United States', users: [] },
     refreshTokens: [],
   } as UserEntity;

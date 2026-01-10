@@ -6,7 +6,7 @@ import { RefreshTokenRepository } from 'src/database/repositories/refresh-token.
 import { TokenType } from 'src/modules/token/types/token-types.enum';
 import { hash, verify } from 'argon2';
 import { randomUUID } from 'crypto';
-import { UserRoles } from 'src/modules/users/user-roles.enum';
+import { UserRole } from 'src/modules/users/user-role.enum';
 import { UnauthorizedException } from '@nestjs/common';
 import { REFRESH_TOKEN_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
@@ -37,7 +37,7 @@ describe('TokenService', () => {
     ),
   };
 
-  const userMock = { userId: 'user-id', role: UserRoles.USER };
+  const userMock = { userId: 'user-id', role: UserRole.USER };
 
   const tokensMock = {
     accessToken: 'access-token',
@@ -62,7 +62,7 @@ describe('TokenService', () => {
   const createJwtPayload = (overrides = {}) => ({
     sub: 'user-id',
     jti: 'jti-123',
-    role: UserRoles.USER,
+    role: UserRole.USER,
     ...overrides,
   });
 
@@ -87,7 +87,7 @@ describe('TokenService', () => {
     );
     expect(jwtServiceMock.signAsync).toHaveBeenNthCalledWith(
       2,
-      { sub: 'user-id', role: UserRoles.USER },
+      { sub: 'user-id', role: UserRole.USER },
       { secret: 'access-secret', expiresIn: '15m' },
     );
   };
@@ -175,7 +175,7 @@ describe('TokenService', () => {
 
       const result = await service.rotateAuthTokens('old-refresh-token', {
         id: 'user-id',
-        role: UserRoles.USER,
+        role: UserRole.USER,
       });
 
       expect(result).toEqual(newTokensMock);

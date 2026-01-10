@@ -1,8 +1,8 @@
-import type { UserRoles } from 'src/modules/users/user-roles.enum';
+import type { UserRole } from 'src/modules/users/user-role.enum';
 
 export type AccessTokenPayload = {
   sub: string;
-  role: UserRoles;
+  role: UserRole;
   iat: number;
   exp: number;
 };

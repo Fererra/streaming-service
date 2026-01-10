@@ -5,7 +5,7 @@ import { TokenService } from 'src/modules/token/token.service';
 import { ConflictException, ForbiddenException } from '@nestjs/common';
 import type { SignUpDto } from 'src/modules/auth/dto/sign-up.dto';
 import type { LoginDto } from 'src/modules/auth/dto/login.dto';
-import { UserRoles } from 'src/modules/users/user-roles.enum';
+import { UserRole } from 'src/modules/users/user-role.enum';
 import { hash, verify } from 'argon2';
 
 jest.mock('argon2', () => ({
@@ -30,7 +30,7 @@ describe('AuthService', () => {
 
   const userMock = {
     id: 'user-id',
-    role: UserRoles.USER,
+    role: UserRole.USER,
     password: 'hashed-password',
   };
 

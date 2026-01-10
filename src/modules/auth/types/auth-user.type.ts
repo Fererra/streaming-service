@@ -1,6 +1,6 @@
-import { UserRoles } from 'src/modules/users/user-roles.enum';
+import { UserRole } from 'src/modules/users/user-role.enum';
 
 export type AuthUser = {
   id: string;
-  role: UserRoles;
+  role: UserRole;
 };
