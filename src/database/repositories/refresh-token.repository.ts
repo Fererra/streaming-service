@@ -1,4 +1,4 @@
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, LessThanOrEqual, Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RefreshTokenEntity } from '../entities/refresh-token.entity';
 import type { IRefreshTokenRepository } from './interfaces/refresh-token-repository.interface';
@@ -62,6 +62,12 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
           replacedByTokenId: newJti,
         },
       );
+    });
+  }
+
+  async removeExpiredTokens(expiredDate: Date): Promise<void> {
+    await this.repository.delete({
+      expiresAt: LessThanOrEqual(expiredDate),
     });
   }
 }

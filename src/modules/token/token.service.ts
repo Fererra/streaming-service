@@ -185,4 +185,14 @@ export class TokenService {
 
     return record;
   }
+
+  async removeExpiredTokens(): Promise<void> {
+    const { expiresIn } = this.getTokenSignOptions(TokenType.REFRESH_TOKEN);
+    const msVal =
+      typeof expiresIn === 'number' ? expiresIn * 1000 : ms(expiresIn);
+
+    const expiredDate = new Date(Date.now() - msVal);
+
+    await this.refreshTokenRepository.removeExpiredTokens(expiredDate);
+  }
 }
