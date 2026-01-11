@@ -1,6 +1,7 @@
 import {
   CanActivate,
   ExecutionContext,
+  Inject,
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
@@ -13,11 +14,9 @@ import type {
 } from '../token/types/payload.types';
 
 export abstract class BaseJwtGuard implements CanActivate {
-  constructor(
-    protected readonly usersService: UsersService,
-    protected readonly jwtService: JwtService,
-    protected readonly configService: ConfigService,
-  ) {}
+  @Inject(UsersService) protected readonly usersService: UsersService;
+  @Inject(JwtService) protected readonly jwtService: JwtService;
+  @Inject(ConfigService) protected readonly configService: ConfigService;
 
   protected abstract extractToken(request: Request): string | null;
   protected abstract getSecretName(): string;
@@ -33,7 +32,8 @@ export abstract class BaseJwtGuard implements CanActivate {
     const secretName = this.getSecretName();
     const secret = this.configService.get<string>(secretName);
 
-    if (!secret) throw new UnauthorizedException(`${secret} not configured`);
+    if (!secret)
+      throw new UnauthorizedException(`${secretName} not configured`);
 
     const payload = await this.validateToken(token, secret).catch(() => {
       throw new UnauthorizedException('Invalid authorization token');

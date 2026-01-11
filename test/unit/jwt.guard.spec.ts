@@ -5,7 +5,7 @@ describe('JwtGuard', () => {
   let guard: JwtGuard;
 
   beforeEach(() => {
-    guard = new JwtGuard({} as any, {} as any, {} as any);
+    guard = new JwtGuard();
   });
 
   describe('extractToken', () => {

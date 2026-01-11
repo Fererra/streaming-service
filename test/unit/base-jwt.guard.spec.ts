@@ -26,18 +26,20 @@ describe('BaseJwtGuard', () => {
     usersService = {
       existsById: jest.fn(),
     };
+
     jwtService = {
       verifyAsync: jest.fn(),
     };
+
     configService = {
       get: jest.fn().mockReturnValue('secret'),
     };
 
-    guard = new TestGuard(
-      usersService as UsersService,
-      jwtService as JwtService,
-      configService as ConfigService,
-    );
+    guard = new TestGuard();
+
+    (guard as any).usersService = usersService;
+    (guard as any).jwtService = jwtService;
+    (guard as any).configService = configService;
   });
 
   const createContext = (token?: string) => {
