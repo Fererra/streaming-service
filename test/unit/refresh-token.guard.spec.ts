@@ -5,7 +5,7 @@ describe('RefreshTokenGuard', () => {
   let guard: RefreshTokenGuard;
 
   beforeEach(() => {
-    guard = new RefreshTokenGuard({} as any, {} as any, {} as any);
+    guard = new RefreshTokenGuard();
   });
 
   describe('extractToken', () => {
