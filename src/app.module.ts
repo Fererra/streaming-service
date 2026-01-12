@@ -8,7 +8,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 @Module({
   imports: [
     ConfigModule.forRoot({
-      envFilePath: '.env.development.local',
+      envFilePath: `.env.${process.env.NODE_ENV}.local`,
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
