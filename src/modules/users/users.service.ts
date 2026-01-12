@@ -3,6 +3,10 @@ import { UserEntity } from 'src/database/entities/user.entity';
 import type { AuthUser } from '../auth/types/auth-user.type';
 import type { IUsersRepository } from 'src/database/repositories/interfaces/users-repository.interface';
 import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
+import type {
+  PaginationOptions,
+  RepositoryPaginatedResult,
+} from 'src/common/@types/pagination.types';
 
 @Injectable()
 export class UsersService {
@@ -13,6 +17,17 @@ export class UsersService {
 
   findByEmail(email: string): Promise<UserEntity | null> {
     return this.usersRepository.findByEmail(email);
+  }
+
+  findByUserId(userId: string): Promise<UserEntity | null> {
+    return this.usersRepository.findByUserId(userId);
+  }
+
+  searchUsers(
+    paginationOptions: PaginationOptions,
+    search?: string,
+  ): Promise<RepositoryPaginatedResult<UserEntity>> {
+    return this.usersRepository.searchUsers(paginationOptions, search);
   }
 
   existsById(userId: string): Promise<boolean> {
@@ -29,5 +44,13 @@ export class UsersService {
     if (!user) throw new UnauthorizedException('User not found');
 
     return user;
+  }
+
+  async promoteToAdmin(userId: string): Promise<void> {
+    await this.usersRepository.promoteToAdmin(userId);
+  }
+
+  async demoteFromAdmin(userId: string): Promise<void> {
+    await this.usersRepository.demoteFromAdmin(userId);
   }
 }
