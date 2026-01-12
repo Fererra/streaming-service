@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { TokenService } from 'src/modules/token/token.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { RefreshTokenRepository } from 'src/database/repositories/refresh-token.repository';
 import { TokenType } from 'src/modules/token/types/token-types.enum';
 import { hash, verify } from 'argon2';
 import { randomUUID } from 'crypto';
@@ -23,6 +22,7 @@ describe('TokenService', () => {
     revoke: jest.fn(),
     findByIdAndUserId: jest.fn(),
     rotateToken: jest.fn(),
+    removeExpiredTokens: jest.fn(),
   };
 
   const configServiceMock = {
@@ -273,6 +273,13 @@ describe('TokenService', () => {
         'user-id',
       );
       expect(result).toEqual(record);
+    });
+  });
+
+  describe('removeExpiredTokens', () => {
+    it('should call removeExpiredTokens on repository', async () => {
+      await service.removeExpiredTokens();
+      expect(refreshTokenRepoMock.removeExpiredTokens).toHaveBeenCalled();
     });
   });
 });
