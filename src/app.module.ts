@@ -4,6 +4,7 @@ import { ConfigModule } from '@nestjs/config';
 import { CountryModule } from './modules/country/country.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     AuthModule,
     CountryModule,
     TasksModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
