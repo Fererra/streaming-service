@@ -14,5 +14,5 @@ export interface IRefreshTokenRepository {
     newTokenHash: string,
     expiresAt: Date,
   ): Promise<void>;
-  removeExpiredTokens(expiredDate: Date): Promise<void>;
+  removeExpiredTokens(): Promise<void>;
 }

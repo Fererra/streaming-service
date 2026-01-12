@@ -11,7 +11,6 @@ export class TokenTasksService {
     timeZone: 'Europe/Kyiv',
   })
   async handleDailyTokenCleanup() {
-    console.log('Starting daily job');
     await this.tokenService.removeExpiredTokens();
   }
 }

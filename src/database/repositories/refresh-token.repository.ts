@@ -65,9 +65,9 @@ export class RefreshTokenRepository implements IRefreshTokenRepository {
     });
   }
 
-  async removeExpiredTokens(expiredDate: Date): Promise<void> {
+  async removeExpiredTokens(): Promise<void> {
     await this.repository.delete({
-      expiresAt: LessThanOrEqual(expiredDate),
+      expiresAt: LessThanOrEqual(new Date()),
     });
   }
 }
