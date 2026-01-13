@@ -8,44 +8,44 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { AdminService } from './admin.service';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/user-role.enum';
 import { JwtGuard } from '../auth/jwt.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { UserSearchQueryDto } from './dto/user-search-query.dto';
+import { UserSearchQueryDto } from '../users/dto/user-search-query.dto';
 import { PaginationResponse } from 'src/common/@types/pagination.types';
-import { UserDto } from './dto/user.dto';
+import { UserDto } from '../users/dto/user.dto';
+import { UsersService } from '../users/users.service';
 
-@Controller('admin')
+@Controller('users')
 @UseGuards(JwtGuard, RolesGuard)
-export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+export class AdminUsersController {
+  constructor(private readonly usersService: UsersService) {}
 
-  @Get('users')
+  @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   searchUsers(
     @Query() options: UserSearchQueryDto,
   ): Promise<PaginationResponse<UserDto>> {
     const { search, ...paginationOptions } = options;
-    return this.adminService.searchUsers(paginationOptions, search);
+    return this.usersService.searchUsers(paginationOptions, search);
   }
 
-  @Post('users/:id/admin')
+  @Post(':id/admin')
   @Roles(UserRole.SUPERADMIN)
   async promoteToAdmin(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ message: string }> {
-    await this.adminService.promoteToAdmin(id);
+    await this.usersService.promoteToAdmin(id);
     return { message: 'User promoted to admin successfully' };
   }
 
-  @Delete('users/:id/admin')
+  @Delete(':id/admin')
   @Roles(UserRole.SUPERADMIN)
   async demoteFromAdmin(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ message: string }> {
-    await this.adminService.demoteFromAdmin(id);
+    await this.usersService.demoteFromAdmin(id);
     return { message: 'User demoted from admin successfully' };
   }
 }
