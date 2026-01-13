@@ -3,7 +3,11 @@ import { UsersService } from 'src/modules/users/users.service';
 import { UsersRepository } from 'src/database/repositories/users.repository';
 import { UserEntity } from 'src/database/entities/user.entity';
 import { UserRole } from 'src/modules/users/user-role.enum';
-import { UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
 describe('UsersService', () => {
@@ -25,9 +29,13 @@ describe('UsersService', () => {
   beforeEach(async () => {
     repoMock = {
       findByEmail: jest.fn().mockResolvedValue(null),
+      findByUserId: jest.fn().mockResolvedValue(null),
+      searchUsers: jest.fn().mockResolvedValue([[], 0]),
       existsById: jest.fn().mockResolvedValue(false),
       createUser: jest.fn().mockResolvedValue(mockUser),
       resolveAuthUser: jest.fn().mockResolvedValue(null),
+      promoteToAdmin: jest.fn().mockResolvedValue(undefined),
+      demoteFromAdmin: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -60,6 +68,25 @@ describe('UsersService', () => {
 
     expect(repoMock.findByEmail).toHaveBeenCalledWith('unknown@example.com');
     expect(result).toBeNull();
+  });
+
+  it('should search users with pagination', async () => {
+    const mockUsers = [mockUser];
+    (repoMock.searchUsers as jest.Mock).mockResolvedValue([mockUsers, 1]);
+
+    const result = await service.searchUsers({ page: 1, limit: 10 }, 'John');
+
+    expect(repoMock.searchUsers).toHaveBeenCalledWith(
+      { page: 1, limit: 10 },
+      'John',
+    );
+    expect(result.data).toEqual(mockUsers);
+    expect(result.meta).toEqual({
+      total: 1,
+      page: 1,
+      limit: 10,
+      lastPage: 1,
+    });
   });
 
   it('should check if user exists by ID', async () => {
@@ -112,5 +139,63 @@ describe('UsersService', () => {
       UnauthorizedException,
     );
     expect(repoMock.resolveAuthUser).toHaveBeenCalledWith('user-2');
+  });
+
+  it('should promote user to admin', async () => {
+    (repoMock.findByUserId as jest.Mock).mockResolvedValue(mockUser);
+    (repoMock.promoteToAdmin as jest.Mock).mockResolvedValue(undefined);
+
+    await service.promoteToAdmin('user-1');
+
+    expect(repoMock.findByUserId).toHaveBeenCalledWith('user-1');
+    expect(repoMock.promoteToAdmin).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should throw NotFoundException if user to promote not found', async () => {
+    (repoMock.findByUserId as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.promoteToAdmin('user-2')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repoMock.findByUserId).toHaveBeenCalledWith('user-2');
+  });
+
+  it('should throw ConflictException if user is already an admin', async () => {
+    const adminUser = { ...mockUser, role: UserRole.ADMIN };
+    (repoMock.findByUserId as jest.Mock).mockResolvedValue(adminUser);
+
+    await expect(service.promoteToAdmin('user-1')).rejects.toThrow(
+      ConflictException,
+    );
+    expect(repoMock.findByUserId).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should demote admin to user', async () => {
+    const adminUser = { ...mockUser, role: UserRole.ADMIN };
+    (repoMock.findByUserId as jest.Mock).mockResolvedValue(adminUser);
+    (repoMock.demoteFromAdmin as jest.Mock).mockResolvedValue(undefined);
+
+    await service.demoteFromAdmin('user-1');
+
+    expect(repoMock.findByUserId).toHaveBeenCalledWith('user-1');
+    expect(repoMock.demoteFromAdmin).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should throw NotFoundException if user to demote not found', async () => {
+    (repoMock.findByUserId as jest.Mock).mockResolvedValue(null);
+
+    await expect(service.demoteFromAdmin('user-2')).rejects.toThrow(
+      NotFoundException,
+    );
+    expect(repoMock.findByUserId).toHaveBeenCalledWith('user-2');
+  });
+
+  it('should throw ConflictException if user is not an admin', async () => {
+    (repoMock.findByUserId as jest.Mock).mockResolvedValue(mockUser);
+
+    await expect(service.demoteFromAdmin('user-1')).rejects.toThrow(
+      ConflictException,
+    );
+    expect(repoMock.findByUserId).toHaveBeenCalledWith('user-1');
   });
 });
