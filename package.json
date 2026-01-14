@@ -18,6 +18,7 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:integration": "NODE_ENV=test docker compose -f compose.test.yaml up -d --wait && jest --config ./test/jest-integration.json --runInBand && docker compose -f compose.test.yaml down -v",
     "docker:dev": "docker compose -f compose.dev.yaml up --build",
     "docker:prod": "docker compose -f compose.prod.yaml up --build",
     "docker:test": "docker compose -f compose.test.yaml up --build",

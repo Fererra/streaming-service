@@ -1,9 +1,14 @@
 services:
-  app:
-    build:
-      context: .
-      target: test
+  db:
+    image: postgres:18-alpine
     environment:
-      NODE_ENV: test
-    env_file:
-      - .env.test.local
+      POSTGRES_DB: test_db
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U test']
+      interval: 1s
+      timeout: 5s
+      retries: 10
