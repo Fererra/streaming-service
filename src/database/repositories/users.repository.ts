@@ -8,6 +8,7 @@ import type {
   PaginationOptions,
   RepositoryPaginatedResult,
 } from 'src/common/@types/pagination.types';
+import { isUUID } from 'class-validator';
 
 export class UsersRepository implements IUsersRepository {
   constructor(
@@ -37,7 +38,7 @@ export class UsersRepository implements IUsersRepository {
       ? [
           { firstName: ILike(`%${search}%`) },
           { lastName: ILike(`%${search}%`) },
-          { id: search },
+          ...(isUUID(search) ? [{ id: search }] : []),
         ]
       : undefined;
 
