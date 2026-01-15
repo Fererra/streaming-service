@@ -1,8 +1,24 @@
 services:
-  db:
+  server:
+    build:
+      context: .
+      target: test
+    environment:
+      NODE_ENV: test
+    env_file:
+      - .env.test.local
+    ports:
+      - '3000:3000'
+    depends_on:
+      test_db:
+        condition: service_healthy
+    profiles:
+      - e2e
+
+  test_db:
     image: postgres:18-alpine
     environment:
-      POSTGRES_DB: test_db
+      POSTGRES_DB: streaming-service-test
       POSTGRES_USER: test
       POSTGRES_PASSWORD: test
     ports:
@@ -12,3 +28,6 @@ services:
       interval: 1s
       timeout: 5s
       retries: 10
+    profiles:
+      - integration
+      - e2e
