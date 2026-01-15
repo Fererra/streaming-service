@@ -15,20 +15,20 @@ describe('JwtGuard', () => {
 
     it('should return null if scheme is not Bearer', () => {
       expect(
-        guard.extractToken({ headers: { Authorization: 'Token abc' } } as any),
+        guard.extractToken({ headers: { authorization: 'Token abc' } } as any),
       ).toBeNull();
     });
 
     it('should return null if token is missing', () => {
       expect(
-        guard.extractToken({ headers: { Authorization: 'Bearer' } } as any),
+        guard.extractToken({ headers: { authorization: 'Bearer' } } as any),
       ).toBeNull();
     });
 
     it('should return token if valid', () => {
       expect(
         guard.extractToken({
-          headers: { Authorization: 'Bearer mytoken' },
+          headers: { authorization: 'Bearer mytoken' },
         } as any),
       ).toBe('mytoken');
     });
