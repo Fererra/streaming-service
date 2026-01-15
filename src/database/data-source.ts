@@ -6,7 +6,7 @@ config({
   path: resolve(`.env.${process.env.NODE_ENV || 'development'}.local`),
 });
 
-const isProduction = process.env.NODE_ENV === 'production';
+const env = process.env.NODE_ENV || 'development';
 
 const AppDataSource = new DataSource({
   type: 'postgres',
@@ -15,12 +15,11 @@ const AppDataSource = new DataSource({
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  ssl: env === 'production' ? { rejectUnauthorized: false } : false,
   entities: [__dirname + '/entities/*.entity{.ts,.js}'],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
-  migrationsRun: isProduction,
-  synchronize: !isProduction,
-  logging: !isProduction,
+  migrationsRun: env !== 'development',
+  synchronize: env === 'development',
 });
 
 export default AppDataSource;
