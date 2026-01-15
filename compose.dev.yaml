@@ -14,10 +14,10 @@ services:
     ports:
       - 3000:3000
     depends_on:
-      db:
+      dev_db:
         condition: service_healthy
 
-  db:
+  dev_db:
     image: postgres:18-alpine
     restart: always
     volumes:
