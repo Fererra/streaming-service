@@ -6,7 +6,7 @@ import { TokenType } from '../token/types/token-types.enum';
 @Injectable()
 export class JwtGuard extends BaseJwtGuard {
   protected extractToken(request: Request): string | null {
-    const header = request.headers['Authorization'];
+    const header = request.headers['authorization'];
     if (!header) return null;
 
     const [scheme, token] = String(header).split(' ');
