@@ -17,6 +17,7 @@ import { RouterModule } from '@nestjs/core';
     AuthModule,
     CountryModule,
     TasksModule,
+    AdminModule,
     RouterModule.register([{ path: 'admin', module: AdminModule }]),
   ],
 })
