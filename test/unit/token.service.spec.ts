@@ -258,11 +258,16 @@ describe('TokenService', () => {
       ).rejects.toThrow(UnauthorizedException);
     });
 
-    it('should throw if token expired', async () => {
+    it('should throw if token expired and revoke from table', async () => {
       setupValidRefreshToken({ expiresAt: new Date(Date.now() - 1000) });
       await expect(
         (service as any).validateRefreshToken('token', 'user-id'),
       ).rejects.toThrow(UnauthorizedException);
+
+      expect(refreshTokenRepoMock.revoke).toHaveBeenCalledWith(
+        'jti-123',
+        'user-id',
+      );
     });
 
     it('should return record if token is valid', async () => {

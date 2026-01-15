@@ -180,8 +180,10 @@ export class TokenService {
 
     if (record.revokedAt)
       throw new UnauthorizedException('Refresh token revoked');
-    if (record.expiresAt && record.expiresAt < new Date())
+    if (record.expiresAt && record.expiresAt < new Date()) {
+      await this.refreshTokenRepository.revoke(record.id, record.userId);
       throw new UnauthorizedException('Refresh token expired');
+    }
 
     return record;
   }
