@@ -2,6 +2,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
@@ -33,6 +34,7 @@ export class AdminUsersController {
 
   @Post(':id/admin')
   @Roles(UserRole.SUPERADMIN)
+  @HttpCode(200)
   async promoteToAdmin(
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<{ message: string }> {
