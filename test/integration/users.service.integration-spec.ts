@@ -1,0 +1,232 @@
+import { Test } from '@nestjs/testing';
+import {
+  INestApplication,
+  UnauthorizedException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
+import { DataSource } from 'typeorm';
+import { UsersService } from 'src/modules/users/users.service';
+import { UsersModule } from 'src/modules/users/users.module';
+import { DatabaseModule } from 'src/database/database.module';
+import { UserRole } from 'src/modules/users/user-role.enum';
+import { CountryEntity } from 'src/database/entities/country.entity';
+import { randomUUID } from 'crypto';
+
+describe('UsersService (integration)', () => {
+  let app: INestApplication;
+  let usersService: UsersService;
+  let dataSource: DataSource;
+  let country: CountryEntity;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [DatabaseModule, UsersModule],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+
+    usersService = app.get(UsersService);
+    dataSource = app.get(DataSource);
+
+    country = dataSource.getRepository(CountryEntity).create({
+      code: 'US',
+      countryName: 'United States',
+    });
+    await dataSource.getRepository(CountryEntity).save(country);
+  });
+
+  afterEach(async () => {
+    await dataSource.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
+  });
+
+  afterAll(async () => {
+    await dataSource.destroy();
+    await app.close();
+  });
+
+  describe('createUser / findByEmail', () => {
+    it('creates a user and finds it by email', async () => {
+      const user = await usersService.createUser({
+        email: `test-${Date.now()}@mail.com`,
+        firstName: 'Test',
+        lastName: 'User',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      const found = await usersService.findByEmail(user.email);
+
+      expect(found).toBeDefined();
+      expect(found!.id).toEqual(user.id);
+    });
+  });
+
+  describe('resolveAuthUser', () => {
+    it('returns auth user if exists', async () => {
+      const user = await usersService.createUser({
+        email: `test-${Date.now()}@mail.com`,
+        firstName: 'Auth',
+        lastName: 'User',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      const authUser = await usersService.resolveAuthUser(user.id);
+
+      expect(authUser.id).toBe(user.id);
+      expect(authUser.role).toBe(UserRole.USER);
+    });
+
+    it('throws Unauthorized if user not found', async () => {
+      await expect(
+        usersService.resolveAuthUser(randomUUID()),
+      ).rejects.toBeInstanceOf(UnauthorizedException);
+    });
+  });
+
+  describe('promoteToAdmin', () => {
+    it('promotes user to admin', async () => {
+      const user = await usersService.createUser({
+        email: `admin-${Date.now()}@mail.com`,
+        firstName: 'Admin',
+        lastName: 'Candidate',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      await usersService.promoteToAdmin(user.id);
+
+      const updated = await usersService.findByEmail(user.email);
+      expect(updated!.role).toBe(UserRole.ADMIN);
+    });
+
+    it('throws Conflict if already admin', async () => {
+      const user = await usersService.createUser({
+        email: `admin-${Date.now()}@mail.com`,
+        firstName: 'Admin',
+        lastName: 'Already',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+        role: UserRole.ADMIN,
+      });
+
+      await expect(usersService.promoteToAdmin(user.id)).rejects.toBeInstanceOf(
+        ConflictException,
+      );
+    });
+
+    it('throws NotFound if user does not exist', async () => {
+      await expect(
+        usersService.promoteToAdmin(randomUUID()),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('demoteFromAdmin', () => {
+    it('demotes admin to user', async () => {
+      const user = await usersService.createUser({
+        email: `demote-${Date.now()}@mail.com`,
+        firstName: 'Admin',
+        lastName: 'Down',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+        role: UserRole.ADMIN,
+      });
+
+      await usersService.demoteFromAdmin(user.id);
+
+      const updated = await usersService.findByEmail(user.email);
+      expect(updated!.role).toBe(UserRole.USER);
+    });
+
+    it('throws Conflict if user is not admin', async () => {
+      const user = await usersService.createUser({
+        email: `user-${Date.now()}@mail.com`,
+        firstName: 'User',
+        lastName: 'Plain',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      await expect(
+        usersService.demoteFromAdmin(user.id),
+      ).rejects.toBeInstanceOf(ConflictException);
+    });
+  });
+
+  describe('searchUsers', () => {
+    it('returns paginated users', async () => {
+      await usersService.createUser({
+        email: 'search1@mail.com',
+        firstName: 'Alice',
+        lastName: 'Smith',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      await usersService.createUser({
+        email: 'search2@mail.com',
+        firstName: 'Bob',
+        lastName: 'Jones',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      const result = await usersService.searchUsers({ page: 1, limit: 10 });
+
+      expect(result.meta.total).toBe(2);
+      expect(result.data.length).toBe(2);
+      expect(result.data[0].firstName).toBeDefined();
+      expect(result.data[1].firstName).toBeDefined();
+    });
+
+    it('searches by firstName', async () => {
+      await usersService.createUser({
+        firstName: 'Alice',
+        lastName: 'Smith',
+        email: 'alice@mail.com',
+        password: 'hashed',
+        dateOfBirth: new Date('1990-01-01'),
+        country: { code: 'US' } as CountryEntity,
+      });
+
+      const result = await usersService.searchUsers(
+        { page: 1, limit: 10 },
+        'Alice',
+      );
+      expect(result.meta.total).toBe(1);
+      expect(result.data[0].firstName).toBe('Alice');
+    });
+  });
+
+  describe('existsById', () => {
+    it('returns true if user exists', async () => {
+      const user = await usersService.createUser({
+        email: 'exists@mail.com',
+        firstName: 'Exist',
+        lastName: 'Check',
+        password: 'hashed',
+        dateOfBirth: new Date('2000-01-01'),
+        country,
+      });
+
+      const exists = await usersService.existsById(user.id);
+      expect(exists).toBe(true);
+    });
+
+    it('returns false if user does not exist', async () => {
+      const exists = await usersService.existsById(randomUUID());
+      expect(exists).toBe(false);
+    });
+  });
+});
