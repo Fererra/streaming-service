@@ -21,12 +21,21 @@ describe('CountryController (e2e)', () => {
   });
 
   describe('GET /countries', () => {
-    it('200 + array ofall countries', async () => {
+    it('200 + array of all countries', async () => {
       const response = await request(app.getHttpServer())
         .get('/countries')
         .expect(200);
 
       expect(Array.isArray(response.body)).toBe(true);
+
+      for (const item of response.body) {
+        expect(item).toEqual(
+          expect.objectContaining({
+            code: expect.any(String),
+            countryName: expect.any(String),
+          }),
+        );
+      }
     });
   });
 });
