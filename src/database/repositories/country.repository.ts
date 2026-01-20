@@ -12,6 +12,6 @@ export class CountryRepository implements ICountryRepository {
   ) {}
 
   getAllCountries(): Promise<CountryEntity[]> {
-    return this.repository.find();
+    return this.repository.find({ order: { countryName: 'ASC' } });
   }
 }
