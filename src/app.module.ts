@@ -7,6 +7,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './modules/admin/admin.module';
 import { RouterModule } from '@nestjs/core';
 import { GenresModule } from './modules/genres/genres.module';
+import { CreditsModule } from './modules/credits/credits.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { GenresModule } from './modules/genres/genres.module';
     AdminModule,
     RouterModule.register([{ path: 'admin', module: AdminModule }]),
     GenresModule,
+    CreditsModule,
   ],
 })
 export class AppModule {}
