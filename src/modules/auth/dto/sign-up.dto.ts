@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsString,
+  MaxDate,
   MinLength,
 } from 'class-validator';
 
@@ -26,6 +27,7 @@ export class SignUpDto {
 
   @IsDateString()
   @IsNotEmpty()
+  @MaxDate(new Date())
   readonly dateOfBirth: string;
 
   @IsString()
