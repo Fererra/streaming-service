@@ -7,6 +7,7 @@ import { RefreshTokenRepository } from './repositories/refresh-token.repository'
 import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import {
   COUNTRY_REPOSITORY,
+  CREDITS_REPOSITORY,
   GENRES_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   USERS_REPOSITORY,
@@ -15,6 +16,8 @@ import { CountryEntity } from './entities/country.entity';
 import { CountryRepository } from './repositories/country.repository';
 import { GenresRepository } from './repositories/genres.repository';
 import { GenreEntity } from './entities/genre.entity';
+import { CreditRoleEntity } from './entities/credit-role.entity';
+import { CreditsRepository } from './repositories/credits.repository';
 
 @Module({
   imports: [
@@ -28,6 +31,7 @@ import { GenreEntity } from './entities/genre.entity';
       RefreshTokenEntity,
       CountryEntity,
       GenreEntity,
+      CreditRoleEntity,
     ]),
   ],
   providers: [
@@ -35,12 +39,14 @@ import { GenreEntity } from './entities/genre.entity';
     { provide: REFRESH_TOKEN_REPOSITORY, useClass: RefreshTokenRepository },
     { provide: COUNTRY_REPOSITORY, useClass: CountryRepository },
     { provide: GENRES_REPOSITORY, useClass: GenresRepository },
+    { provide: CREDITS_REPOSITORY, useClass: CreditsRepository },
   ],
   exports: [
     USERS_REPOSITORY,
     REFRESH_TOKEN_REPOSITORY,
     COUNTRY_REPOSITORY,
     GENRES_REPOSITORY,
+    CREDITS_REPOSITORY,
   ],
 })
 export class DatabaseModule {}
