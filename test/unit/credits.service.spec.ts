@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CREDITS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
-import { CreditsService } from 'src/modules/credits/credits.service';
+import { CreditsService } from 'src/modules/reference/credits/credits.service';
 
 describe('CreditsService', () => {
   let service: CreditsService;

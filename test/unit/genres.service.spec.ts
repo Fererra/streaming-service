@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GenresService } from 'src/modules/genres/genres.service';
+import { GenresService } from 'src/modules/reference/genres/genres.service';
 import { GENRES_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 
 describe('GenresService', () => {

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { CreditsController } from 'src/modules/credits/credits.controller';
-import { CreditsService } from 'src/modules/credits/credits.service';
+import { CreditsController } from 'src/modules/reference/credits/credits.controller';
+import { CreditsService } from 'src/modules/reference/credits/credits.service';
 
 describe('CreditsController', () => {
   let controller: CreditsController;
