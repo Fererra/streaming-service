@@ -5,6 +5,7 @@ services:
       target: development
     volumes:
       - ./src:/usr/src/app/src
+      - ~/.config/gcloud:/root/.config/gcloud:ro
     environment:
       NODE_ENV: development
     env_file:
