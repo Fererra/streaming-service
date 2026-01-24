@@ -6,6 +6,7 @@ import { TasksModule } from './modules/tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './modules/admin/admin.module';
 import { RouterModule } from '@nestjs/core';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { RouterModule } from '@nestjs/core';
     TasksModule,
     AdminModule,
     RouterModule.register([{ path: 'admin', module: AdminModule }]),
+    StorageModule,
   ],
 })
 export class AppModule {}
