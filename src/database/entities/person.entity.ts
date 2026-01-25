@@ -29,7 +29,9 @@ export class PersonEntity {
   @Column({ type: 'text', nullable: true })
   biography: string | null;
 
-  @ManyToOne(() => CountryEntity, (country) => country.persons)
+  @ManyToOne(() => CountryEntity, (country) => country.persons, {
+    nullable: false,
+  })
   @JoinColumn({ name: 'country_code' })
   country: CountryEntity;
 }
