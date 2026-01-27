@@ -1,8 +1,11 @@
+import { Type } from 'class-transformer';
 import {
-  IsDateString,
+  IsDate,
   IsEmail,
   IsNotEmpty,
   IsString,
+  Length,
+  MaxDate,
   MinLength,
 } from 'class-validator';
 
@@ -24,11 +27,14 @@ export class SignUpDto {
   @MinLength(8)
   readonly password: string;
 
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   @IsNotEmpty()
-  readonly dateOfBirth: string;
+  @MaxDate(new Date())
+  readonly dateOfBirth: Date;
 
   @IsString()
   @IsNotEmpty()
+  @Length(2, 2)
   readonly country: string;
 }

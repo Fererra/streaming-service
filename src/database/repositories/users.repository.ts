@@ -46,7 +46,7 @@ export class UsersRepository implements IUsersRepository {
     const take = options.limit;
 
     return this.repository.findAndCount({
-      select: ['id', 'firstName', 'lastName'],
+      select: ['id', 'firstName', 'lastName', 'avatarPath'],
       where,
       skip,
       take,
@@ -60,6 +60,19 @@ export class UsersRepository implements IUsersRepository {
   createUser(data: Partial<UserEntity>): Promise<UserEntity> {
     const user = this.repository.create(data);
     return this.repository.save(user);
+  }
+
+  async getAvatarPath(userId: string): Promise<string | null> {
+    const user = await this.repository.findOne({
+      select: ['avatarPath'],
+      where: { id: userId },
+    });
+
+    return user?.avatarPath ?? null;
+  }
+
+  async update(id: string, data: Partial<UserEntity>): Promise<void> {
+    await this.repository.update({ id }, data);
   }
 
   resolveAuthUser(userId: string): Promise<AuthUser | null> {

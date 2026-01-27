@@ -33,7 +33,7 @@ describe('AuthController (e2e)', () => {
       lastName: 'User',
       email: `user+${timestamp}@test.com`,
       password: 'Password123!',
-      dateOfBirth: '2000-01-01',
+      dateOfBirth: new Date('2000-01-01'),
       country: 'UA',
     };
   };
