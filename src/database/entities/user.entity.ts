@@ -40,7 +40,9 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 255 })
   password: string;
 
-  @ManyToOne(() => CountryEntity, (country) => country.users)
+  @ManyToOne(() => CountryEntity, (country) => country.users, {
+    nullable: false,
+  })
   @JoinColumn({ name: 'country_code' })
   country: CountryEntity;
 
