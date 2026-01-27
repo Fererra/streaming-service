@@ -46,7 +46,7 @@ export class UsersRepository implements IUsersRepository {
     const take = options.limit;
 
     return this.repository.findAndCount({
-      select: ['id', 'firstName', 'lastName'],
+      select: ['id', 'firstName', 'lastName', 'avatarPath'],
       where,
       skip,
       take,
