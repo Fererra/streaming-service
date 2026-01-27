@@ -62,6 +62,19 @@ export class UsersRepository implements IUsersRepository {
     return this.repository.save(user);
   }
 
+  async getAvatarPath(userId: string): Promise<string | null> {
+    const user = await this.repository.findOne({
+      select: ['avatarPath'],
+      where: { id: userId },
+    });
+
+    return user?.avatarPath ?? null;
+  }
+
+  async update(id: string, data: Partial<UserEntity>): Promise<void> {
+    await this.repository.update({ id }, data);
+  }
+
   resolveAuthUser(userId: string): Promise<AuthUser | null> {
     return this.repository.findOne({
       select: ['id', 'role'],
