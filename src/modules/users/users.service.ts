@@ -16,12 +16,21 @@ import type {
 import { UserRole } from './user-role.enum';
 import { buildPaginationResponse } from 'src/common/utils/pagination.util';
 import { UserDto } from './dto/user.dto';
+import type {
+  ImageStorage,
+  InputOptions,
+} from '../storage/image-storage.interface';
+import { IMAGE_STORAGE } from '../storage/storage.token';
+import { ImageStoragePath } from '../storage/storage-path.enum';
+import { extension } from 'mime-types';
 
 @Injectable()
 export class UsersService {
   constructor(
     @Inject(USERS_REPOSITORY)
     private readonly usersRepository: IUsersRepository,
+    @Inject(IMAGE_STORAGE)
+    private readonly imageStorage: ImageStorage,
   ) {}
 
   findByEmail(email: string): Promise<UserEntity | null> {
@@ -46,6 +55,27 @@ export class UsersService {
 
   createUser(data: Partial<UserEntity>): Promise<UserEntity> {
     return this.usersRepository.createUser(data);
+  }
+
+  async updateAvatar(userId: string, avatar: InputOptions): Promise<void> {
+    const userAvatar = await this.usersRepository.getAvatarPath(userId);
+
+    const { storageKey } = await this.imageStorage.upload(avatar, {
+      path: ImageStoragePath.USER_AVATARS,
+      extension: extension(avatar.contentType) || 'bin',
+      isPublic: false,
+    });
+
+    try {
+      await this.usersRepository.update(userId, { avatarPath: storageKey });
+
+      if (userAvatar) {
+        await this.imageStorage.delete(userAvatar, false);
+      }
+    } catch (error) {
+      await this.imageStorage.delete(storageKey, false);
+      throw error;
+    }
   }
 
   async resolveAuthUser(userId: string): Promise<AuthUser> {
