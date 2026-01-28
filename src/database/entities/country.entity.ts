@@ -1,6 +1,7 @@
-import { Column, Entity, OneToMany, PrimaryColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, OneToMany, PrimaryColumn } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { PersonEntity } from './person.entity';
+import { MovieEntity } from './movie.entity';
 
 @Entity('countries')
 export class CountryEntity {
@@ -15,4 +16,7 @@ export class CountryEntity {
 
   @OneToMany(() => PersonEntity, (person) => person.country)
   persons: PersonEntity[];
+
+  @ManyToMany(() => MovieEntity, (movie) => movie.countries)
+  movies: MovieEntity[];
 }
