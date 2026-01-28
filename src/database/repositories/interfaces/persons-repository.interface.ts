@@ -8,6 +8,7 @@ export interface IPersonsRepository {
     paginationOptions: PaginationQueryDto,
     search?: string,
   ): Promise<RepositoryPaginatedResult<PersonEntity>>;
+  findByIds(ids: string[]): Promise<PersonEntity[]>;
   existsById(id: string): Promise<boolean>;
   create(data: Partial<PersonEntity>): Promise<PersonEntity>;
   update(id: string, data: Partial<PersonEntity>): Promise<void>;

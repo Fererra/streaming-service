@@ -1,4 +1,4 @@
-import { ILike, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { PersonEntity } from '../entities/person.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Injectable } from '@nestjs/common';
@@ -44,6 +44,10 @@ export class PersonsRepository implements IPersonsRepository {
       skip,
       take,
     });
+  }
+
+  findByIds(ids: string[]): Promise<PersonEntity[]> {
+    return this.repository.find({ select: ['id'], where: { id: In(ids) } });
   }
 
   existsById(id: string): Promise<boolean> {

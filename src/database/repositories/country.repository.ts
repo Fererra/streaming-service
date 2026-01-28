@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CountryEntity } from '../entities/country.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { ICountryRepository } from './interfaces/country-repository.interface';
 
 @Injectable()
@@ -13,5 +13,9 @@ export class CountryRepository implements ICountryRepository {
 
   getAllCountries(): Promise<CountryEntity[]> {
     return this.repository.find({ order: { countryName: 'ASC' } });
+  }
+
+  findCountriesByIds(ids: string[]): Promise<CountryEntity[]> {
+    return this.repository.find({ select: ['code'], where: { code: In(ids) } });
   }
 }
