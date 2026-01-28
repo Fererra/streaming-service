@@ -19,7 +19,7 @@ import { PersonsModule } from './modules/persons/persons.module';
     TasksModule,
     AdminModule,
     RouterModule.register([{ path: 'admin', module: AdminModule }]),
-    ReferenceModule
+    ReferenceModule,
     PersonsModule,
   ],
 })
