@@ -9,15 +9,15 @@ import {
   COUNTRY_REPOSITORY,
   CREDITS_REPOSITORY,
   GENRES_REPOSITORY,
+  PERSONS_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   USERS_REPOSITORY,
 } from './repositories/tokens/repository.tokens';
 import { CountryEntity } from './entities/country.entity';
 import { CountryRepository } from './repositories/country.repository';
-import { GenresRepository } from './repositories/genres.repository';
 import { GenreEntity } from './entities/genre.entity';
 import { CreditRoleEntity } from './entities/credit-role.entity';
-import { CreditsRepository } from './repositories/credits.repository';
+import { PersonEntity } from './entities/person.entity';
 
 @Module({
   imports: [
@@ -32,14 +32,16 @@ import { CreditsRepository } from './repositories/credits.repository';
       CountryEntity,
       GenreEntity,
       CreditRoleEntity,
+      PersonEntity,
     ]),
   ],
   providers: [
     { provide: USERS_REPOSITORY, useClass: UsersRepository },
     { provide: REFRESH_TOKEN_REPOSITORY, useClass: RefreshTokenRepository },
     { provide: COUNTRY_REPOSITORY, useClass: CountryRepository },
-    { provide: GENRES_REPOSITORY, useClass: GenresRepository },
-    { provide: CREDITS_REPOSITORY, useClass: CreditsRepository },
+    { provide: GENRES_REPOSITORY, useClass: GenreEntity },
+    { provide: CREDITS_REPOSITORY, useClass: CreditRoleEntity },
+    { provide: PERSONS_REPOSITORY, useClass: PersonEntity },
   ],
   exports: [
     USERS_REPOSITORY,
@@ -47,6 +49,7 @@ import { CreditsRepository } from './repositories/credits.repository';
     COUNTRY_REPOSITORY,
     GENRES_REPOSITORY,
     CREDITS_REPOSITORY,
+    PERSONS_REPOSITORY,
   ],
 })
 export class DatabaseModule {}

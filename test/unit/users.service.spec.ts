@@ -1,6 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersService } from 'src/modules/users/users.service';
-import { UsersRepository } from 'src/database/repositories/users.repository';
 import { UserEntity } from 'src/database/entities/user.entity';
 import { UserRole } from 'src/modules/users/user-role.enum';
 import {
@@ -9,10 +8,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
+import { IMAGE_STORAGE } from 'src/modules/storage/storage.token';
 
 describe('UsersService', () => {
   let service: UsersService;
-  let repoMock: Partial<UsersRepository>;
 
   const mockUser = {
     id: 'user-1',
@@ -24,24 +23,34 @@ describe('UsersService', () => {
     role: UserRole.USER,
     country: { code: 'US', countryName: 'United States', users: [] },
     refreshTokens: [],
-  } as UserEntity;
+  };
+
+  const imageStorageMock = {
+    upload: jest.fn(),
+    delete: jest.fn(),
+  };
+
+  const repoMock = {
+    findByEmail: jest.fn().mockResolvedValue(null),
+    findByUserId: jest.fn().mockResolvedValue(null),
+    searchUsers: jest.fn().mockResolvedValue([[], 0]),
+    existsById: jest.fn().mockResolvedValue(false),
+    createUser: jest.fn().mockResolvedValue(mockUser),
+    getAvatarPath: jest.fn().mockResolvedValue(null),
+    update: jest.fn().mockResolvedValue(undefined),
+    resolveAuthUser: jest.fn().mockResolvedValue(null),
+    promoteToAdmin: jest.fn().mockResolvedValue(undefined),
+    demoteFromAdmin: jest.fn().mockResolvedValue(undefined),
+  };
 
   beforeEach(async () => {
-    repoMock = {
-      findByEmail: jest.fn().mockResolvedValue(null),
-      findByUserId: jest.fn().mockResolvedValue(null),
-      searchUsers: jest.fn().mockResolvedValue([[], 0]),
-      existsById: jest.fn().mockResolvedValue(false),
-      createUser: jest.fn().mockResolvedValue(mockUser),
-      resolveAuthUser: jest.fn().mockResolvedValue(null),
-      promoteToAdmin: jest.fn().mockResolvedValue(undefined),
-      demoteFromAdmin: jest.fn().mockResolvedValue(undefined),
-    };
+    jest.clearAllMocks();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: USERS_REPOSITORY, useValue: repoMock },
+        { provide: IMAGE_STORAGE, useValue: imageStorageMock },
       ],
     }).compile();
 
@@ -197,5 +206,95 @@ describe('UsersService', () => {
       ConflictException,
     );
     expect(repoMock.findByUserId).toHaveBeenCalledWith('user-1');
+  });
+
+  it('should update avatar when user has no existing avatar', async () => {
+    const avatarInput = {
+      buffer: Buffer.from('image'),
+      contentType: 'image/png',
+    };
+
+    (repoMock.getAvatarPath as jest.Mock).mockResolvedValue(null);
+    (imageStorageMock.upload as jest.Mock).mockResolvedValue({
+      storageKey: 'new-avatar-key',
+    });
+    (repoMock.update as jest.Mock).mockResolvedValue(undefined);
+
+    await service.updateAvatar('user-1', avatarInput);
+
+    expect(repoMock.getAvatarPath).toHaveBeenCalledWith('user-1');
+    expect(imageStorageMock.upload).toHaveBeenCalled();
+    expect(repoMock.update).toHaveBeenCalledWith('user-1', {
+      avatarPath: 'new-avatar-key',
+    });
+    expect(imageStorageMock.delete).not.toHaveBeenCalled();
+  });
+
+  it('should update avatar and delete old one when it exists', async () => {
+    const avatarInput = {
+      buffer: Buffer.from('image'),
+      contentType: 'image/png',
+    };
+
+    (repoMock.getAvatarPath as jest.Mock).mockResolvedValue('old-avatar-key');
+    (imageStorageMock.upload as jest.Mock).mockResolvedValue({
+      storageKey: 'new-avatar-key',
+    });
+    (repoMock.update as jest.Mock).mockResolvedValue(undefined);
+    (imageStorageMock.delete as jest.Mock).mockResolvedValue(undefined);
+
+    await service.updateAvatar('user-1', avatarInput);
+
+    expect(repoMock.getAvatarPath).toHaveBeenCalledWith('user-1');
+    expect(imageStorageMock.upload).toHaveBeenCalled();
+    expect(repoMock.update).toHaveBeenCalledWith('user-1', {
+      avatarPath: 'new-avatar-key',
+    });
+    expect(imageStorageMock.delete).toHaveBeenCalledWith(
+      'old-avatar-key',
+      false,
+    );
+  });
+
+  it('should clean up uploaded file if update fails', async () => {
+    const avatarInput = {
+      buffer: Buffer.from('image'),
+      contentType: 'image/png',
+    };
+    const updateError = new Error('Database error');
+
+    (repoMock.getAvatarPath as jest.Mock).mockResolvedValue(null);
+    (imageStorageMock.upload as jest.Mock).mockResolvedValue({
+      storageKey: 'new-avatar-key',
+    });
+    (repoMock.update as jest.Mock).mockRejectedValue(updateError);
+    (imageStorageMock.delete as jest.Mock).mockResolvedValue(undefined);
+
+    await expect(service.updateAvatar('user-1', avatarInput)).rejects.toThrow(
+      updateError,
+    );
+
+    expect(imageStorageMock.delete).toHaveBeenCalledWith(
+      'new-avatar-key',
+      false,
+    );
+  });
+
+  it('should use default extension when content type is unknown', async () => {
+    const avatarInput = {
+      buffer: Buffer.from('image'),
+      contentType: 'application/octet-stream',
+    };
+
+    (repoMock.getAvatarPath as jest.Mock).mockResolvedValue(null);
+    (imageStorageMock.upload as jest.Mock).mockResolvedValue({
+      storageKey: 'new-avatar-key',
+    });
+    (repoMock.update as jest.Mock).mockResolvedValue(undefined);
+
+    await service.updateAvatar('user-1', avatarInput);
+
+    const uploadCall = (imageStorageMock.upload as jest.Mock).mock.calls[0];
+    expect(uploadCall[1].extension).toBe('bin');
   });
 });

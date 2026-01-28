@@ -22,6 +22,9 @@ export class UserEntity {
   @Column({ name: 'last_name', type: 'varchar', length: 255 })
   lastName: string;
 
+  @Column({ name: 'avatar_path', type: 'varchar', length: 255, nullable: true })
+  avatarPath: string | null;
+
   @Check('"date_of_birth" <= CURRENT_DATE')
   @Column({ name: 'date_of_birth', type: 'date' })
   dateOfBirth: Date;
@@ -40,7 +43,9 @@ export class UserEntity {
   @Column({ type: 'varchar', length: 255 })
   password: string;
 
-  @ManyToOne(() => CountryEntity, (country) => country.users)
+  @ManyToOne(() => CountryEntity, (country) => country.users, {
+    nullable: false,
+  })
   @JoinColumn({ name: 'country_code' })
   country: CountryEntity;
 

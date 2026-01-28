@@ -29,18 +29,13 @@ jobs:
       - name: Start Database
         run: docker compose -f compose.test.yaml --profile integration up -d --wait
 
+      - name: Create .env file
+        run: echo "${{ secrets.TEST_ENV_BUNDLE }}" > .env.test.local
+
       - name: Run Integration Tests
         run: npx jest --config ./test/jest-integration.json --runInBand
         env:
-          ACCESS_TOKEN_SECRET: ${{ secrets.TEST_ACCESS_TOKEN_SECRET }}
-          ACCESS_TOKEN_EXPIRATION_TIME: ${{ secrets.ACCESS_TOKEN_EXPIRATION_TIME }}
-          REFRESH_TOKEN_SECRET: ${{ secrets.TEST_REFRESH_TOKEN_SECRET }}
-          REFRESH_TOKEN_EXPIRATION_TIME: ${{ secrets.REFRESH_TOKEN_EXPIRATION_TIME }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          NODE_ENV: test
 
       - name: Stop and Clean up
         if: always()

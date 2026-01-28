@@ -1,0 +1,1 @@
+export const IMAGE_STORAGE = 'IMAGE_STORAGE';

@@ -1,15 +1,14 @@
 import { Type } from 'class-transformer';
 import {
   IsDate,
-  IsEmail,
   IsNotEmpty,
+  IsOptional,
   IsString,
   Length,
   MaxDate,
-  MinLength,
 } from 'class-validator';
 
-export class SignUpDto {
+export class CreatePersonDto {
   @IsString()
   @IsNotEmpty()
   readonly firstName: string;
@@ -18,20 +17,15 @@ export class SignUpDto {
   @IsNotEmpty()
   readonly lastName: string;
 
-  @IsEmail()
-  @IsNotEmpty()
-  readonly email: string;
-
-  @IsString()
-  @IsNotEmpty()
-  @MinLength(8)
-  readonly password: string;
-
   @IsDate()
   @Type(() => Date)
   @IsNotEmpty()
   @MaxDate(new Date())
   readonly dateOfBirth: Date;
+
+  @IsString()
+  @IsOptional()
+  readonly biography?: string | undefined;
 
   @IsString()
   @IsNotEmpty()

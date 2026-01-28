@@ -13,6 +13,8 @@ export interface IUsersRepository {
     search?: string,
   ): Promise<RepositoryPaginatedResult<UserEntity>>;
   existsById(userId: string): Promise<boolean>;
+  getAvatarPath(userId: string): Promise<string | null>;
+  update(userId: string, data: Partial<UserEntity>): Promise<void>;
   createUser(data: Partial<UserEntity>): Promise<UserEntity>;
   resolveAuthUser(userId: string): Promise<AuthUser | null>;
   promoteToAdmin(userId: string): Promise<void>;
