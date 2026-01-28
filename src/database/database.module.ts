@@ -18,6 +18,9 @@ import { CountryRepository } from './repositories/country.repository';
 import { GenreEntity } from './entities/genre.entity';
 import { CreditRoleEntity } from './entities/credit-role.entity';
 import { PersonEntity } from './entities/person.entity';
+import { PersonsRepository } from './repositories/persons.repository';
+import { GenresRepository } from './repositories/genres.repository';
+import { CreditsRepository } from './repositories/credits.repository';
 
 @Module({
   imports: [
@@ -39,9 +42,9 @@ import { PersonEntity } from './entities/person.entity';
     { provide: USERS_REPOSITORY, useClass: UsersRepository },
     { provide: REFRESH_TOKEN_REPOSITORY, useClass: RefreshTokenRepository },
     { provide: COUNTRY_REPOSITORY, useClass: CountryRepository },
-    { provide: GENRES_REPOSITORY, useClass: GenreEntity },
-    { provide: CREDITS_REPOSITORY, useClass: CreditRoleEntity },
-    { provide: PERSONS_REPOSITORY, useClass: PersonEntity },
+    { provide: GENRES_REPOSITORY, useClass: GenresRepository },
+    { provide: CREDITS_REPOSITORY, useClass: CreditsRepository },
+    { provide: PERSONS_REPOSITORY, useClass: PersonsRepository },
   ],
   exports: [
     USERS_REPOSITORY,
