@@ -5,5 +5,6 @@ import { GenresModule } from './genres/genres.module';
 
 @Module({
   imports: [CountryModule, CreditsModule, GenresModule],
+  exports: [CountryModule, CreditsModule, GenresModule],
 })
 export class ReferenceModule {}
