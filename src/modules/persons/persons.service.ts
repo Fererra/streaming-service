@@ -1,4 +1,9 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePersonDto } from './dto/create-person.dto';
 import { PERSONS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 import type { IPersonsRepository } from 'src/database/repositories/interfaces/persons-repository.interface';
@@ -37,6 +42,23 @@ export class PersonsService {
     );
 
     return buildPaginationResponse(persons, total, paginationOptions);
+  }
+
+  async validateExists(ids: string[]): Promise<void> {
+    if (!ids || ids.length === 0) {
+      return;
+    }
+
+    const foundPersons = await this.personsRepository.findByIds(ids);
+
+    if (foundPersons.length !== ids.length) {
+      const foundIds = foundPersons.map((person) => person.id);
+      const missingIds = ids.filter((id) => !foundIds.includes(id));
+
+      throw new BadRequestException(
+        `Persons not found for IDs: ${missingIds.join(', ')}`,
+      );
+    }
   }
 
   create(createPersonDto: CreatePersonDto): Promise<PersonEntity> {
