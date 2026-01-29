@@ -4,12 +4,10 @@ import { UsersModule } from '../users/users.module';
 import { PersonsModule } from '../persons/persons.module';
 import { AdminPersonsController } from './admin-persons.controller';
 import { AdminMoviesController } from './admin-movies.controller';
-import { AdminMoviesService } from './admin-movies.service';
-import { ReferenceModule } from '../reference/reference.module';
+import { MoviesModule } from '../movies/movies.module';
 
 @Module({
-  imports: [UsersModule, PersonsModule, ReferenceModule],
-  providers: [AdminMoviesService],
+  imports: [UsersModule, PersonsModule, MoviesModule],
   controllers: [
     AdminUsersController,
     AdminPersonsController,
