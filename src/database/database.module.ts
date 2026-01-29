@@ -9,6 +9,7 @@ import {
   COUNTRY_REPOSITORY,
   CREDITS_REPOSITORY,
   GENRES_REPOSITORY,
+  MOVIES_REPOSITORY,
   PERSONS_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   USERS_REPOSITORY,
@@ -21,6 +22,9 @@ import { PersonEntity } from './entities/person.entity';
 import { PersonsRepository } from './repositories/persons.repository';
 import { GenresRepository } from './repositories/genres.repository';
 import { CreditsRepository } from './repositories/credits.repository';
+import { MoviesRepository } from './repositories/movies.repository';
+import { MovieEntity } from './entities/movie.entity';
+import { MovieCreditEntity } from './entities/movie-credit.entity';
 
 @Module({
   imports: [
@@ -36,6 +40,8 @@ import { CreditsRepository } from './repositories/credits.repository';
       GenreEntity,
       CreditRoleEntity,
       PersonEntity,
+      MovieEntity,
+      MovieCreditEntity,
     ]),
   ],
   providers: [
@@ -45,6 +51,7 @@ import { CreditsRepository } from './repositories/credits.repository';
     { provide: GENRES_REPOSITORY, useClass: GenresRepository },
     { provide: CREDITS_REPOSITORY, useClass: CreditsRepository },
     { provide: PERSONS_REPOSITORY, useClass: PersonsRepository },
+    { provide: MOVIES_REPOSITORY, useClass: MoviesRepository },
   ],
   exports: [
     USERS_REPOSITORY,
@@ -53,6 +60,7 @@ import { CreditsRepository } from './repositories/credits.repository';
     GENRES_REPOSITORY,
     CREDITS_REPOSITORY,
     PERSONS_REPOSITORY,
+    MOVIES_REPOSITORY,
   ],
 })
 export class DatabaseModule {}

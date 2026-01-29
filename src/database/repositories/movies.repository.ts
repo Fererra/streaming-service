@@ -1,0 +1,39 @@
+import { Injectable } from '@nestjs/common';
+import { IMoviesRepository } from './interfaces/movies-repository.interface';
+import { InjectRepository } from '@nestjs/typeorm';
+import { MovieEntity } from '../entities/movie.entity';
+import { Repository } from 'typeorm';
+import { MovieCreditEntity } from '../entities/movie-credit.entity';
+
+@Injectable()
+export class MoviesRepository implements IMoviesRepository {
+  constructor(
+    @InjectRepository(MovieEntity)
+    private readonly repository: Repository<MovieEntity>,
+  ) {}
+
+  existsBy(criteria: { title: string; releaseYear: number }): Promise<boolean> {
+    return this.repository.existsBy(criteria);
+  }
+
+  save(
+    movieData: Partial<MovieEntity>,
+    credits: Partial<MovieCreditEntity>[],
+  ): Promise<MovieEntity> {
+    return this.repository.manager.transaction(async (manager) => {
+      const movie = await manager.save(MovieEntity, movieData);
+
+      if (credits.length > 0) {
+        const creditEntities = credits.map((c) =>
+          manager.create(MovieCreditEntity, {
+            ...c,
+            movieId: movie.id,
+          }),
+        );
+        await manager.save(MovieCreditEntity, creditEntities);
+      }
+
+      return movie;
+    });
+  }
+}
