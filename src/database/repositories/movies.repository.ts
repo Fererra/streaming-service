@@ -12,8 +12,23 @@ export class MoviesRepository implements IMoviesRepository {
     private readonly repository: Repository<MovieEntity>,
   ) {}
 
-  existsBy(criteria: { title: string; releaseYear: number }): Promise<boolean> {
-    return this.repository.existsBy(criteria);
+  existsBy(criteria: Partial<MovieEntity>): Promise<boolean> {
+    const cleanedCriteria = Object.fromEntries(
+      Object.entries(criteria).filter(
+        ([, value]) => value !== null && value !== undefined,
+      ),
+    );
+
+    return this.repository.existsBy(cleanedCriteria);
+  }
+
+  async findPosterPathById(id: string): Promise<string | null> {
+    const movie = await this.repository.findOne({
+      select: ['posterPath'],
+      where: { id },
+    });
+
+    return movie?.posterPath ?? null;
   }
 
   save(
@@ -35,5 +50,9 @@ export class MoviesRepository implements IMoviesRepository {
 
       return movie;
     });
+  }
+
+  async update(id: string, data: Partial<MovieEntity>): Promise<void> {
+    await this.repository.update(id, data);
   }
 }
