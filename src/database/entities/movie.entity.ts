@@ -1,4 +1,4 @@
-import { AgeRating } from 'src/modules/movies/age-rating.enum';
+import { AgeRating } from '../../modules/movies/age-rating.enum';
 import {
   Check,
   Column,
