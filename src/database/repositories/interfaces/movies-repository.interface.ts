@@ -9,4 +9,6 @@ export interface IMoviesRepository {
     credits: Partial<MovieCreditEntity>[],
   ): Promise<MovieEntity>;
   update(id: string, data: Partial<MovieEntity>): Promise<void>;
+  updateCountries(id: string, countryCodes: string[]): Promise<void>;
+  updateGenres(id: string, genreIds: string[]): Promise<void>;
 }

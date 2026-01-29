@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { IMoviesRepository } from './interfaces/movies-repository.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MovieEntity } from '../entities/movie.entity';
-import { Repository } from 'typeorm';
+import { EntityManager, EntityTarget, Repository } from 'typeorm';
 import { MovieCreditEntity } from '../entities/movie-credit.entity';
 
 @Injectable()
@@ -54,5 +54,46 @@ export class MoviesRepository implements IMoviesRepository {
 
   async update(id: string, data: Partial<MovieEntity>): Promise<void> {
     await this.repository.update(id, data);
+  }
+
+  async updateCountries(id: string, countryCodes: string[]): Promise<void> {
+    await this.repository.manager.transaction((manager) =>
+      this.replaceManyToMany(
+        manager,
+        MovieEntity,
+        'countries',
+        id,
+        countryCodes,
+      ),
+    );
+  }
+
+  async updateGenres(id: string, genreIds: string[]): Promise<void> {
+    await this.repository.manager.transaction((manager) =>
+      this.replaceManyToMany(manager, MovieEntity, 'genres', id, genreIds),
+    );
+  }
+
+  private async replaceManyToMany(
+    manager: EntityManager,
+    entity: EntityTarget<any>,
+    relationName: string,
+    ownerId: string,
+    targetIds: string[],
+  ): Promise<void> {
+    const relation = manager
+      .createQueryBuilder()
+      .relation(entity, relationName)
+      .of(ownerId);
+
+    const existing = await relation.loadMany();
+
+    if (existing.length > 0) {
+      await relation.remove(existing);
+    }
+
+    if (targetIds.length > 0) {
+      await relation.add(targetIds);
+    }
   }
 }
