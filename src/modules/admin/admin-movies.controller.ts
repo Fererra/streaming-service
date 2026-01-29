@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
@@ -18,6 +19,12 @@ import { CreateMovieDto } from '../movies/dto/create-movie.dto';
 import { MoviesService } from '../movies/movies.service';
 import { ApiImageFile } from 'src/common/decorators/image-upload.decorator';
 import { MoviesMediaService } from '../movies/movies-media.service';
+import {
+  UpdateMovieCountriesDto,
+  UpdateMovieDto,
+  UpdateMovieGenresDto,
+} from '../movies/dto/update-movie.dto';
+import { CheckEmptyBodyPipe } from 'src/common/pipes/check-empty-body.pipe';
 
 @Controller('movies')
 @UseGuards(JwtGuard, RolesGuard)
@@ -66,18 +73,42 @@ export class AdminMoviesController {
   }
 
   @Patch(':id')
-  async updateMovie() {
-    throw new NotImplementedException();
+  async updateMovie(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(CheckEmptyBodyPipe) updateMovieDto: UpdateMovieDto,
+  ) {
+    await this.moviesService.update(id, updateMovieDto);
+
+    return {
+      message: 'Movie updated successfully',
+    };
   }
 
-  @Patch(':id/countries')
-  async updateMovieCountries() {
-    throw new NotImplementedException();
+  @Put(':id/countries')
+  async updateMovieCountries(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(CheckEmptyBodyPipe) updateMovieCountriesDto: UpdateMovieCountriesDto,
+  ) {
+    await this.moviesService.updateCountries(
+      id,
+      updateMovieCountriesDto.countryCodes,
+    );
+
+    return {
+      message: 'Movie countries updated successfully',
+    };
   }
 
-  @Patch(':id/genres')
-  async updateMovieGenres() {
-    throw new NotImplementedException();
+  @Put(':id/genres')
+  async updateMovieGenres(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(CheckEmptyBodyPipe) updateMovieGenresDto: UpdateMovieGenresDto,
+  ) {
+    await this.moviesService.updateGenres(id, updateMovieGenresDto.genreIds);
+
+    return {
+      message: 'Movie genres updated successfully',
+    };
   }
 
   @Patch(':id/credits')

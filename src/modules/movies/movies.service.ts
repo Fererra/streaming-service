@@ -1,4 +1,9 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { GenresService } from '../reference/genres/genres.service';
 import { CountryService } from '../reference/country/country.service';
 import { CreateMovieDto } from '../movies/dto/create-movie.dto';
@@ -6,6 +11,7 @@ import { CreditsService } from '../reference/credits/credits.service';
 import { PersonsService } from '../persons/persons.service';
 import { MOVIES_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 import type { IMoviesRepository } from 'src/database/repositories/interfaces/movies-repository.interface';
+import { UpdateMovieDto } from './dto/update-movie.dto';
 
 @Injectable()
 export class MoviesService {
@@ -44,5 +50,33 @@ export class MoviesService {
     ]);
 
     return this.moviesRepository.save(movieData, credits);
+  }
+
+  async update(id: string, updateMovieDto: UpdateMovieDto) {
+    await this.checkMovieExists(id);
+
+    await this.moviesRepository.update(id, updateMovieDto);
+  }
+
+  async updateCountries(id: string, countryCodes: string[]) {
+    await this.checkMovieExists(id);
+
+    await this.countryService.validateExists(countryCodes);
+    await this.moviesRepository.updateCountries(id, countryCodes);
+  }
+
+  async updateGenres(id: string, genreIds: string[]) {
+    await this.checkMovieExists(id);
+
+    await this.genresService.validateExists(genreIds);
+    await this.moviesRepository.updateGenres(id, genreIds);
+  }
+
+  private async checkMovieExists(id: string) {
+    const movieExists = await this.moviesRepository.existsBy({ id });
+
+    if (!movieExists) {
+      throw new NotFoundException(`Movie with id "${id}" does not exist.`);
+    }
   }
 }
