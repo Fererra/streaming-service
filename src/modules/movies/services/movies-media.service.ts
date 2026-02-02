@@ -1,12 +1,12 @@
 import { Inject, NotFoundException } from '@nestjs/common';
 import type { IMoviesRepository } from 'src/database/repositories/interfaces/movies-repository.interface';
 import { MOVIES_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
-import { IMAGE_STORAGE } from '../storage/storage.token';
+import { IMAGE_STORAGE } from '../../storage/storage.token';
 import type {
   ImageStorage,
   InputOptions,
-} from '../storage/image-storage.interface';
-import { ImageStoragePath } from '../storage/storage-path.enum';
+} from '../../storage/image-storage.interface';
+import { ImageStoragePath } from '../../storage/storage-path.enum';
 import { extension } from 'mime-types';
 
 export class MoviesMediaService {
