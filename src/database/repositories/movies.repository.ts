@@ -2,8 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { IMoviesRepository } from './interfaces/movies-repository.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MovieEntity } from '../entities/movie.entity';
-import { EntityManager, EntityTarget, Repository } from 'typeorm';
+import { EntityManager, EntityTarget, ILike, Repository } from 'typeorm';
 import { MovieCreditEntity } from '../entities/movie-credit.entity';
+import { PaginationOptions } from 'src/common/@types/pagination.types';
 
 @Injectable()
 export class MoviesRepository implements IMoviesRepository {
@@ -31,21 +32,99 @@ export class MoviesRepository implements IMoviesRepository {
     return movie?.posterPath ?? null;
   }
 
+  findExistingMovieById(id: string): Promise<MovieEntity | null> {
+    return this.repository.findOne({
+      select: ['title', 'releaseYear'],
+      where: { id },
+    });
+  }
+
+  findAll(options: PaginationOptions): Promise<[MovieEntity[], number]> {
+    const skip = (options.page - 1) * options.limit;
+    const take = options.limit;
+
+    return this.repository.findAndCount({
+      select: ['id', 'title', 'releaseYear', 'rating', 'posterPath'],
+      skip,
+      take,
+    });
+  }
+
+  searchMovies(
+    title: string,
+    paginationOptions: PaginationOptions,
+  ): Promise<[MovieEntity[], number]> {
+    const skip = (paginationOptions.page - 1) * paginationOptions.limit;
+    const take = paginationOptions.limit;
+
+    return this.repository.findAndCount({
+      select: ['id', 'title', 'releaseYear', 'rating', 'posterPath'],
+      where: { title: ILike(`%${title}%`) },
+      skip,
+      take,
+    });
+  }
+
+  findById(id: string): Promise<MovieEntity | null> {
+    return this.repository
+      .createQueryBuilder('movies')
+      .leftJoinAndSelect('movies.genres', 'genre')
+      .leftJoinAndSelect('movies.countries', 'country')
+      .leftJoinAndSelect('movies.credits', 'credit')
+      .leftJoinAndSelect('credit.person', 'person')
+      .leftJoinAndSelect('credit.role', 'role')
+      .where('movies.id = :id', { id })
+      .select([
+        'movies',
+        'genre.id',
+        'genre.name',
+        'country.code',
+        'country.countryName',
+        'person.id',
+        'person.firstName',
+        'person.lastName',
+        'person.photoPath',
+        'credit.id',
+        'role.id',
+        'role.code',
+        'role.role',
+        'credit.characterName',
+        'credit.orderIndex',
+      ])
+      .getOne();
+  }
+
   save(
     movieData: Partial<MovieEntity>,
     credits: Partial<MovieCreditEntity>[],
+    genreIds: string[],
+    countryCodes: string[],
   ): Promise<MovieEntity> {
     return this.repository.manager.transaction(async (manager) => {
       const movie = await manager.save(MovieEntity, movieData);
 
       if (credits.length > 0) {
-        const creditEntities = credits.map((c) =>
-          manager.create(MovieCreditEntity, {
-            ...c,
-            movieId: movie.id,
-          }),
-        );
+        const creditEntities = credits.map((credit) => ({
+          ...credit,
+          movieId: movie.id,
+        }));
         await manager.save(MovieCreditEntity, creditEntities);
+      }
+
+      if (genreIds && genreIds.length > 0) {
+        const relation = manager
+          .createQueryBuilder()
+          .relation(MovieEntity, 'genres')
+          .of(movie.id);
+        await relation.add(genreIds);
+      }
+
+      if (countryCodes && countryCodes.length > 0) {
+        const relation = manager
+          .createQueryBuilder()
+          .relation(MovieEntity, 'countries')
+          .of(movie.id);
+        await relation.add(countryCodes);
       }
 
       return movie;
@@ -95,5 +174,9 @@ export class MoviesRepository implements IMoviesRepository {
     if (targetIds.length > 0) {
       await relation.add(targetIds);
     }
+  }
+  async delete(id: string): Promise<number> {
+    const result = await this.repository.softDelete(id);
+    return result.affected ?? 0;
   }
 }
