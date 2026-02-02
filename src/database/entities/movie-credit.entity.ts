@@ -4,7 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  PrimaryColumn,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { MovieEntity } from './movie.entity';
 import { PersonEntity } from './person.entity';
@@ -12,13 +12,16 @@ import { CreditRoleEntity } from './credit-role.entity';
 
 @Entity('movie_credits')
 export class MovieCreditEntity {
-  @PrimaryColumn({ name: 'movie_id' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'movie_id' })
   movieId: string;
 
-  @PrimaryColumn({ name: 'person_id' })
+  @Column({ name: 'person_id' })
   personId: string;
 
-  @PrimaryColumn({ name: 'role_id' })
+  @Column({ name: 'role_id' })
   roleId: string;
 
   @Column({
