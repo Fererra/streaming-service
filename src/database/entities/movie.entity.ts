@@ -2,12 +2,15 @@ import { AgeRating } from '../../modules/movies/age-rating.enum';
 import {
   Check,
   Column,
+  CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   Unique,
+  UpdateDateColumn,
 } from 'typeorm';
 import { CountryEntity } from './country.entity';
 import { GenreEntity } from './genre.entity';
@@ -66,6 +69,15 @@ export class MovieEntity {
     nullable: true,
   })
   moviePath: string | null;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null;
 
   @ManyToMany(() => CountryEntity, (country) => country.movies)
   @JoinTable({ name: 'movie_countries' })
