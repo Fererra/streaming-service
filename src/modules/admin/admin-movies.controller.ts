@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   NotImplementedException,
   Param,
+  ParseArrayPipe,
   ParseFilePipe,
   ParseUUIDPipe,
   Patch,
@@ -15,16 +17,21 @@ import { JwtGuard } from '../auth/jwt.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/user-role.enum';
-import { CreateMovieDto } from '../movies/dto/create-movie.dto';
-import { MoviesService } from '../movies/movies.service';
+import {
+  CreateCreditsDto,
+  CreateMovieDto,
+} from '../movies/dto/create-movie.dto';
+import { MoviesService } from '../movies/services/movies.service';
 import { ApiImageFile } from 'src/common/decorators/image-upload.decorator';
-import { MoviesMediaService } from '../movies/movies-media.service';
+import { MoviesMediaService } from '../movies/services/movies-media.service';
 import {
   UpdateMovieCountriesDto,
+  UpdateMovieCreditDto,
   UpdateMovieDto,
   UpdateMovieGenresDto,
 } from '../movies/dto/update-movie.dto';
 import { CheckEmptyBodyPipe } from 'src/common/pipes/check-empty-body.pipe';
+import { MovieCreditsService } from '../movies/services/movie-credits.service';
 
 @Controller('movies')
 @UseGuards(JwtGuard, RolesGuard)
@@ -33,6 +40,7 @@ export class AdminMoviesController {
   constructor(
     private readonly moviesService: MoviesService,
     private readonly moviesMediaService: MoviesMediaService,
+    private readonly movieCreditsService: MovieCreditsService,
   ) {}
 
   @Post()
@@ -111,8 +119,50 @@ export class AdminMoviesController {
     };
   }
 
-  @Patch(':id/credits')
-  async updateMovieCredits() {
-    throw new NotImplementedException();
+  @Post(':id/credits')
+  async addMovieCredits(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(CheckEmptyBodyPipe, new ParseArrayPipe({ items: CreateCreditsDto }))
+    createCreditsDto: CreateCreditsDto[],
+  ) {
+    await this.movieCreditsService.addCredits(id, createCreditsDto);
+
+    return {
+      message: 'Movie credits added successfully',
+    };
+  }
+
+  @Patch(':id/credits/:creditId')
+  async updateMovieCredits(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('creditId', ParseUUIDPipe) creditId: string,
+    @Body(CheckEmptyBodyPipe) updateCreditDto: UpdateMovieCreditDto,
+  ) {
+    await this.movieCreditsService.updateCredit(id, creditId, updateCreditDto);
+
+    return {
+      message: 'Movie credit updated successfully',
+    };
+  }
+
+  @Delete(':id')
+  async deleteMovie(@Param('id', ParseUUIDPipe) id: string) {
+    await this.moviesService.delete(id);
+
+    return {
+      message: 'Movie deleted successfully',
+    };
+  }
+
+  @Delete(':id/credits/:creditId')
+  async deleteMovieCredits(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('creditId', ParseUUIDPipe) creditId: string,
+  ) {
+    await this.movieCreditsService.deleteCredit(id, creditId);
+
+    return {
+      message: 'Movie credit deleted successfully',
+    };
   }
 }
