@@ -13,11 +13,7 @@ import {
 import { AgeRating } from '../age-rating.enum';
 import { Type } from 'class-transformer';
 
-export class CreateCreditsDto {
-  @IsUUID('all')
-  @IsNotEmpty()
-  personId: string;
-
+export class CreateCreditRoleDto {
   @IsUUID('all')
   @IsNotEmpty()
   roleId: string;
@@ -29,6 +25,17 @@ export class CreateCreditsDto {
   @IsOptional()
   @IsInt()
   orderIndex: number;
+}
+
+export class CreateCreditsDto {
+  @IsUUID('all')
+  @IsNotEmpty()
+  personId: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateCreditRoleDto)
+  roles: CreateCreditRoleDto[];
 }
 
 export class CreateMovieDto {
