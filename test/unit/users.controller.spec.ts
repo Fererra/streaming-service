@@ -1,14 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from '../../src/modules/users/users.controller';
 import { CanActivate, ExecutionContext } from '@nestjs/common';
-import { UsersService } from 'src/modules/users/users.service';
+import { UsersMediaService } from 'src/modules/users/services/users-media.service';
 import { JwtGuard } from 'src/modules/auth/jwt.guard';
 
 describe('UsersController', () => {
   let controller: UsersController;
 
-  const usersServiceMock = {
+  const usersMediaServiceMock = {
     updateAvatar: jest.fn(),
+    confirmAvatar: jest.fn(),
   };
 
   const GuardMock: CanActivate = {
@@ -20,7 +21,9 @@ describe('UsersController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
-      providers: [{ provide: UsersService, useValue: usersServiceMock }],
+      providers: [
+        { provide: UsersMediaService, useValue: usersMediaServiceMock },
+      ],
     })
       .overrideGuard(JwtGuard)
       .useValue(GuardMock)
@@ -34,61 +37,64 @@ describe('UsersController', () => {
   });
 
   describe('updateAvatar', () => {
-    it('should successfully update user avatar', async () => {
+    it('should return upload URL and storage key', async () => {
       const userId = 'user-1';
-      const mockFile = {
-        mimetype: 'image/png',
-        buffer: Buffer.from('image-data'),
-      } as Express.Multer.File;
+      const contentType = 'image/png';
+      const expectedResult = {
+        uploadUrl: 'https://storage.example.com/signed-url',
+        storageKey: 'avatars/123-uuid.png',
+      };
 
-      usersServiceMock.updateAvatar.mockResolvedValue(undefined);
+      usersMediaServiceMock.updateAvatar.mockResolvedValue(expectedResult);
 
-      const result = await controller.updateAvatar(userId, mockFile);
+      const result = await controller.updateAvatar(userId, { contentType });
 
-      expect(usersServiceMock.updateAvatar).toHaveBeenCalledWith(userId, {
-        buffer: mockFile.buffer,
-        contentType: mockFile.mimetype,
-      });
-      expect(result).toEqual({
-        message: 'User avatar updated successfully',
-      });
+      expect(usersMediaServiceMock.updateAvatar).toHaveBeenCalledWith(
+        userId,
+        contentType,
+      );
+      expect(result).toEqual(expectedResult);
     });
 
     it('should propagate service errors', async () => {
       const userId = 'user-3';
-      const mockFile = {
-        mimetype: 'image/png',
-        buffer: Buffer.from('image-data'),
-      } as Express.Multer.File;
+      const contentType = 'image/png';
 
-      const error = new Error('Storage error');
-      usersServiceMock.updateAvatar.mockRejectedValue(error);
+      const error = new Error('User not found');
+      usersMediaServiceMock.updateAvatar.mockRejectedValue(error);
 
-      await expect(controller.updateAvatar(userId, mockFile)).rejects.toThrow(
-        error,
+      await expect(
+        controller.updateAvatar(userId, { contentType }),
+      ).rejects.toThrow(error);
+    });
+  });
+
+  describe('confirmAvatar', () => {
+    it('should confirm avatar and return success message', async () => {
+      const userId = 'user-1';
+      const storageKey = 'avatars/123-uuid.png';
+
+      usersMediaServiceMock.confirmAvatar.mockResolvedValue(undefined);
+
+      const result = await controller.confirmAvatar(userId, { storageKey });
+
+      expect(usersMediaServiceMock.confirmAvatar).toHaveBeenCalledWith(
+        userId,
+        storageKey,
       );
-      expect(usersServiceMock.updateAvatar).toHaveBeenCalledWith(userId, {
-        buffer: mockFile.buffer,
-        contentType: mockFile.mimetype,
-      });
+      expect(result).toEqual({ message: 'Avatar updated successfully' });
     });
 
-    it('should pass buffer and content type from file', async () => {
-      const userId = 'user-4';
-      const imageBuffer = Buffer.from('custom-image-data');
-      const mockFile = {
-        mimetype: 'image/webp',
-        buffer: imageBuffer,
-      } as Express.Multer.File;
+    it('should propagate service errors', async () => {
+      const userId = 'user-1';
+      const storageKey = 'avatars/123-uuid.png';
 
-      usersServiceMock.updateAvatar.mockResolvedValue(undefined);
+      const error = new Error('No valid upload intent found');
+      usersMediaServiceMock.confirmAvatar.mockRejectedValue(error);
 
-      await controller.updateAvatar(userId, mockFile);
-
-      const callArgs = usersServiceMock.updateAvatar.mock.calls[0];
-      expect(callArgs[0]).toBe(userId);
-      expect(callArgs[1].buffer).toBe(imageBuffer);
-      expect(callArgs[1].contentType).toBe('image/webp');
+      await expect(
+        controller.confirmAvatar(userId, { storageKey }),
+      ).rejects.toThrow(error);
     });
   });
 });

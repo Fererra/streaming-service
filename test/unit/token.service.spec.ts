@@ -271,13 +271,17 @@ describe('TokenService', () => {
     });
 
     it('should return record if token is valid', async () => {
-      const record = createRefreshTokenRecord();
       setupValidRefreshToken();
       const result = await (service as any).validateRefreshToken(
         'token',
         'user-id',
       );
-      expect(result).toEqual(record);
+      expect(result).toEqual({
+        id: 'jti-123',
+        userId: 'user-id',
+        revokedAt: null,
+        expiresAt: expect.any(Date),
+      });
     });
   });
 

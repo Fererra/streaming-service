@@ -1,24 +1,17 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PERSONS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
-import { PersonsService } from 'src/modules/persons/persons.service';
-import { IMAGE_STORAGE } from 'src/modules/storage/storage.token';
-import { ImageStoragePath } from 'src/modules/storage/storage-path.enum';
+import { PersonsService } from 'src/modules/persons/services/persons.service';
 
 describe('PersonsService', () => {
   let service: PersonsService;
 
   const personsRepositoryMock = {
     findAll: jest.fn(),
+    findByIds: jest.fn(),
     existsById: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
-    findPhotoPathById: jest.fn(),
-  };
-
-  const imageStorageMock = {
-    upload: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -29,7 +22,6 @@ describe('PersonsService', () => {
       providers: [
         PersonsService,
         { provide: PERSONS_REPOSITORY, useValue: personsRepositoryMock },
-        { provide: IMAGE_STORAGE, useValue: imageStorageMock },
       ],
     }).compile();
 
@@ -149,110 +141,33 @@ describe('PersonsService', () => {
     });
   });
 
-  describe('updatePhoto', () => {
-    it('should update photo for an existing person', async () => {
-      const personId = '1';
-      const photoInput = {
-        buffer: Buffer.from('test'),
-        contentType: 'image/jpeg',
-        originalName: 'photo.jpg',
-      };
-      const oldPhotoPath = 'old/photo.jpg';
-      const newStorageKey = 'new/photo.jpg';
+  describe('validateExists', () => {
+    it('should not throw when all person IDs exist', async () => {
+      const ids = ['1', '2', '3'];
+      personsRepositoryMock.findByIds.mockResolvedValue([
+        { id: '1' },
+        { id: '2' },
+        { id: '3' },
+      ]);
 
-      personsRepositoryMock.existsById.mockResolvedValue(true);
-      personsRepositoryMock.findPhotoPathById.mockResolvedValue(oldPhotoPath);
-      imageStorageMock.upload.mockResolvedValue({ storageKey: newStorageKey });
-      personsRepositoryMock.update.mockResolvedValue(undefined);
+      await expect(service.validateExists(ids)).resolves.not.toThrow();
 
-      await service.updatePhoto(personId, photoInput);
-
-      expect(personsRepositoryMock.findPhotoPathById).toHaveBeenCalledWith(
-        personId,
-      );
-      expect(imageStorageMock.upload).toHaveBeenCalledWith(photoInput, {
-        path: ImageStoragePath.PERSON_PHOTOS,
-        extension: 'jpg',
-        isPublic: true,
-      });
-      expect(personsRepositoryMock.update).toHaveBeenCalledWith(personId, {
-        photoPath: newStorageKey,
-      });
-      expect(imageStorageMock.delete).toHaveBeenCalledWith(oldPhotoPath, true);
+      expect(personsRepositoryMock.findByIds).toHaveBeenCalledWith(ids);
     });
 
-    it('should update photo without deleting old one if not exists', async () => {
-      const personId = '1';
-      const photoInput = {
-        buffer: Buffer.from('test'),
-        contentType: 'image/jpeg',
-        originalName: 'photo.jpg',
-      };
-      const newStorageKey = 'new/photo.jpg';
+    it('should throw BadRequestException when some IDs do not exist', async () => {
+      const ids = ['1', '2', '3'];
+      personsRepositoryMock.findByIds.mockResolvedValue([{ id: '1' }]);
 
-      personsRepositoryMock.existsById.mockResolvedValue(true);
-      personsRepositoryMock.findPhotoPathById.mockResolvedValue(null);
-      imageStorageMock.upload.mockResolvedValue({ storageKey: newStorageKey });
-      personsRepositoryMock.update.mockResolvedValue(undefined);
-
-      await service.updatePhoto(personId, photoInput);
-
-      expect(personsRepositoryMock.findPhotoPathById).toHaveBeenCalledWith(
-        personId,
+      await expect(service.validateExists(ids)).rejects.toThrow(
+        BadRequestException,
       );
-      expect(imageStorageMock.upload).toHaveBeenCalledWith(photoInput, {
-        path: ImageStoragePath.PERSON_PHOTOS,
-        extension: 'jpg',
-        isPublic: true,
-      });
-      expect(personsRepositoryMock.update).toHaveBeenCalledWith(personId, {
-        photoPath: newStorageKey,
-      });
-      expect(imageStorageMock.delete).toHaveBeenCalledTimes(0);
     });
 
-    it('should throw NotFoundException when person does not exist', async () => {
-      const personId = '1';
-      const photoInput = {
-        buffer: Buffer.from('test'),
-        contentType: 'image/jpeg',
-        originalName: 'photo.jpg',
-      };
-      personsRepositoryMock.existsById.mockResolvedValue(false);
+    it('should not call repository when ids array is empty', async () => {
+      await service.validateExists([]);
 
-      await expect(service.updatePhoto(personId, photoInput)).rejects.toThrow(
-        NotFoundException,
-      );
-
-      expect(personsRepositoryMock.findPhotoPathById).not.toHaveBeenCalled();
-      expect(imageStorageMock.upload).not.toHaveBeenCalled();
-      expect(personsRepositoryMock.update).not.toHaveBeenCalled();
-    });
-
-    it('should delete uploaded photo if update fails', async () => {
-      const personId = '1';
-      const photoInput = {
-        buffer: Buffer.from('test'),
-        contentType: 'image/jpeg',
-        originalName: 'photo.jpg',
-      };
-      const oldPhotoPath = 'old/photo.jpg';
-      const newStorageKey = 'new/photo.jpg';
-      const updateError = new Error('Update failed');
-
-      personsRepositoryMock.existsById.mockResolvedValue(true);
-      personsRepositoryMock.findPhotoPathById.mockResolvedValue(oldPhotoPath);
-      imageStorageMock.upload.mockResolvedValue({ storageKey: newStorageKey });
-      personsRepositoryMock.update.mockRejectedValue(updateError);
-
-      await expect(service.updatePhoto(personId, photoInput)).rejects.toThrow(
-        updateError,
-      );
-
-      expect(personsRepositoryMock.update).toHaveBeenCalledWith(personId, {
-        photoPath: newStorageKey,
-      });
-      expect(imageStorageMock.delete).toHaveBeenCalledWith(newStorageKey, true);
+      expect(personsRepositoryMock.findByIds).not.toHaveBeenCalled();
     });
   });
 

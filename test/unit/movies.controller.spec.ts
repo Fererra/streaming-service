@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MoviesController } from 'src/modules/movies/movies.controller';
 import { MoviesService } from 'src/modules/movies/services/movies.service';
-import { MovieCreditsService } from 'src/modules/movies/services/movie-credits.service';
+import { MoviesCreditsService } from 'src/modules/movies/services/movies-credits.service';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 
 describe('MoviesController', () => {
@@ -24,7 +24,7 @@ describe('MoviesController', () => {
       controllers: [MoviesController],
       providers: [
         { provide: MoviesService, useValue: moviesServiceMock },
-        { provide: MovieCreditsService, useValue: movieCreditsServiceMock },
+        { provide: MoviesCreditsService, useValue: movieCreditsServiceMock },
       ],
     }).compile();
 
