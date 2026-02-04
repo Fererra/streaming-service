@@ -8,6 +8,8 @@ import { AppModule } from 'src/app.module';
 import { randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
 import { CountryEntity } from 'src/database/entities/country.entity';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
+import type { ObjectStorage } from 'src/modules/storage/object-storage.interface';
 
 describe('AdminPersons (e2e)', () => {
   let app: INestApplication;
@@ -15,10 +17,27 @@ describe('AdminPersons (e2e)', () => {
   let admin: UserEntity;
   let testPersonId: string;
 
+  const mockObjectStorage: ObjectStorage = {
+    generateSignedUploadUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-upload-url'),
+    exists: jest.fn().mockResolvedValue(true),
+    getPublicUrl: jest
+      .fn()
+      .mockReturnValue('https://storage.example.com/public-url'),
+    getSignedUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-url'),
+    delete: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(OBJECT_STORAGE)
+      .useValue(mockObjectStorage)
+      .compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -135,23 +154,66 @@ describe('AdminPersons (e2e)', () => {
     });
   });
 
-  describe('PATCH /admin/persons/:id/photo', () => {
-    it('should update person photo with valid image', async () => {
+  describe('PATCH /admin/persons/:id/photo/upload-intent', () => {
+    it('should return upload URL and storage key', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/admin/persons/${testPersonId}/photo`)
+        .patch(`/admin/persons/${testPersonId}/photo/upload-intent`)
         .set('Authorization', `Bearer ${accessToken}`)
-        .attach('photo', Buffer.from('fake image data'), 'test.jpg')
+        .send({ contentType: 'image/jpeg' })
         .expect(200);
 
       expect(res.body).toEqual({
-        message: 'Person photo updated successfully',
+        uploadUrl: expect.any(String),
+        storageKey: expect.stringMatching(
+          /^persons\/photos\/\d+-[a-f0-9-]+\.jpg$/,
+        ),
       });
     });
 
-    it('should return 400 when file is missing', async () => {
+    it('should return 400 for invalid content type', async () => {
       await request(app.getHttpServer())
-        .patch(`/admin/persons/${testPersonId}/photo`)
+        .patch(`/admin/persons/${testPersonId}/photo/upload-intent`)
         .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'application/pdf' })
+        .expect(400);
+    });
+
+    it('should return 404 for non-existent person', async () => {
+      const fakeId = randomUUID();
+
+      await request(app.getHttpServer())
+        .patch(`/admin/persons/${fakeId}/photo/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'image/jpeg' })
+        .expect(404);
+    });
+  });
+
+  describe('POST /admin/persons/:id/photo/confirm', () => {
+    it('should confirm photo upload successfully', async () => {
+      const intentRes = await request(app.getHttpServer())
+        .patch(`/admin/persons/${testPersonId}/photo/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'image/png' });
+
+      const { storageKey } = intentRes.body;
+
+      const confirmRes = await request(app.getHttpServer())
+        .post(`/admin/persons/${testPersonId}/photo/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey })
+        .expect(201);
+
+      expect(confirmRes.body).toEqual({
+        message: 'Photo updated successfully',
+      });
+    });
+
+    it('should return 400 for invalid storage key format', async () => {
+      await request(app.getHttpServer())
+        .post(`/admin/persons/${testPersonId}/photo/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey: 'invalid-key' })
         .expect(400);
     });
   });
