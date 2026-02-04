@@ -21,6 +21,10 @@ export interface IMoviesRepository {
     countryCodes: string[],
   ): Promise<MovieEntity>;
   update(id: string, data: Partial<MovieEntity>): Promise<void>;
+  swapPosterPath(
+    movieId: string,
+    newPosterPath: string,
+  ): Promise<string | null>;
   updateCountries(id: string, countryCodes: string[]): Promise<void>;
   updateGenres(id: string, genreIds: string[]): Promise<void>;
   delete(id: string): Promise<number>;
