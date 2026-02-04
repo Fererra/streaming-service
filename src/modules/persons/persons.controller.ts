@@ -1,5 +1,5 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { PersonsService } from './persons.service';
+import { PersonsService } from './services/persons.service';
 import { PaginationResponse } from 'src/common/@types/pagination.types';
 import { PersonEntity } from 'src/database/entities/person.entity';
 import { PersonSearchQueryDto } from './dto/person-search-query.dto';
