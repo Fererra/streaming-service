@@ -1,7 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { MovieCreditsService } from 'src/modules/movies/services/movie-credits.service';
+import { MoviesCreditsService } from 'src/modules/movies/services/movies-credits.service';
 import { MoviesService } from 'src/modules/movies/services/movies.service';
 import { MoviesModule } from 'src/modules/movies/movies.module';
 import { DatabaseModule } from 'src/database/database.module';
@@ -14,12 +14,12 @@ import { CreditRoleEntity } from 'src/database/entities/credit-role.entity';
 import { MovieEntity } from 'src/database/entities/movie.entity';
 import { MovieCreditEntity } from 'src/database/entities/movie-credit.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
-import { IMAGE_STORAGE } from 'src/modules/storage/storage.token';
-import { ImageStorage } from 'src/modules/storage/image-storage.interface';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
+import { ObjectStorage } from 'src/modules/storage/object-storage.interface';
 
-describe('MovieCreditsService (integration)', () => {
+describe('MoviesCreditsService (integration)', () => {
   let app: INestApplication;
-  let movieCreditsService: MovieCreditsService;
+  let moviesCreditsService: MoviesCreditsService;
   let moviesService: MoviesService;
   let dataSource: DataSource;
 
@@ -31,8 +31,8 @@ describe('MovieCreditsService (integration)', () => {
   let directorRole: CreditRoleEntity;
   let testMovie: MovieEntity;
 
-  const imageStorageMock: Partial<ImageStorage> = {
-    upload: jest.fn(),
+  const storageMock: Partial<ObjectStorage> = {
+    generateSignedUploadUrl: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -40,14 +40,14 @@ describe('MovieCreditsService (integration)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule, MoviesModule, ReferenceModule, PersonsModule],
     })
-      .overrideProvider(IMAGE_STORAGE)
-      .useValue(imageStorageMock)
+      .overrideProvider(OBJECT_STORAGE)
+      .useValue(storageMock)
       .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
 
-    movieCreditsService = app.get(MovieCreditsService);
+    moviesCreditsService = app.get(MoviesCreditsService);
     moviesService = app.get(MoviesService);
     dataSource = app.get(DataSource);
 
@@ -111,13 +111,13 @@ describe('MovieCreditsService (integration)', () => {
 
   describe('getMovieCredits', () => {
     it('should return empty array for movie without credits', async () => {
-      const credits = await movieCreditsService.getMovieCredits(testMovie.id);
+      const credits = await moviesCreditsService.getMovieCredits(testMovie.id);
 
       expect(credits).toEqual([]);
     });
 
     it('should return grouped credits by role', async () => {
-      await movieCreditsService.addCredits(testMovie.id, [
+      await moviesCreditsService.addCredits(testMovie.id, [
         {
           personId: person1.id,
           roles: [
@@ -132,7 +132,7 @@ describe('MovieCreditsService (integration)', () => {
         },
       ]);
 
-      const credits = await movieCreditsService.getMovieCredits(testMovie.id);
+      const credits = await moviesCreditsService.getMovieCredits(testMovie.id);
 
       expect(credits).toHaveLength(2);
 
@@ -147,7 +147,7 @@ describe('MovieCreditsService (integration)', () => {
     });
 
     it('should group multiple roles for same person', async () => {
-      await movieCreditsService.addCredits(testMovie.id, [
+      await moviesCreditsService.addCredits(testMovie.id, [
         {
           personId: person1.id,
           roles: [
@@ -165,7 +165,7 @@ describe('MovieCreditsService (integration)', () => {
         },
       ]);
 
-      const credits = await movieCreditsService.getMovieCredits(testMovie.id);
+      const credits = await moviesCreditsService.getMovieCredits(testMovie.id);
 
       expect(credits).toHaveLength(1);
       expect(credits[0].people).toHaveLength(1);
@@ -174,7 +174,7 @@ describe('MovieCreditsService (integration)', () => {
 
     it('should throw NotFoundException for non-existent movie', async () => {
       await expect(
-        movieCreditsService.getMovieCredits(
+        moviesCreditsService.getMovieCredits(
           '00000000-0000-0000-0000-000000000000',
         ),
       ).rejects.toThrow(NotFoundException);
@@ -183,7 +183,7 @@ describe('MovieCreditsService (integration)', () => {
 
   describe('addCredits', () => {
     it('should add credits to movie', async () => {
-      await movieCreditsService.addCredits(testMovie.id, [
+      await moviesCreditsService.addCredits(testMovie.id, [
         {
           personId: person1.id,
           roles: [
@@ -202,7 +202,7 @@ describe('MovieCreditsService (integration)', () => {
     });
 
     it('should add multiple people with multiple roles', async () => {
-      await movieCreditsService.addCredits(testMovie.id, [
+      await moviesCreditsService.addCredits(testMovie.id, [
         {
           personId: person1.id,
           roles: [
@@ -227,14 +227,17 @@ describe('MovieCreditsService (integration)', () => {
 
     it('should throw NotFoundException for non-existent movie', async () => {
       await expect(
-        movieCreditsService.addCredits('00000000-0000-0000-0000-000000000000', [
-          {
-            personId: person1.id,
-            roles: [
-              { roleId: actorRole.id, characterName: 'Test', orderIndex: 1 },
-            ],
-          },
-        ]),
+        moviesCreditsService.addCredits(
+          '00000000-0000-0000-0000-000000000000',
+          [
+            {
+              personId: person1.id,
+              roles: [
+                { roleId: actorRole.id, characterName: 'Test', orderIndex: 1 },
+              ],
+            },
+          ],
+        ),
       ).rejects.toThrow(NotFoundException);
     });
   });
@@ -243,7 +246,7 @@ describe('MovieCreditsService (integration)', () => {
     let creditId: string;
 
     beforeEach(async () => {
-      await movieCreditsService.addCredits(testMovie.id, [
+      await moviesCreditsService.addCredits(testMovie.id, [
         {
           personId: person1.id,
           roles: [
@@ -259,7 +262,7 @@ describe('MovieCreditsService (integration)', () => {
     });
 
     it('should update credit character name', async () => {
-      await movieCreditsService.updateCredit(testMovie.id, creditId, {
+      await moviesCreditsService.updateCredit(testMovie.id, creditId, {
         characterName: 'Updated Name',
       });
 
@@ -271,7 +274,7 @@ describe('MovieCreditsService (integration)', () => {
     });
 
     it('should update credit order index', async () => {
-      await movieCreditsService.updateCredit(testMovie.id, creditId, {
+      await moviesCreditsService.updateCredit(testMovie.id, creditId, {
         orderIndex: 99,
       });
 
@@ -284,7 +287,7 @@ describe('MovieCreditsService (integration)', () => {
 
     it('should throw NotFoundException for non-existent credit', async () => {
       await expect(
-        movieCreditsService.updateCredit(
+        moviesCreditsService.updateCredit(
           testMovie.id,
           '00000000-0000-0000-0000-000000000000',
           { characterName: 'Test' },
@@ -305,7 +308,7 @@ describe('MovieCreditsService (integration)', () => {
       });
 
       await expect(
-        movieCreditsService.updateCredit(otherMovie.id, creditId, {
+        moviesCreditsService.updateCredit(otherMovie.id, creditId, {
           characterName: 'Test',
         }),
       ).rejects.toThrow(NotFoundException);
@@ -316,7 +319,7 @@ describe('MovieCreditsService (integration)', () => {
     let creditId: string;
 
     beforeEach(async () => {
-      await movieCreditsService.addCredits(testMovie.id, [
+      await moviesCreditsService.addCredits(testMovie.id, [
         {
           personId: person1.id,
           roles: [
@@ -332,7 +335,7 @@ describe('MovieCreditsService (integration)', () => {
     });
 
     it('should delete credit', async () => {
-      await movieCreditsService.deleteCredit(testMovie.id, creditId);
+      await moviesCreditsService.deleteCredit(testMovie.id, creditId);
 
       const deleted = await dataSource
         .getRepository(MovieCreditEntity)
@@ -343,7 +346,7 @@ describe('MovieCreditsService (integration)', () => {
 
     it('should throw NotFoundException for non-existent credit', async () => {
       await expect(
-        movieCreditsService.deleteCredit(
+        moviesCreditsService.deleteCredit(
           testMovie.id,
           '00000000-0000-0000-0000-000000000000',
         ),
@@ -363,7 +366,7 @@ describe('MovieCreditsService (integration)', () => {
       });
 
       await expect(
-        movieCreditsService.deleteCredit(otherMovie.id, creditId),
+        moviesCreditsService.deleteCredit(otherMovie.id, creditId),
       ).rejects.toThrow(NotFoundException);
     });
   });

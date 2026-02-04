@@ -6,12 +6,12 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UsersService } from 'src/modules/users/users.service';
-import { DatabaseModule } from 'src/database/database.module';
+import { UsersService } from 'src/modules/users/services/users.service';
 import { UserRole } from 'src/modules/users/user-role.enum';
 import { CountryEntity } from 'src/database/entities/country.entity';
 import { randomUUID } from 'crypto';
-import { IMAGE_STORAGE } from 'src/modules/storage/storage.token';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
+import { DatabaseModule } from 'src/database/database.module';
 
 describe('UsersService (integration)', () => {
   let app: INestApplication;
@@ -19,9 +19,10 @@ describe('UsersService (integration)', () => {
   let dataSource: DataSource;
   let country: CountryEntity;
 
-  const imageStorageMock = {
-    upload: jest.fn(),
+  const storageMock = {
+    generateSignedUploadUrl: jest.fn(),
     delete: jest.fn(),
+    exists: jest.fn(),
   };
 
   beforeAll(async () => {
@@ -29,14 +30,11 @@ describe('UsersService (integration)', () => {
 
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule],
-      providers: [
-        UsersService,
-        {
-          provide: IMAGE_STORAGE,
-          useValue: imageStorageMock,
-        },
-      ],
-    }).compile();
+      providers: [UsersService],
+    })
+      .overrideProvider(OBJECT_STORAGE)
+      .useValue(storageMock)
+      .compile();
 
     app = moduleRef.createNestApplication();
     await app.init();
@@ -259,84 +257,6 @@ describe('UsersService (integration)', () => {
     it('returns false if user does not exist', async () => {
       const exists = await usersService.existsById(randomUUID());
       expect(exists).toBe(false);
-    });
-  });
-
-  describe('updateAvatar', () => {
-    it('updates user avatar successfully and saves to database', async () => {
-      const user = await usersService.createUser({
-        email: `avatar-${Date.now()}@mail.com`,
-        firstName: 'Avatar',
-        lastName: 'User',
-        password: 'hashed',
-        dateOfBirth: new Date('2000-01-01'),
-        country,
-      });
-
-      (imageStorageMock.upload as jest.Mock).mockResolvedValue({
-        storageKey: 'avatars/photo.png',
-      });
-
-      await usersService.updateAvatar(user.id, {
-        buffer: Buffer.from('test-image-data'),
-        contentType: 'image/png',
-      });
-
-      expect(imageStorageMock.upload).toHaveBeenCalled();
-
-      const updated = await usersService.searchUsers({ page: 1, limit: 10 });
-      expect(updated.data[0].avatarPath).toBe('avatars/photo.png');
-    });
-
-    it('updates avatar path when uploading new avatar', async () => {
-      const user = await usersService.createUser({
-        email: `update-avatar-${Date.now()}@mail.com`,
-        firstName: 'Update',
-        lastName: 'Avatar',
-        password: 'hashed',
-        dateOfBirth: new Date('2000-01-01'),
-        country,
-      });
-
-      (imageStorageMock.upload as jest.Mock)
-        .mockResolvedValueOnce({ storageKey: 'avatars/first-image.png' })
-        .mockResolvedValueOnce({ storageKey: 'avatars/second-image.jpg' });
-
-      (imageStorageMock.delete as jest.Mock).mockResolvedValue(undefined);
-
-      await usersService.updateAvatar(user.id, {
-        buffer: Buffer.from('first-image'),
-        contentType: 'image/png',
-      });
-
-      expect(imageStorageMock.upload).toHaveBeenCalled();
-
-      const afterFirstUpdate = await usersService.searchUsers({
-        page: 1,
-        limit: 10,
-      });
-      expect(afterFirstUpdate.data[0].avatarPath).toBe(
-        'avatars/first-image.png',
-      );
-
-      await usersService.updateAvatar(user.id, {
-        buffer: Buffer.from('second-image'),
-        contentType: 'image/jpeg',
-      });
-
-      expect(imageStorageMock.upload).toHaveBeenCalled();
-      expect(imageStorageMock.delete).toHaveBeenCalledWith(
-        'avatars/first-image.png',
-        false,
-      );
-
-      const afterSecondUpdate = await usersService.searchUsers({
-        page: 1,
-        limit: 10,
-      });
-      expect(afterSecondUpdate.data[0].avatarPath).toBe(
-        'avatars/second-image.jpg',
-      );
     });
   });
 });
