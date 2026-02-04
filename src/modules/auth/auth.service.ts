@@ -8,7 +8,7 @@ import type { AuthTokens } from '../token/types/auth-tokens.type';
 import { hash, verify } from 'argon2';
 import { LoginDto } from './dto/login.dto';
 import { TokenService } from '../token/token.service';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/services/users.service';
 import { CountryEntity } from 'src/database/entities/country.entity';
 
 @Injectable()
