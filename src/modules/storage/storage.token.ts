@@ -1,1 +1,1 @@
-export const IMAGE_STORAGE = 'IMAGE_STORAGE';
+export const OBJECT_STORAGE = 'OBJECT_STORAGE';
