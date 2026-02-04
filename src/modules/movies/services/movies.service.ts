@@ -8,7 +8,7 @@ import { GenresService } from '../../reference/genres/genres.service';
 import { CountryService } from '../../reference/country/country.service';
 import { CreateMovieDto } from '../dto/create-movie.dto';
 import { CreditsService } from '../../reference/credits/credits.service';
-import { PersonsService } from '../../persons/persons.service';
+import { PersonsService } from '../../persons/services/persons.service';
 import { MOVIES_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 import type { IMoviesRepository } from 'src/database/repositories/interfaces/movies-repository.interface';
 import { UpdateMovieDto } from '../dto/update-movie.dto';

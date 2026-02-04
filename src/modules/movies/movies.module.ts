@@ -6,7 +6,7 @@ import { PersonsModule } from '../persons/persons.module';
 import { ReferenceModule } from '../reference/reference.module';
 import { MoviesMediaService } from './services/movies-media.service';
 import { StorageModule } from '../storage/storage.module';
-import { MovieCreditsService } from './services/movie-credits.service';
+import { MoviesCreditsService } from './services/movies-credits.service';
 import { MovieMapper } from './mappers/movie.mapper';
 import { CreditEntityFactory } from './factories/credit-entity.factory';
 
@@ -16,10 +16,10 @@ import { CreditEntityFactory } from './factories/credit-entity.factory';
   providers: [
     MoviesService,
     MoviesMediaService,
-    MovieCreditsService,
+    MoviesCreditsService,
     MovieMapper,
     CreditEntityFactory,
   ],
-  exports: [MoviesService, MoviesMediaService, MovieCreditsService],
+  exports: [MoviesService, MoviesMediaService, MoviesCreditsService],
 })
 export class MoviesModule {}

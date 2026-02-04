@@ -8,13 +8,13 @@ import type { IMoviesRepository } from 'src/database/repositories/interfaces/mov
 import { CreateCreditsDto } from '../dto/create-movie.dto';
 import { UpdateMovieCreditDto } from '../dto/update-movie.dto';
 import { CreditsService } from '../../reference/credits/credits.service';
-import { PersonsService } from '../../persons/persons.service';
+import { PersonsService } from '../../persons/services/persons.service';
 import { MovieMapper } from '../mappers/movie.mapper';
 import { CreditEntityFactory } from '../factories/credit-entity.factory';
 import { MovieCreditsDto } from '../dto/movie-response.dto';
 
 @Injectable()
-export class MovieCreditsService {
+export class MoviesCreditsService {
   constructor(
     @Inject(MOVIES_REPOSITORY)
     private readonly moviesRepository: IMoviesRepository,
