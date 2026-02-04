@@ -16,8 +16,8 @@ import { PersonEntity } from 'src/database/entities/person.entity';
 import { CreditRoleEntity } from 'src/database/entities/credit-role.entity';
 import { MovieEntity } from 'src/database/entities/movie.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
-import { IMAGE_STORAGE } from 'src/modules/storage/storage.token';
-import { ImageStorage } from 'src/modules/storage/image-storage.interface';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
+import { ObjectStorage } from 'src/modules/storage/object-storage.interface';
 
 describe('MoviesService (integration)', () => {
   let app: INestApplication;
@@ -29,8 +29,8 @@ describe('MoviesService (integration)', () => {
   let person: PersonEntity;
   let actorRole: CreditRoleEntity;
 
-  const imageStorageMock: Partial<ImageStorage> = {
-    upload: jest.fn(),
+  const imageStorageMock: Partial<ObjectStorage> = {
+    generateSignedUploadUrl: jest.fn(),
     delete: jest.fn(),
   };
 
@@ -38,7 +38,7 @@ describe('MoviesService (integration)', () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule, MoviesModule, ReferenceModule, PersonsModule],
     })
-      .overrideProvider(IMAGE_STORAGE)
+      .overrideProvider(OBJECT_STORAGE)
       .useValue(imageStorageMock)
       .compile();
 

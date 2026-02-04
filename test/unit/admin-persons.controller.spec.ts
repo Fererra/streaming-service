@@ -5,7 +5,8 @@ import { JwtGuard } from 'src/modules/auth/jwt.guard';
 import { RolesGuard } from 'src/modules/auth/roles.guard';
 import { CreatePersonDto } from 'src/modules/persons/dto/create-person.dto';
 import { UpdatePersonDto } from 'src/modules/persons/dto/update-person.dto';
-import { PersonsService } from 'src/modules/persons/persons.service';
+import { PersonsService } from 'src/modules/persons/services/persons.service';
+import { PersonsMediaService } from 'src/modules/persons/services/persons-media.service';
 
 describe('AdminPersonsController', () => {
   let controller: AdminPersonsController;
@@ -13,8 +14,12 @@ describe('AdminPersonsController', () => {
   const personsServiceMock = {
     create: jest.fn(),
     update: jest.fn(),
-    updatePhoto: jest.fn(),
     delete: jest.fn(),
+  };
+
+  const personsMediaServiceMock = {
+    updatePhoto: jest.fn(),
+    confirmPhoto: jest.fn(),
   };
 
   const GuardMock: CanActivate = {
@@ -24,7 +29,10 @@ describe('AdminPersonsController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AdminPersonsController],
-      providers: [{ provide: PersonsService, useValue: personsServiceMock }],
+      providers: [
+        { provide: PersonsService, useValue: personsServiceMock },
+        { provide: PersonsMediaService, useValue: personsMediaServiceMock },
+      ],
     })
       .overrideGuard(JwtGuard)
       .useValue(GuardMock)
@@ -148,63 +156,92 @@ describe('AdminPersonsController', () => {
   });
 
   describe('updatePersonPhoto', () => {
-    it('should update person photo and return success message', async () => {
+    it('should return upload URL and storage key', async () => {
       const personId = '550e8400-e29b-41d4-a716-446655440000';
-      const mockFile = {
-        mimetype: 'image/jpeg',
-        buffer: Buffer.from('test-image-data'),
-      } as Express.Multer.File;
+      const contentType = 'image/jpeg';
+      const expectedResult = {
+        uploadUrl: 'https://storage.example.com/signed-url',
+        storageKey: 'photos/123-uuid.jpg',
+      };
 
-      personsServiceMock.updatePhoto.mockResolvedValue(undefined);
-      const result = await controller.updatePersonPhoto(personId, mockFile);
+      personsMediaServiceMock.updatePhoto.mockResolvedValue(expectedResult);
 
-      expect(result).toEqual({
-        message: 'Person photo updated successfully',
+      const result = await controller.updatePersonPhoto(personId, {
+        contentType,
       });
-      expect(personsServiceMock.updatePhoto).toHaveBeenCalledWith(personId, {
-        buffer: mockFile.buffer,
-        contentType: mockFile.mimetype,
-      });
-      expect(personsServiceMock.updatePhoto).toHaveBeenCalledTimes(1);
+
+      expect(result).toEqual(expectedResult);
+      expect(personsMediaServiceMock.updatePhoto).toHaveBeenCalledWith(
+        personId,
+        contentType,
+      );
+      expect(personsMediaServiceMock.updatePhoto).toHaveBeenCalledTimes(1);
     });
 
     it('should handle different image types', async () => {
       const personId = '550e8400-e29b-41d4-a716-446655440000';
-      const mockFile = {
-        mimetype: 'image/png',
-        buffer: Buffer.from('test-png-data'),
-      } as Express.Multer.File;
+      const contentType = 'image/png';
+      const expectedResult = {
+        uploadUrl: 'https://storage.example.com/signed-url',
+        storageKey: 'photos/123-uuid.png',
+      };
 
-      personsServiceMock.updatePhoto.mockResolvedValue(undefined);
+      personsMediaServiceMock.updatePhoto.mockResolvedValue(expectedResult);
 
-      const result = await controller.updatePersonPhoto(personId, mockFile);
-
-      expect(result).toEqual({
-        message: 'Person photo updated successfully',
+      const result = await controller.updatePersonPhoto(personId, {
+        contentType,
       });
-      expect(personsServiceMock.updatePhoto).toHaveBeenCalledWith(personId, {
-        buffer: mockFile.buffer,
-        contentType: 'image/png',
-      });
+
+      expect(result).toEqual(expectedResult);
+      expect(personsMediaServiceMock.updatePhoto).toHaveBeenCalledWith(
+        personId,
+        contentType,
+      );
     });
 
     it('should throw an error if person does not exist', async () => {
       const personId = '550e8400-e29b-41d4-a716-446655440001';
-      const mockFile = {
-        mimetype: 'image/jpeg',
-        buffer: Buffer.from('test-image-data'),
-      } as Express.Multer.File;
+      const contentType = 'image/jpeg';
 
       const error = new Error('Person not found');
-      personsServiceMock.updatePhoto.mockRejectedValue(error);
+      personsMediaServiceMock.updatePhoto.mockRejectedValue(error);
 
       await expect(
-        controller.updatePersonPhoto(personId, mockFile),
+        controller.updatePersonPhoto(personId, { contentType }),
       ).rejects.toThrow(error);
-      expect(personsServiceMock.updatePhoto).toHaveBeenCalledWith(personId, {
-        buffer: mockFile.buffer,
-        contentType: mockFile.mimetype,
-      });
+      expect(personsMediaServiceMock.updatePhoto).toHaveBeenCalledWith(
+        personId,
+        contentType,
+      );
+    });
+  });
+
+  describe('confirmPhoto', () => {
+    it('should confirm photo and return success message', async () => {
+      const personId = '550e8400-e29b-41d4-a716-446655440000';
+      const storageKey = 'photos/123-uuid.jpg';
+
+      personsMediaServiceMock.confirmPhoto.mockResolvedValue(undefined);
+
+      const result = await controller.confirmPhoto(personId, { storageKey });
+
+      expect(result).toEqual({ message: 'Photo updated successfully' });
+      expect(personsMediaServiceMock.confirmPhoto).toHaveBeenCalledWith(
+        personId,
+        storageKey,
+      );
+    });
+
+    it('should throw an error if intent is invalid', async () => {
+      const personId = '550e8400-e29b-41d4-a716-446655440000';
+      const storageKey = 'photos/invalid-key.jpg';
+
+      const error = new Error('No valid upload intent found');
+      personsMediaServiceMock.confirmPhoto.mockRejectedValue(error);
+
+      await expect(
+        controller.confirmPhoto(personId, { storageKey }),
+      ).rejects.toThrow(error);
     });
   });
 

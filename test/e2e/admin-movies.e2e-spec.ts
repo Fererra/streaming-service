@@ -13,6 +13,8 @@ import { PersonEntity } from 'src/database/entities/person.entity';
 import { CreditRoleEntity } from 'src/database/entities/credit-role.entity';
 import { MovieCreditEntity } from 'src/database/entities/movie-credit.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
+import type { ObjectStorage } from 'src/modules/storage/object-storage.interface';
 
 describe('AdminMovies (e2e)', () => {
   let app: INestApplication;
@@ -27,10 +29,27 @@ describe('AdminMovies (e2e)', () => {
   let person: PersonEntity;
   let actorRole: CreditRoleEntity;
 
+  const mockObjectStorage: ObjectStorage = {
+    generateSignedUploadUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-upload-url'),
+    exists: jest.fn().mockResolvedValue(true),
+    getPublicUrl: jest
+      .fn()
+      .mockReturnValue('https://storage.example.com/public-url'),
+    getSignedUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-url'),
+    delete: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(OBJECT_STORAGE)
+      .useValue(mockObjectStorage)
+      .compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -226,23 +245,64 @@ describe('AdminMovies (e2e)', () => {
     });
   });
 
-  describe('PATCH /admin/movies/:id/poster', () => {
-    it('200 + updates poster', async () => {
+  describe('PATCH /admin/movies/:id/poster/upload-intent', () => {
+    it('200 + returns upload URL and storage key', async () => {
       const res = await request(app.getHttpServer())
-        .patch(`/admin/movies/${testMovieId}/poster`)
+        .patch(`/admin/movies/${testMovieId}/poster/upload-intent`)
         .set('Authorization', `Bearer ${accessToken}`)
-        .attach('poster', Buffer.from('fake image data'), 'poster.jpg')
+        .send({ contentType: 'image/jpeg' })
         .expect(200);
 
       expect(res.body).toEqual({
+        uploadUrl: expect.any(String),
+        storageKey: expect.stringMatching(
+          /^movies\/posters\/\d+-[a-f0-9-]+\.jpg$/,
+        ),
+      });
+    });
+
+    it('400 for invalid content type', async () => {
+      await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/poster/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'application/pdf' })
+        .expect(400);
+    });
+
+    it('404 for non-existent movie', async () => {
+      await request(app.getHttpServer())
+        .patch(`/admin/movies/${randomUUID()}/poster/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'image/jpeg' })
+        .expect(404);
+    });
+  });
+
+  describe('POST /admin/movies/:id/poster/confirm', () => {
+    it('201 + confirms poster upload successfully', async () => {
+      const intentRes = await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/poster/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'image/png' });
+
+      const { storageKey } = intentRes.body;
+
+      const confirmRes = await request(app.getHttpServer())
+        .post(`/admin/movies/${testMovieId}/poster/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey })
+        .expect(201);
+
+      expect(confirmRes.body).toEqual({
         message: 'Movie poster updated successfully',
       });
     });
 
-    it('400 when file is missing', async () => {
+    it('400 for invalid storage key format', async () => {
       await request(app.getHttpServer())
-        .patch(`/admin/movies/${testMovieId}/poster`)
+        .post(`/admin/movies/${testMovieId}/poster/confirm`)
         .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey: 'invalid-key' })
         .expect(400);
     });
   });

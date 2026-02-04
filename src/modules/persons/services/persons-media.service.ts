@@ -1,41 +1,52 @@
-import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
-import type { IMoviesRepository } from 'src/database/repositories/interfaces/movies-repository.interface';
 import {
-  MOVIES_REPOSITORY,
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { OBJECT_STORAGE } from '../../storage/storage.token';
+import {
+  BucketType,
+  type ObjectStorage,
+} from '../../storage/object-storage.interface';
+import { extension } from 'mime-types';
+import { ImageStoragePath } from '../../storage/storage-path.enum';
+import { randomUUID } from 'crypto';
+import {
+  PERSONS_REPOSITORY,
   UPLOAD_INTENTS_REPOSITORY,
 } from 'src/database/repositories/tokens/repository.tokens';
-import { OBJECT_STORAGE } from '../../storage/storage.token';
-import type { ObjectStorage } from '../../storage/object-storage.interface';
-import { BucketType } from '../../storage/object-storage.interface';
-import { ImageStoragePath } from '../../storage/storage-path.enum';
-import { extension } from 'mime-types';
-import { randomUUID } from 'crypto';
 import type { IUploadIntentsRepository } from 'src/database/repositories/interfaces/upload-intents-repository.interface';
+import type { IPersonsRepository } from 'src/database/repositories/interfaces/persons-repository.interface';
 import { IntentStatus } from 'src/modules/storage/intent-status.enum';
 
-export class MoviesMediaService {
+@Injectable()
+export class PersonsMediaService {
   constructor(
-    @Inject(MOVIES_REPOSITORY)
-    private readonly moviesRepository: IMoviesRepository,
+    @Inject(PERSONS_REPOSITORY)
+    private readonly personsRepository: IPersonsRepository,
     @Inject(OBJECT_STORAGE)
     private readonly storage: ObjectStorage,
     @Inject(UPLOAD_INTENTS_REPOSITORY)
     private readonly intents: IUploadIntentsRepository,
   ) {}
 
-  async updatePoster(id: string, contentType: string) {
-    const movie = await this.moviesRepository.existsBy({ id });
+  async updatePhoto(
+    id: string,
+    contentType: string,
+  ): Promise<{ uploadUrl: string; storageKey: string }> {
+    const isPersonExists = await this.personsRepository.existsById(id);
 
-    if (!movie) {
-      throw new NotFoundException(`Movie not found`);
+    if (!isPersonExists) {
+      throw new NotFoundException('Person not found');
     }
 
     const extractedExtension = this.extractExtension(contentType);
-    const storageKey = this.generatePosterKey(extractedExtension);
+    const storageKey = this.generatePhotoKey(extractedExtension);
     const expiresIn = 15 * 60 * 1000;
 
     await this.intents.createUploadIntent({
-      entityType: 'movie_poster',
+      entityType: 'person_photo',
       entityId: id,
       storageKey,
       contentType,
@@ -64,14 +75,14 @@ export class MoviesMediaService {
     return fileExtension;
   }
 
-  private generatePosterKey(extension: string) {
-    return `${ImageStoragePath.MOVIE_POSTERS}/${Date.now()}-${randomUUID()}.${extension}`;
+  private generatePhotoKey(extension: string) {
+    return `${ImageStoragePath.PERSON_PHOTOS}/${Date.now()}-${randomUUID()}.${extension}`;
   }
 
-  async confirmPoster(movieId: string, storageKey: string): Promise<void> {
+  async confirmPhoto(personId: string, storageKey: string): Promise<void> {
     const intent = await this.intents.consumeIntent(
-      'movie_poster',
-      movieId,
+      'person_photo',
+      personId,
       storageKey,
       IntentStatus.IN_PROGRESS,
     );
@@ -96,11 +107,11 @@ export class MoviesMediaService {
       throw new BadRequestException('Upload intent expired');
     }
 
-    let oldPosterKey: string | null = null;
+    let oldPhotoKey: string | null = null;
 
     try {
-      oldPosterKey = await this.moviesRepository.swapPosterPath(
-        movieId,
+      oldPhotoKey = await this.personsRepository.swapPhotoPath(
+        personId,
         storageKey,
       );
     } catch (error) {
@@ -113,8 +124,8 @@ export class MoviesMediaService {
 
     await this.intents.updateStatus(intent.id, IntentStatus.COMPLETED);
 
-    if (oldPosterKey) {
-      await this.storage.delete(oldPosterKey, BucketType.PUBLIC);
+    if (oldPhotoKey) {
+      await this.storage.delete(oldPhotoKey, BucketType.PUBLIC);
     }
   }
 }

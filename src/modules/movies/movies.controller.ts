@@ -2,13 +2,13 @@ import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
 import { MoviesService } from './services/movies.service';
 import { MovieSearchQueryDto } from './dto/movie-search-query.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
-import { MovieCreditsService } from './services/movie-credits.service';
+import { MoviesCreditsService } from './services/movies-credits.service';
 
 @Controller('movies')
 export class MoviesController {
   constructor(
     private readonly moviesService: MoviesService,
-    private readonly movieCreditsService: MovieCreditsService,
+    private readonly movieCreditsService: MoviesCreditsService,
   ) {}
 
   @Get()

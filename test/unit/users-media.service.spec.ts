@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { MoviesMediaService } from 'src/modules/movies/services/movies-media.service';
+import { UsersMediaService } from 'src/modules/users/services/users-media.service';
 import {
-  MOVIES_REPOSITORY,
   UPLOAD_INTENTS_REPOSITORY,
+  USERS_REPOSITORY,
 } from 'src/database/repositories/tokens/repository.tokens';
 import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import { BucketType } from 'src/modules/storage/object-storage.interface';
 import { IntentStatus } from 'src/modules/storage/intent-status.enum';
 
-describe('MoviesMediaService', () => {
-  let service: MoviesMediaService;
+describe('UsersMediaService', () => {
+  let service: UsersMediaService;
 
-  const moviesRepositoryMock = {
-    existsBy: jest.fn(),
-    swapPosterPath: jest.fn(),
+  const usersRepositoryMock = {
+    existsById: jest.fn(),
+    swapAvatarPath: jest.fn(),
   };
 
   const storageMock = {
@@ -34,40 +34,37 @@ describe('MoviesMediaService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        MoviesMediaService,
-        { provide: MOVIES_REPOSITORY, useValue: moviesRepositoryMock },
+        UsersMediaService,
+        { provide: USERS_REPOSITORY, useValue: usersRepositoryMock },
         { provide: OBJECT_STORAGE, useValue: storageMock },
         { provide: UPLOAD_INTENTS_REPOSITORY, useValue: intentsMock },
       ],
     }).compile();
 
-    service = module.get<MoviesMediaService>(MoviesMediaService);
+    service = module.get<UsersMediaService>(UsersMediaService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
   });
 
-  describe('updatePoster', () => {
-    const movieId = 'movie-123';
+  describe('updateAvatar', () => {
+    const userId = 'user-123';
     const contentType = 'image/jpeg';
 
-    it('should generate signed upload URL for existing movie', async () => {
+    it('should generate signed upload URL for existing user', async () => {
       const expectedUploadUrl = 'https://storage.example.com/signed-url';
 
-      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      usersRepositoryMock.existsById.mockResolvedValue(true);
       intentsMock.createUploadIntent.mockResolvedValue({ id: 'intent-1' });
       storageMock.generateSignedUploadUrl.mockResolvedValue(expectedUploadUrl);
 
-      const result = await service.updatePoster(movieId, contentType);
+      const result = await service.updateAvatar(userId, contentType);
 
-      expect(moviesRepositoryMock.existsBy).toHaveBeenCalledWith({
-        id: movieId,
-      });
       expect(intentsMock.createUploadIntent).toHaveBeenCalledWith(
         expect.objectContaining({
-          entityType: 'movie_poster',
-          entityId: movieId,
+          entityType: 'user_avatar',
+          entityId: userId,
           contentType,
         }),
       );
@@ -81,55 +78,44 @@ describe('MoviesMediaService', () => {
       expect(result.storageKey).toBeDefined();
     });
 
-    it('should throw NotFoundException if movie does not exist', async () => {
-      moviesRepositoryMock.existsBy.mockResolvedValue(false);
-
-      await expect(service.updatePoster(movieId, contentType)).rejects.toThrow(
-        NotFoundException,
-      );
-
-      expect(intentsMock.createUploadIntent).not.toHaveBeenCalled();
-      expect(storageMock.generateSignedUploadUrl).not.toHaveBeenCalled();
-    });
-
     it('should throw BadRequestException for invalid content type', async () => {
-      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      usersRepositoryMock.existsById.mockResolvedValue(true);
 
       await expect(
-        service.updatePoster(movieId, 'invalid/type'),
+        service.updateAvatar(userId, 'invalid/type'),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should handle png content type', async () => {
-      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      usersRepositoryMock.existsById.mockResolvedValue(true);
       intentsMock.createUploadIntent.mockResolvedValue({ id: 'intent-1' });
       storageMock.generateSignedUploadUrl.mockResolvedValue('https://url');
 
-      const result = await service.updatePoster(movieId, 'image/png');
+      const result = await service.updateAvatar(userId, 'image/png');
 
       expect(result.storageKey).toContain('.png');
     });
   });
 
-  describe('confirmPoster', () => {
-    const movieId = 'movie-123';
-    const storageKey = 'posters/123-uuid.jpg';
+  describe('confirmAvatar', () => {
+    const userId = 'user-123';
+    const storageKey = 'avatars/123-uuid.jpg';
     const mockIntent = {
       id: 'intent-1',
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     };
 
-    it('should confirm poster when intent is valid', async () => {
+    it('should confirm avatar when intent is valid', async () => {
       intentsMock.consumeIntent.mockResolvedValue(mockIntent);
       storageMock.exists.mockResolvedValue(true);
-      moviesRepositoryMock.swapPosterPath.mockResolvedValue(null);
+      usersRepositoryMock.swapAvatarPath.mockResolvedValue(null);
       intentsMock.updateStatus.mockResolvedValue(undefined);
 
-      await service.confirmPoster(movieId, storageKey);
+      await service.confirmAvatar(userId, storageKey);
 
       expect(intentsMock.consumeIntent).toHaveBeenCalledWith(
-        'movie_poster',
-        movieId,
+        'user_avatar',
+        userId,
         storageKey,
         IntentStatus.IN_PROGRESS,
       );
@@ -137,8 +123,8 @@ describe('MoviesMediaService', () => {
         storageKey,
         BucketType.PUBLIC,
       );
-      expect(moviesRepositoryMock.swapPosterPath).toHaveBeenCalledWith(
-        movieId,
+      expect(usersRepositoryMock.swapAvatarPath).toHaveBeenCalledWith(
+        userId,
         storageKey,
       );
       expect(intentsMock.updateStatus).toHaveBeenCalledWith(
@@ -147,19 +133,19 @@ describe('MoviesMediaService', () => {
       );
     });
 
-    it('should delete old poster when it exists', async () => {
-      const oldPosterKey = 'posters/old-poster.jpg';
+    it('should delete old avatar when it exists', async () => {
+      const oldAvatarKey = 'avatars/old-avatar.jpg';
 
       intentsMock.consumeIntent.mockResolvedValue(mockIntent);
       storageMock.exists.mockResolvedValue(true);
-      moviesRepositoryMock.swapPosterPath.mockResolvedValue(oldPosterKey);
+      usersRepositoryMock.swapAvatarPath.mockResolvedValue(oldAvatarKey);
       intentsMock.updateStatus.mockResolvedValue(undefined);
       storageMock.delete.mockResolvedValue(undefined);
 
-      await service.confirmPoster(movieId, storageKey);
+      await service.confirmAvatar(userId, storageKey);
 
       expect(storageMock.delete).toHaveBeenCalledWith(
-        oldPosterKey,
+        oldAvatarKey,
         BucketType.PUBLIC,
       );
     });
@@ -167,11 +153,11 @@ describe('MoviesMediaService', () => {
     it('should throw BadRequestException when no valid intent found', async () => {
       intentsMock.consumeIntent.mockResolvedValue(null);
 
-      await expect(service.confirmPoster(movieId, storageKey)).rejects.toThrow(
+      await expect(service.confirmAvatar(userId, storageKey)).rejects.toThrow(
         BadRequestException,
       );
 
-      expect(moviesRepositoryMock.swapPosterPath).not.toHaveBeenCalled();
+      expect(usersRepositoryMock.swapAvatarPath).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when file not found in storage', async () => {
@@ -179,7 +165,7 @@ describe('MoviesMediaService', () => {
       storageMock.exists.mockResolvedValue(false);
       intentsMock.updateStatus.mockResolvedValue(undefined);
 
-      await expect(service.confirmPoster(movieId, storageKey)).rejects.toThrow(
+      await expect(service.confirmAvatar(userId, storageKey)).rejects.toThrow(
         BadRequestException,
       );
 
@@ -187,7 +173,7 @@ describe('MoviesMediaService', () => {
         mockIntent.id,
         IntentStatus.FAILED,
       );
-      expect(moviesRepositoryMock.swapPosterPath).not.toHaveBeenCalled();
+      expect(usersRepositoryMock.swapAvatarPath).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException when intent is expired', async () => {
@@ -201,7 +187,7 @@ describe('MoviesMediaService', () => {
       intentsMock.updateStatus.mockResolvedValue(undefined);
       storageMock.delete.mockResolvedValue(undefined);
 
-      await expect(service.confirmPoster(movieId, storageKey)).rejects.toThrow(
+      await expect(service.confirmAvatar(userId, storageKey)).rejects.toThrow(
         BadRequestException,
       );
 
@@ -220,11 +206,11 @@ describe('MoviesMediaService', () => {
 
       intentsMock.consumeIntent.mockResolvedValue(mockIntent);
       storageMock.exists.mockResolvedValue(true);
-      moviesRepositoryMock.swapPosterPath.mockRejectedValue(error);
+      usersRepositoryMock.swapAvatarPath.mockRejectedValue(error);
       storageMock.delete.mockResolvedValue(undefined);
       intentsMock.updateStatus.mockResolvedValue(undefined);
 
-      await expect(service.confirmPoster(movieId, storageKey)).rejects.toThrow(
+      await expect(service.confirmAvatar(userId, storageKey)).rejects.toThrow(
         error,
       );
 

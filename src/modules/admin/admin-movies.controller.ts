@@ -5,12 +5,10 @@ import {
   NotImplementedException,
   Param,
   ParseArrayPipe,
-  ParseFilePipe,
   ParseUUIDPipe,
   Patch,
   Post,
   Put,
-  UploadedFile,
   UseGuards,
 } from '@nestjs/common';
 import { JwtGuard } from '../auth/jwt.guard';
@@ -22,7 +20,6 @@ import {
   CreateMovieDto,
 } from '../movies/dto/create-movie.dto';
 import { MoviesService } from '../movies/services/movies.service';
-import { ApiImageFile } from 'src/common/decorators/image-upload.decorator';
 import { MoviesMediaService } from '../movies/services/movies-media.service';
 import {
   UpdateMovieCountriesDto,
@@ -31,7 +28,9 @@ import {
   UpdateMovieGenresDto,
 } from '../movies/dto/update-movie.dto';
 import { CheckEmptyBodyPipe } from 'src/common/pipes/check-empty-body.pipe';
-import { MovieCreditsService } from '../movies/services/movie-credits.service';
+import { MoviesCreditsService } from '../movies/services/movies-credits.service';
+import { AllowedImageContentTypesDto } from 'src/common/dto/image-content-types.dto';
+import { ConfirmPosterDto } from '../movies/dto/confirm-poster.dto';
 
 @Controller('movies')
 @UseGuards(JwtGuard, RolesGuard)
@@ -40,7 +39,7 @@ export class AdminMoviesController {
   constructor(
     private readonly moviesService: MoviesService,
     private readonly moviesMediaService: MoviesMediaService,
-    private readonly movieCreditsService: MovieCreditsService,
+    private readonly movieCreditsService: MoviesCreditsService,
   ) {}
 
   @Post()
@@ -53,21 +52,22 @@ export class AdminMoviesController {
     };
   }
 
-  @Patch(':id/poster')
-  @ApiImageFile('poster')
+  @Patch(':id/poster/upload-intent')
   async updateMoviePoster(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
-    poster: Express.Multer.File,
+    @Body() { contentType }: AllowedImageContentTypesDto,
   ) {
-    await this.moviesMediaService.updatePoster(id, {
-      buffer: poster.buffer,
-      contentType: poster.mimetype,
-    });
+    return this.moviesMediaService.updatePoster(id, contentType);
+  }
 
-    return {
-      message: 'Movie poster updated successfully',
-    };
+  @Post(':id/poster/confirm')
+  async confirmPoster(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() { storageKey }: ConfirmPosterDto,
+  ) {
+    await this.moviesMediaService.confirmPoster(id, storageKey);
+
+    return { message: 'Movie poster updated successfully' };
   }
 
   @Patch(':id/trailer')

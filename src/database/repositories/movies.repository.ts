@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { IMoviesRepository } from './interfaces/movies-repository.interface';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MovieEntity } from '../entities/movie.entity';
@@ -133,6 +133,33 @@ export class MoviesRepository implements IMoviesRepository {
 
   async update(id: string, data: Partial<MovieEntity>): Promise<void> {
     await this.repository.update(id, data);
+  }
+
+  async swapPosterPath(
+    movieId: string,
+    newPosterPath: string,
+  ): Promise<string | null> {
+    return this.repository.manager.transaction(async (manager) => {
+      const movie = await manager.findOne(MovieEntity, {
+        select: ['id', 'posterPath'],
+        where: { id: movieId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!movie) {
+        throw new NotFoundException('Movie not found');
+      }
+
+      const oldPosterPath = movie.posterPath;
+
+      await manager.update(
+        MovieEntity,
+        { id: movieId },
+        { posterPath: newPosterPath },
+      );
+
+      return oldPosterPath;
+    });
   }
 
   async updateCountries(id: string, countryCodes: string[]): Promise<void> {

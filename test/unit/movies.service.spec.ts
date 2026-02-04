@@ -5,7 +5,7 @@ import { MOVIES_REPOSITORY } from 'src/database/repositories/tokens/repository.t
 import { GenresService } from 'src/modules/reference/genres/genres.service';
 import { CountryService } from 'src/modules/reference/country/country.service';
 import { CreditsService } from 'src/modules/reference/credits/credits.service';
-import { PersonsService } from 'src/modules/persons/persons.service';
+import { PersonsService } from 'src/modules/persons/services/persons.service';
 import { MovieMapper } from 'src/modules/movies/mappers/movie.mapper';
 import { CreditEntityFactory } from 'src/modules/movies/factories/credit-entity.factory';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';

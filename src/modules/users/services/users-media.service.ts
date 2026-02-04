@@ -1,41 +1,46 @@
-import { BadRequestException, Inject, NotFoundException } from '@nestjs/common';
-import type { IMoviesRepository } from 'src/database/repositories/interfaces/movies-repository.interface';
 import {
-  MOVIES_REPOSITORY,
-  UPLOAD_INTENTS_REPOSITORY,
-} from 'src/database/repositories/tokens/repository.tokens';
+  BadRequestException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { OBJECT_STORAGE } from '../../storage/storage.token';
-import type { ObjectStorage } from '../../storage/object-storage.interface';
-import { BucketType } from '../../storage/object-storage.interface';
-import { ImageStoragePath } from '../../storage/storage-path.enum';
+import {
+  BucketType,
+  type ObjectStorage,
+} from '../../storage/object-storage.interface';
 import { extension } from 'mime-types';
+import { ImageStoragePath } from '../../storage/storage-path.enum';
 import { randomUUID } from 'crypto';
+import {
+  UPLOAD_INTENTS_REPOSITORY,
+  USERS_REPOSITORY,
+} from 'src/database/repositories/tokens/repository.tokens';
 import type { IUploadIntentsRepository } from 'src/database/repositories/interfaces/upload-intents-repository.interface';
+import type { IUsersRepository } from 'src/database/repositories/interfaces/users-repository.interface';
 import { IntentStatus } from 'src/modules/storage/intent-status.enum';
 
-export class MoviesMediaService {
+@Injectable()
+export class UsersMediaService {
   constructor(
-    @Inject(MOVIES_REPOSITORY)
-    private readonly moviesRepository: IMoviesRepository,
+    @Inject(USERS_REPOSITORY)
+    private readonly usersRepository: IUsersRepository,
     @Inject(OBJECT_STORAGE)
     private readonly storage: ObjectStorage,
     @Inject(UPLOAD_INTENTS_REPOSITORY)
     private readonly intents: IUploadIntentsRepository,
   ) {}
 
-  async updatePoster(id: string, contentType: string) {
-    const movie = await this.moviesRepository.existsBy({ id });
-
-    if (!movie) {
-      throw new NotFoundException(`Movie not found`);
-    }
-
+  async updateAvatar(
+    id: string,
+    contentType: string,
+  ): Promise<{ uploadUrl: string; storageKey: string }> {
     const extractedExtension = this.extractExtension(contentType);
-    const storageKey = this.generatePosterKey(extractedExtension);
+    const storageKey = this.generateAvatarKey(extractedExtension);
     const expiresIn = 15 * 60 * 1000;
 
     await this.intents.createUploadIntent({
-      entityType: 'movie_poster',
+      entityType: 'user_avatar',
       entityId: id,
       storageKey,
       contentType,
@@ -64,14 +69,14 @@ export class MoviesMediaService {
     return fileExtension;
   }
 
-  private generatePosterKey(extension: string) {
-    return `${ImageStoragePath.MOVIE_POSTERS}/${Date.now()}-${randomUUID()}.${extension}`;
+  private generateAvatarKey(extension: string) {
+    return `${ImageStoragePath.USER_AVATARS}/${Date.now()}-${randomUUID()}.${extension}`;
   }
 
-  async confirmPoster(movieId: string, storageKey: string): Promise<void> {
+  async confirmAvatar(userId: string, storageKey: string): Promise<void> {
     const intent = await this.intents.consumeIntent(
-      'movie_poster',
-      movieId,
+      'user_avatar',
+      userId,
       storageKey,
       IntentStatus.IN_PROGRESS,
     );
@@ -96,11 +101,11 @@ export class MoviesMediaService {
       throw new BadRequestException('Upload intent expired');
     }
 
-    let oldPosterKey: string | null = null;
+    let oldAvatarKey: string | null = null;
 
     try {
-      oldPosterKey = await this.moviesRepository.swapPosterPath(
-        movieId,
+      oldAvatarKey = await this.usersRepository.swapAvatarPath(
+        userId,
         storageKey,
       );
     } catch (error) {
@@ -113,8 +118,8 @@ export class MoviesMediaService {
 
     await this.intents.updateStatus(intent.id, IntentStatus.COMPLETED);
 
-    if (oldPosterKey) {
-      await this.storage.delete(oldPosterKey, BucketType.PUBLIC);
+    if (oldAvatarKey) {
+      await this.storage.delete(oldAvatarKey, BucketType.PUBLIC);
     }
   }
 }

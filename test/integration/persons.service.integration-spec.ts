@@ -1,33 +1,32 @@
 import { Test } from '@nestjs/testing';
 import { INestApplication, NotFoundException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { PersonsService } from 'src/modules/persons/persons.service';
+import { PersonsService } from 'src/modules/persons/services/persons.service';
 import { PersonsModule } from 'src/modules/persons/persons.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { CountryEntity } from 'src/database/entities/country.entity';
 import { PersonEntity } from 'src/database/entities/person.entity';
 import { randomUUID } from 'crypto';
-import { IMAGE_STORAGE } from 'src/modules/storage/storage.token';
-import { ImageStorage } from 'src/modules/storage/image-storage.interface';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 
 describe('PersonsService (integration)', () => {
   let app: INestApplication;
   let personsService: PersonsService;
   let dataSource: DataSource;
   let country: CountryEntity;
-  let imageStorageMock: Partial<ImageStorage>;
+
+  const storageMock = {
+    generateSignedUploadUrl: jest.fn(),
+    delete: jest.fn(),
+    exists: jest.fn(),
+  };
 
   beforeAll(async () => {
-    imageStorageMock = {
-      upload: jest.fn(),
-      delete: jest.fn(),
-    };
-
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule, PersonsModule],
     })
-      .overrideProvider(IMAGE_STORAGE)
-      .useValue(imageStorageMock)
+      .overrideProvider(OBJECT_STORAGE)
+      .useValue(storageMock)
       .compile();
 
     app = moduleRef.createNestApplication();
@@ -178,93 +177,6 @@ describe('PersonsService (integration)', () => {
       await expect(
         personsService.update(randomUUID(), { firstName: 'NonExistent' }),
       ).rejects.toBeInstanceOf(NotFoundException);
-    });
-  });
-
-  describe('updatePhoto', () => {
-    it('updates person photo successfully', async () => {
-      const person = await personsService.create({
-        firstName: 'John',
-        lastName: 'Doe',
-        dateOfBirth: new Date('1990-01-01'),
-        country: 'US',
-      });
-
-      (imageStorageMock.upload as jest.Mock).mockResolvedValue({
-        storageKey: 'persons/photo-123.jpg',
-      });
-
-      await personsService.updatePhoto(person.id, {
-        buffer: Buffer.from('fake-image-data'),
-        contentType: 'image/jpeg',
-      });
-
-      expect(imageStorageMock.upload).toHaveBeenCalled();
-
-      const updated = await personsService.findAll({ page: 1, limit: 10 });
-      expect(updated.data[0].photoPath).toBe('persons/photo-123.jpg');
-    });
-
-    it('deletes old photo when updating', async () => {
-      const person = await personsService.create({
-        firstName: 'John',
-        lastName: 'Doe',
-        dateOfBirth: new Date('1990-01-01'),
-        country: 'US',
-      });
-
-      (imageStorageMock.upload as jest.Mock).mockResolvedValue({
-        storageKey: 'persons/old-photo.jpg',
-      });
-      await personsService.updatePhoto(person.id, {
-        buffer: Buffer.from('old-image-data'),
-        contentType: 'image/jpeg',
-      });
-
-      (imageStorageMock.upload as jest.Mock).mockResolvedValue({
-        storageKey: 'persons/new-photo.jpg',
-      });
-      (imageStorageMock.delete as jest.Mock).mockResolvedValue(undefined);
-
-      await personsService.updatePhoto(person.id, {
-        buffer: Buffer.from('new-image-data'),
-        contentType: 'image/jpeg',
-      });
-
-      expect(imageStorageMock.delete).toHaveBeenCalledWith(
-        'persons/old-photo.jpg',
-        true,
-      );
-    });
-
-    it('throws NotFoundException if person does not exist', async () => {
-      await expect(
-        personsService.updatePhoto(randomUUID(), {
-          buffer: Buffer.from('fake-image-data'),
-          contentType: 'image/jpeg',
-        }),
-      ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('deletes uploaded photo if update fails', async () => {
-      const person = await personsService.create({
-        firstName: 'John',
-        lastName: 'Doe',
-        dateOfBirth: new Date('1990-01-01'),
-        country: 'US',
-      });
-
-      (imageStorageMock.upload as jest.Mock).mockResolvedValue({
-        storageKey: 'persons/photo-123.jpg',
-      });
-      (imageStorageMock.delete as jest.Mock).mockResolvedValue(undefined);
-
-      await expect(
-        personsService.updatePhoto(person.id, {
-          buffer: Buffer.from('fake-image-data'),
-          contentType: 'image/jpeg',
-        }),
-      ).resolves.toBeUndefined();
     });
   });
 

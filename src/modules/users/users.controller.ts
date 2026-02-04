@@ -1,34 +1,30 @@
-import {
-  Controller,
-  ParseFilePipe,
-  Patch,
-  UploadedFile,
-  UseGuards,
-} from '@nestjs/common';
-import { UsersService } from './users.service';
-import { ApiImageFile } from 'src/common/decorators/image-upload.decorator';
+import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { JwtGuard } from '../auth/jwt.guard';
+import { UsersMediaService } from './services/users-media.service';
+import { AllowedImageContentTypesDto } from 'src/common/dto/image-content-types.dto';
+import { ConfirmAvatarDto } from './dto/confirm-avatar.dto';
 
 @Controller('users')
 @UseGuards(JwtGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersMediaService: UsersMediaService) {}
 
-  @Patch('me/avatar')
-  @ApiImageFile('avatar')
-  async updateAvatar(
+  @Patch('me/avatar/upload-intent')
+  updateAvatar(
     @CurrentUserId() userId: string,
-    @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
-    avatar: Express.Multer.File,
+    @Body() { contentType }: AllowedImageContentTypesDto,
   ) {
-    await this.usersService.updateAvatar(userId, {
-      buffer: avatar.buffer,
-      contentType: avatar.mimetype,
-    });
+    return this.usersMediaService.updateAvatar(userId, contentType);
+  }
 
-    return {
-      message: 'User avatar updated successfully',
-    };
+  @Post('me/avatar/confirm')
+  async confirmAvatar(
+    @CurrentUserId() userId: string,
+    @Body() { storageKey }: ConfirmAvatarDto,
+  ) {
+    await this.usersMediaService.confirmAvatar(userId, storageKey);
+
+    return { message: 'Avatar updated successfully' };
   }
 }

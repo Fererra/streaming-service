@@ -1,18 +1,18 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
-import { MovieCreditsService } from 'src/modules/movies/services/movie-credits.service';
+import { MoviesCreditsService } from 'src/modules/movies/services/movies-credits.service';
 import {
   MOVIE_CREDITS_REPOSITORY,
   MOVIES_REPOSITORY,
 } from 'src/database/repositories/tokens/repository.tokens';
 import { CreditsService } from 'src/modules/reference/credits/credits.service';
-import { PersonsService } from 'src/modules/persons/persons.service';
+import { PersonsService } from 'src/modules/persons/services/persons.service';
 import { MovieMapper } from 'src/modules/movies/mappers/movie.mapper';
 import { CreditEntityFactory } from 'src/modules/movies/factories/credit-entity.factory';
 import { CreateCreditsDto } from 'src/modules/movies/dto/create-movie.dto';
 
-describe('MovieCreditsService', () => {
-  let service: MovieCreditsService;
+describe('MoviesCreditsService', () => {
+  let service: MoviesCreditsService;
 
   const moviesRepositoryMock = {
     existsBy: jest.fn(),
@@ -48,7 +48,7 @@ describe('MovieCreditsService', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
-        MovieCreditsService,
+        MoviesCreditsService,
         { provide: MOVIES_REPOSITORY, useValue: moviesRepositoryMock },
         {
           provide: MOVIE_CREDITS_REPOSITORY,
@@ -61,7 +61,7 @@ describe('MovieCreditsService', () => {
       ],
     }).compile();
 
-    service = module.get<MovieCreditsService>(MovieCreditsService);
+    service = module.get<MoviesCreditsService>(MoviesCreditsService);
   });
 
   it('should be defined', () => {
