@@ -8,6 +8,7 @@ import { CreditsService } from 'src/modules/reference/credits/credits.service';
 import { PersonsService } from 'src/modules/persons/services/persons.service';
 import { MovieMapper } from 'src/modules/movies/mappers/movie.mapper';
 import { CreditEntityFactory } from 'src/modules/movies/factories/credit-entity.factory';
+import { MoviesMediaService } from 'src/modules/movies/services/movies-media.service';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 
 describe('MoviesService', () => {
@@ -24,6 +25,7 @@ describe('MoviesService', () => {
     updateCountries: jest.fn(),
     updateGenres: jest.fn(),
     delete: jest.fn(),
+    getVideoPathById: jest.fn(),
   };
 
   const genresServiceMock = {
@@ -52,6 +54,12 @@ describe('MoviesService', () => {
     createFromDto: jest.fn(),
   };
 
+  const moviesMediaServiceMock = {
+    resolvePosterUrl: jest.fn(),
+    resolveTrailerUrl: jest.fn(),
+    resolveVideoUrl: jest.fn(),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -65,6 +73,7 @@ describe('MoviesService', () => {
         { provide: PersonsService, useValue: personsServiceMock },
         { provide: MovieMapper, useValue: movieMapperMock },
         { provide: CreditEntityFactory, useValue: creditEntityFactoryMock },
+        { provide: MoviesMediaService, useValue: moviesMediaServiceMock },
       ],
     }).compile();
 
@@ -120,21 +129,44 @@ describe('MoviesService', () => {
     const movieId = 'movie-123';
 
     it('should return mapped movie details', async () => {
-      const mockMovie = { id: movieId, title: 'Test Movie' };
+      const mockMovie = {
+        id: movieId,
+        title: 'Test Movie',
+        posterPath: 'poster.jpg',
+        trailerPath: 'trailer.mp4',
+      };
+      const mockPosterUrl = 'https://storage.example.com/poster.jpg';
+      const mockTrailerUrl = 'https://storage.example.com/trailer.mp4';
       const mappedMovie = {
         id: movieId,
         title: 'Test Movie',
+        posterUrl: mockPosterUrl,
+        trailerUrl: mockTrailerUrl,
         directors: [],
         actors: [],
       };
 
       moviesRepositoryMock.findById.mockResolvedValue(mockMovie);
+      moviesMediaServiceMock.resolvePosterUrl.mockReturnValue(mockPosterUrl);
+      moviesMediaServiceMock.resolveTrailerUrl.mockReturnValue(mockTrailerUrl);
       movieMapperMock.toMovieDetailsDto.mockReturnValue(mappedMovie);
 
       const result = await service.getMovieById(movieId);
 
       expect(moviesRepositoryMock.findById).toHaveBeenCalledWith(movieId);
-      expect(movieMapperMock.toMovieDetailsDto).toHaveBeenCalledWith(mockMovie);
+      expect(moviesMediaServiceMock.resolvePosterUrl).toHaveBeenCalledWith(
+        'poster.jpg',
+      );
+      expect(moviesMediaServiceMock.resolveTrailerUrl).toHaveBeenCalledWith(
+        'trailer.mp4',
+      );
+      expect(movieMapperMock.toMovieDetailsDto).toHaveBeenCalledWith(
+        mockMovie,
+        {
+          posterUrl: mockPosterUrl,
+          trailerUrl: mockTrailerUrl,
+        },
+      );
       expect(result).toEqual(mappedMovie);
     });
 
@@ -144,6 +176,52 @@ describe('MoviesService', () => {
       await expect(service.getMovieById(movieId)).rejects.toThrow(
         NotFoundException,
       );
+    });
+  });
+
+  describe('getMovieVideo', () => {
+    const movieId = 'movie-123';
+
+    it('should return signed video URL', async () => {
+      const videoPath = 'movies/movie-123/video.mp4';
+      const signedUrl = 'https://storage.example.com/signed-video-url';
+
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      moviesRepositoryMock.getVideoPathById.mockResolvedValue(videoPath);
+      moviesMediaServiceMock.resolveVideoUrl.mockResolvedValue(signedUrl);
+
+      const result = await service.getMovieVideo(movieId);
+
+      expect(moviesRepositoryMock.existsBy).toHaveBeenCalledWith({
+        id: movieId,
+      });
+      expect(moviesRepositoryMock.getVideoPathById).toHaveBeenCalledWith(
+        movieId,
+      );
+      expect(moviesMediaServiceMock.resolveVideoUrl).toHaveBeenCalledWith(
+        videoPath,
+      );
+      expect(result).toEqual({ videoUrl: signedUrl });
+    });
+
+    it('should return null when video path is null', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      moviesRepositoryMock.getVideoPathById.mockResolvedValue(null);
+      moviesMediaServiceMock.resolveVideoUrl.mockResolvedValue(null);
+
+      const result = await service.getMovieVideo(movieId);
+
+      expect(result).toEqual({ videoUrl: null });
+    });
+
+    it('should throw NotFoundException if movie not found', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(false);
+
+      await expect(service.getMovieVideo(movieId)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(moviesRepositoryMock.getVideoPathById).not.toHaveBeenCalled();
     });
   });
 

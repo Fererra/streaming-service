@@ -71,13 +71,20 @@ describe('MovieMapper', () => {
   };
 
   describe('toMovieDetailsDto', () => {
+    const defaultMedia = {
+      posterUrl: 'https://example.com/poster.jpg',
+      trailerUrl: null,
+    };
+
     it('should map movie entity to details DTO', () => {
       const movie = createMockMovie();
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.id).toBe('movie-1');
       expect(result.title).toBe('Test Movie');
+      expect(result.posterUrl).toBe('https://example.com/poster.jpg');
+      expect(result.trailerUrl).toBeNull();
       expect(result.releaseYear).toBe(2024);
       expect(result.ageRating).toBe(AgeRating.PG_13);
       expect(result.durationMinutes).toBe(120);
@@ -113,7 +120,7 @@ describe('MovieMapper', () => {
         ],
       });
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.directors).toHaveLength(1);
       expect(result.directors[0]).toEqual({
@@ -153,7 +160,7 @@ describe('MovieMapper', () => {
         ],
       });
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.directors).toHaveLength(2);
     });
@@ -170,7 +177,7 @@ describe('MovieMapper', () => {
 
       const movie = createMockMovie({ credits });
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.actors).toHaveLength(20);
     });
@@ -199,7 +206,7 @@ describe('MovieMapper', () => {
         ],
       });
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.actors[0].name).toContain('First');
       expect(result.actors[1].name).toContain('Second');
@@ -215,7 +222,7 @@ describe('MovieMapper', () => {
         ],
       });
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.directors).toHaveLength(0);
       expect(result.actors).toHaveLength(1);
@@ -224,7 +231,7 @@ describe('MovieMapper', () => {
     it('should return empty arrays for no credits', () => {
       const movie = createMockMovie({ credits: [] });
 
-      const result = mapper.toMovieDetailsDto(movie);
+      const result = mapper.toMovieDetailsDto(movie, defaultMedia);
 
       expect(result.directors).toEqual([]);
       expect(result.actors).toEqual([]);

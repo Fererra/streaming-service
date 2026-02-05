@@ -11,6 +11,7 @@ describe('MoviesController', () => {
     findAll: jest.fn(),
     searchMovies: jest.fn(),
     getMovieById: jest.fn(),
+    getMovieVideo: jest.fn(),
   };
 
   const movieCreditsServiceMock = {
@@ -94,6 +95,27 @@ describe('MoviesController', () => {
 
       expect(moviesServiceMock.getMovieById).toHaveBeenCalledWith('movie-1');
       expect(result).toEqual(mockMovie);
+    });
+  });
+
+  describe('getMovieVideo', () => {
+    it('should return signed video URL', async () => {
+      const signedUrl = 'https://storage.example.com/signed-video-url';
+      moviesServiceMock.getMovieVideo.mockResolvedValue(signedUrl);
+
+      const result = await controller.getMovieVideo('movie-1');
+
+      expect(moviesServiceMock.getMovieVideo).toHaveBeenCalledWith('movie-1');
+      expect(result).toBe(signedUrl);
+    });
+
+    it('should return null when no video available', async () => {
+      moviesServiceMock.getMovieVideo.mockResolvedValue(null);
+
+      const result = await controller.getMovieVideo('movie-1');
+
+      expect(moviesServiceMock.getMovieVideo).toHaveBeenCalledWith('movie-1');
+      expect(result).toBeNull();
     });
   });
 

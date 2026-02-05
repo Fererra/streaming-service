@@ -516,4 +516,92 @@ describe('MoviesMediaService', () => {
       expect(moviesRepositoryMock.swapVideoPath).not.toHaveBeenCalled();
     });
   });
+
+  describe('resolvePosterUrl', () => {
+    it('should return public URL for poster path', () => {
+      const posterPath = 'posters/movie-poster.jpg';
+      const expectedUrl =
+        'https://storage.example.com/posters/movie-poster.jpg';
+
+      storageMock.getPublicUrl = jest.fn().mockReturnValue(expectedUrl);
+
+      const result = service.resolvePosterUrl(posterPath);
+
+      expect(storageMock.getPublicUrl).toHaveBeenCalledWith(posterPath);
+      expect(result).toBe(expectedUrl);
+    });
+
+    it('should return default poster URL when posterPath is null', () => {
+      const defaultUrl =
+        'https://storage.example.com/defaults/movie-poster-default.png';
+
+      storageMock.getPublicUrl = jest.fn().mockReturnValue(defaultUrl);
+
+      const result = service.resolvePosterUrl(null);
+
+      expect(storageMock.getPublicUrl).toHaveBeenCalledWith(
+        'defaults/movie-poster-default.png',
+      );
+      expect(result).toBe(defaultUrl);
+    });
+
+    it('should return default poster URL when posterPath is undefined', () => {
+      const defaultUrl =
+        'https://storage.example.com/defaults/movie-poster-default.png';
+
+      storageMock.getPublicUrl = jest.fn().mockReturnValue(defaultUrl);
+
+      const result = service.resolvePosterUrl(undefined);
+
+      expect(storageMock.getPublicUrl).toHaveBeenCalledWith(
+        'defaults/movie-poster-default.png',
+      );
+      expect(result).toBe(defaultUrl);
+    });
+  });
+
+  describe('resolveTrailerUrl', () => {
+    it('should return public URL for trailer path', () => {
+      const trailerPath = 'movies/movie-123/trailer.mp4';
+      const expectedUrl =
+        'https://storage.example.com/movies/movie-123/trailer.mp4';
+
+      storageMock.getPublicUrl = jest.fn().mockReturnValue(expectedUrl);
+
+      const result = service.resolveTrailerUrl(trailerPath);
+
+      expect(storageMock.getPublicUrl).toHaveBeenCalledWith(trailerPath);
+      expect(result).toBe(expectedUrl);
+    });
+
+    it('should return null when trailerPath is null', () => {
+      const result = service.resolveTrailerUrl(null);
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('resolveVideoUrl', () => {
+    it('should return signed URL for video path', async () => {
+      const videoPath = 'movies/movie-123/video.mp4';
+      const expectedUrl = 'https://storage.example.com/signed-video-url';
+      const expectedExpiresMs = 4 * 60 * 60 * 1000;
+
+      storageMock.getSignedUrl = jest.fn().mockResolvedValue(expectedUrl);
+
+      const result = await service.resolveVideoUrl(videoPath);
+
+      expect(storageMock.getSignedUrl).toHaveBeenCalledWith(
+        videoPath,
+        expectedExpiresMs,
+      );
+      expect(result).toBe(expectedUrl);
+    });
+
+    it('should return null when videoPath is null', async () => {
+      const result = await service.resolveVideoUrl(null);
+
+      expect(result).toBeNull();
+    });
+  });
 });
