@@ -248,4 +248,192 @@ describe('MoviesMediaService (integration)', () => {
       expect(rejected.length).toBe(1);
     });
   });
+
+  describe('uploadTrailer', () => {
+    it('creates upload intent and returns signed URL', async () => {
+      const movie = await createMovie();
+
+      const result = await moviesMediaService.uploadTrailer(
+        movie.id,
+        'video/mp4',
+      );
+
+      expect(result.uploadUrl).toBe('https://signed-url');
+      expect(result.storageKey).toContain('movies/');
+      expect(result.storageKey).toContain('/trailer.mp4');
+
+      const intentRepo = dataSource.getRepository(UploadIntentEntity);
+      const intent = await intentRepo.findOneBy({
+        entityId: movie.id,
+        entityType: 'movie_trailer',
+      });
+
+      expect(intent).toBeDefined();
+      expect(intent!.status).toBe(IntentStatus.PENDING);
+      expect(intent!.storageKey).toBe(result.storageKey);
+    });
+
+    it('throws NotFoundException for non-existent movie', async () => {
+      await expect(
+        moviesMediaService.uploadTrailer(
+          '00000000-0000-0000-0000-000000000000',
+          'video/mp4',
+        ),
+      ).rejects.toThrow('Movie not found');
+    });
+  });
+
+  describe('confirmTrailer', () => {
+    it('confirms trailer upload and updates movie', async () => {
+      const movie = await createMovie();
+
+      const { storageKey } = await moviesMediaService.uploadTrailer(
+        movie.id,
+        'video/mp4',
+      );
+
+      await moviesMediaService.confirmTrailer(movie.id, storageKey);
+
+      const updatedMovie = await dataSource
+        .getRepository(MovieEntity)
+        .findOneBy({ id: movie.id });
+
+      expect(updatedMovie!.trailerPath).toBe(storageKey);
+
+      const intent = await dataSource
+        .getRepository(UploadIntentEntity)
+        .findOneBy({ entityId: movie.id, entityType: 'movie_trailer' });
+
+      expect(intent!.status).toBe(IntentStatus.COMPLETED);
+    });
+
+    it('deletes old trailer when updating to new one', async () => {
+      const oldTrailerPath = 'movies/old-movie/trailer.mp4';
+      const movie = await createMovie({ trailerPath: oldTrailerPath });
+
+      const { storageKey } = await moviesMediaService.uploadTrailer(
+        movie.id,
+        'video/mp4',
+      );
+
+      await moviesMediaService.confirmTrailer(movie.id, storageKey);
+
+      expect(storageMock.delete).toHaveBeenCalledWith(
+        oldTrailerPath,
+        expect.anything(),
+      );
+    });
+
+    it('throws BadRequestException when no valid intent exists', async () => {
+      const movie = await createMovie();
+
+      await expect(
+        moviesMediaService.confirmTrailer(movie.id, 'non-existent-key'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('uploadVideo', () => {
+    it('creates upload intent and returns signed URL', async () => {
+      const movie = await createMovie();
+
+      const result = await moviesMediaService.uploadVideo(
+        movie.id,
+        'video/mp4',
+      );
+
+      expect(result.uploadUrl).toBe('https://signed-url');
+      expect(result.storageKey).toContain('movies/');
+      expect(result.storageKey).toContain('/video.mp4');
+
+      const intentRepo = dataSource.getRepository(UploadIntentEntity);
+      const intent = await intentRepo.findOneBy({
+        entityId: movie.id,
+        entityType: 'movie_video',
+      });
+
+      expect(intent).toBeDefined();
+      expect(intent!.status).toBe(IntentStatus.PENDING);
+      expect(intent!.storageKey).toBe(result.storageKey);
+    });
+
+    it('throws NotFoundException for non-existent movie', async () => {
+      await expect(
+        moviesMediaService.uploadVideo(
+          '00000000-0000-0000-0000-000000000000',
+          'video/mp4',
+        ),
+      ).rejects.toThrow('Movie not found');
+    });
+  });
+
+  describe('confirmVideo', () => {
+    it('confirms video upload and updates movie', async () => {
+      const movie = await createMovie();
+
+      const { storageKey } = await moviesMediaService.uploadVideo(
+        movie.id,
+        'video/mp4',
+      );
+
+      await moviesMediaService.confirmVideo(movie.id, storageKey);
+
+      const updatedMovie = await dataSource
+        .getRepository(MovieEntity)
+        .findOneBy({ id: movie.id });
+
+      expect(updatedMovie!.moviePath).toBe(storageKey);
+
+      const intent = await dataSource
+        .getRepository(UploadIntentEntity)
+        .findOneBy({ entityId: movie.id, entityType: 'movie_video' });
+
+      expect(intent!.status).toBe(IntentStatus.COMPLETED);
+    });
+
+    it('deletes old video when updating to new one', async () => {
+      const oldVideoPath = 'movies/old-movie/video.mp4';
+      const movie = await createMovie({ moviePath: oldVideoPath });
+
+      const { storageKey } = await moviesMediaService.uploadVideo(
+        movie.id,
+        'video/mp4',
+      );
+
+      await moviesMediaService.confirmVideo(movie.id, storageKey);
+
+      expect(storageMock.delete).toHaveBeenCalledWith(
+        oldVideoPath,
+        expect.anything(),
+      );
+    });
+
+    it('throws BadRequestException when no valid intent exists', async () => {
+      const movie = await createMovie();
+
+      await expect(
+        moviesMediaService.confirmVideo(movie.id, 'non-existent-key'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('handles concurrent video confirmations correctly', async () => {
+      const movie = await createMovie();
+
+      const { storageKey } = await moviesMediaService.uploadVideo(
+        movie.id,
+        'video/mp4',
+      );
+
+      const results = await Promise.allSettled([
+        moviesMediaService.confirmVideo(movie.id, storageKey),
+        moviesMediaService.confirmVideo(movie.id, storageKey),
+      ]);
+
+      const fulfilled = results.filter((r) => r.status === 'fulfilled');
+      const rejected = results.filter((r) => r.status === 'rejected');
+
+      expect(fulfilled.length).toBe(1);
+      expect(rejected.length).toBe(1);
+    });
+  });
 });
