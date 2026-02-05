@@ -144,7 +144,8 @@ describe('GcsObjectStorage', () => {
   describe('getSignedUrl', () => {
     it('should return signed URL for private file', async () => {
       const storageKey = 'persons/document.pdf';
-      const url = await service.getSignedUrl(storageKey);
+      const expiresInMs = 60 * 60 * 1000;
+      const url = await service.getSignedUrl(storageKey, expiresInMs);
 
       expect(url).toBe('https://signed-url');
     });
