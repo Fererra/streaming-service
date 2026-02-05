@@ -3,6 +3,8 @@ import { MoviesController } from 'src/modules/movies/movies.controller';
 import { MoviesService } from 'src/modules/movies/services/movies.service';
 import { MoviesCreditsService } from 'src/modules/movies/services/movies-credits.service';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
+import { CanActivate, ExecutionContext } from '@nestjs/common';
+import { JwtGuard } from 'src/modules/auth/jwt.guard';
 
 describe('MoviesController', () => {
   let controller: MoviesController;
@@ -18,6 +20,10 @@ describe('MoviesController', () => {
     getMovieCredits: jest.fn(),
   };
 
+  const GuardMock: CanActivate = {
+    canActivate: jest.fn((_context: ExecutionContext) => true),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -27,7 +33,10 @@ describe('MoviesController', () => {
         { provide: MoviesService, useValue: moviesServiceMock },
         { provide: MoviesCreditsService, useValue: movieCreditsServiceMock },
       ],
-    }).compile();
+    })
+      .overrideGuard(JwtGuard)
+      .useValue(GuardMock)
+      .compile();
 
     controller = module.get<MoviesController>(MoviesController);
   });
@@ -82,7 +91,7 @@ describe('MoviesController', () => {
         id: 'movie-1',
         title: 'Test Movie',
         releaseYear: 2024,
-        ageRating: AgeRating.PG13,
+        ageRating: AgeRating.PG_13,
         durationMinutes: 120,
         genres: [],
         countries: [],

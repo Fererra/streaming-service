@@ -3,6 +3,8 @@ import {
   INestApplication,
   ConflictException,
   NotFoundException,
+  CanActivate,
+  ExecutionContext,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { MoviesService } from 'src/modules/movies/services/movies.service';
@@ -18,6 +20,7 @@ import { MovieEntity } from 'src/database/entities/movie.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import { ObjectStorage } from 'src/modules/storage/object-storage.interface';
+import { JwtGuard } from 'src/modules/auth/jwt.guard';
 
 describe('MoviesService (integration)', () => {
   let app: INestApplication;
@@ -42,10 +45,16 @@ describe('MoviesService (integration)', () => {
       .mockResolvedValue('https://storage.example.com/signed-video-url'),
   };
 
+  const GuardMock: CanActivate = {
+    canActivate: jest.fn((_context: ExecutionContext) => true),
+  };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule, MoviesModule, ReferenceModule, PersonsModule],
     })
+      .overrideGuard(JwtGuard)
+      .useValue(GuardMock)
       .overrideProvider(OBJECT_STORAGE)
       .useValue(imageStorageMock)
       .compile();

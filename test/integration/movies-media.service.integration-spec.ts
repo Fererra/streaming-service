@@ -1,8 +1,12 @@
 import { Test } from '@nestjs/testing';
-import { INestApplication, BadRequestException } from '@nestjs/common';
+import {
+  INestApplication,
+  BadRequestException,
+  CanActivate,
+  ExecutionContext,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { MoviesMediaService } from 'src/modules/movies/services/movies-media.service';
-import { MoviesModule } from 'src/modules/movies/movies.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { ReferenceModule } from 'src/modules/reference/reference.module';
 import { PersonsModule } from 'src/modules/persons/persons.module';
@@ -13,6 +17,8 @@ import { UploadIntentEntity } from 'src/database/entities/upload-intent.entity';
 import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import { IntentStatus } from 'src/modules/storage/intent-status.enum';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
+import { MoviesModule } from 'src/modules/movies/movies.module';
+import { JwtGuard } from 'src/modules/auth/jwt.guard';
 
 describe('MoviesMediaService (integration)', () => {
   let app: INestApplication;
@@ -28,10 +34,16 @@ describe('MoviesMediaService (integration)', () => {
     upload: jest.fn(),
   };
 
+  const GuardMock: CanActivate = {
+    canActivate: jest.fn((_context: ExecutionContext) => true),
+  };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule, MoviesModule, ReferenceModule, PersonsModule],
     })
+      .overrideGuard(JwtGuard)
+      .useValue(GuardMock)
       .overrideProvider(OBJECT_STORAGE)
       .useValue(storageMock)
       .compile();

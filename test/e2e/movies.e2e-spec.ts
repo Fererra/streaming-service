@@ -9,11 +9,14 @@ import { MovieEntity } from 'src/database/entities/movie.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import type { ObjectStorage } from 'src/modules/storage/object-storage.interface';
+import { UserEntity } from 'src/database/entities/user.entity';
+import { hash } from 'argon2';
 
 describe('MoviesController (e2e)', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let testMovieId: string;
+  let accessToken: string;
 
   let genre: GenreEntity;
   let country: CountryEntity;
@@ -73,6 +76,24 @@ describe('MoviesController (e2e)', () => {
       countries: [country],
     });
     testMovieId = movie.id;
+
+    const user = await dataSource.getRepository(UserEntity).save({
+      firstName: 'Movies',
+      lastName: 'E2E',
+      email: `movies.e2e+${Date.now()}@test.com`,
+      password: await hash('Password123!'),
+      dateOfBirth: '2000-01-01',
+      country: country,
+    });
+
+    const loginRes = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({
+        email: user.email,
+        password: 'Password123!',
+      });
+
+    accessToken = loginRes.body.accessToken;
   });
 
   afterAll(async () => {
@@ -171,6 +192,12 @@ describe('MoviesController (e2e)', () => {
   });
 
   describe('GET /movies/:id/video', () => {
+    it('401 when not authenticated', async () => {
+      await request(app.getHttpServer())
+        .get(`/movies/${testMovieId}/video`)
+        .expect(401);
+    });
+
     it('200 + returns signed video URL', async () => {
       await dataSource
         .getRepository(MovieEntity)
@@ -178,6 +205,7 @@ describe('MoviesController (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(`/movies/${testMovieId}/video`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
       expect(response.body).toEqual({
@@ -192,6 +220,7 @@ describe('MoviesController (e2e)', () => {
 
       const response = await request(app.getHttpServer())
         .get(`/movies/${testMovieId}/video`)
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
       expect(response.body).toEqual({ videoUrl: null });
@@ -200,12 +229,14 @@ describe('MoviesController (e2e)', () => {
     it('404 on non-existent movie', async () => {
       await request(app.getHttpServer())
         .get('/movies/00000000-0000-0000-0000-000000000000/video')
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(404);
     });
 
     it('400 on invalid UUID', async () => {
       await request(app.getHttpServer())
         .get('/movies/invalid-id/video')
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(400);
     });
   });
