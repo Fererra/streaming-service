@@ -32,6 +32,14 @@ describe('MoviesService (integration)', () => {
   const imageStorageMock: Partial<ObjectStorage> = {
     generateSignedUploadUrl: jest.fn(),
     delete: jest.fn(),
+    getPublicUrl: jest
+      .fn()
+      .mockImplementation(
+        (key: string) => `https://storage.example.com/${key}`,
+      ),
+    getSignedUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-video-url'),
   };
 
   beforeAll(async () => {
@@ -340,6 +348,40 @@ describe('MoviesService (integration)', () => {
         'Action',
         'Drama',
       ]);
+    });
+  });
+
+  describe('getMovieVideo', () => {
+    it('should return signed video URL for movie with video', async () => {
+      const movie = await moviesService.create(createMovieDto());
+
+      await dataSource
+        .getRepository(MovieEntity)
+        .update(movie.id, { moviePath: 'movies/video.mp4' });
+
+      const result = await moviesService.getMovieVideo(movie.id);
+
+      expect(result).toEqual({
+        videoUrl: 'https://storage.example.com/signed-video-url',
+      });
+      expect(imageStorageMock.getSignedUrl).toHaveBeenCalledWith(
+        'movies/video.mp4',
+        4 * 60 * 60 * 1000,
+      );
+    });
+
+    it('should return null for movie without video', async () => {
+      const movie = await moviesService.create(createMovieDto());
+
+      const result = await moviesService.getMovieVideo(movie.id);
+
+      expect(result).toEqual({ videoUrl: null });
+    });
+
+    it('should throw NotFoundException for non-existent movie', async () => {
+      await expect(
+        moviesService.getMovieVideo('00000000-0000-0000-0000-000000000000'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
