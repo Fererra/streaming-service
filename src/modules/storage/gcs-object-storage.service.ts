@@ -60,11 +60,11 @@ export class GcsObjectStorage implements ObjectStorage {
     return `https://storage.googleapis.com/${this.publicBucket.name}/${storageKey}`;
   }
 
-  async getSignedUrl(storageKey: string): Promise<string> {
+  async getSignedUrl(storageKey: string, expiresInMs: number): Promise<string> {
     const [url] = await this.privateBucket.file(storageKey).getSignedUrl({
       version: 'v4',
       action: 'read',
-      expires: new Date(Date.now() + 15 * 60 * 1000),
+      expires: new Date(Date.now() + expiresInMs),
     });
 
     return url;
