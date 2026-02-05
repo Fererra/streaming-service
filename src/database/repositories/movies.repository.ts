@@ -268,6 +268,7 @@ export class MoviesRepository implements IMoviesRepository {
       await relation.add(targetIds);
     }
   }
+
   async delete(id: string): Promise<number> {
     const result = await this.repository.softDelete(id);
     return result.affected ?? 0;
