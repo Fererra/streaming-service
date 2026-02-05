@@ -14,6 +14,7 @@ export interface IMoviesRepository {
     paginationOptions: PaginationOptions,
   ): Promise<[MovieEntity[], number]>;
   findById(id: string): Promise<MovieEntity | null>;
+  getVideoPathById(id: string): Promise<string | null>;
   save(
     movieData: Partial<MovieEntity>,
     credits: Partial<MovieCreditEntity>[],

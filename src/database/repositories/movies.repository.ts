@@ -75,7 +75,13 @@ export class MoviesRepository implements IMoviesRepository {
       .leftJoinAndSelect('credit.role', 'role')
       .where('movies.id = :id', { id })
       .select([
-        'movies',
+        'movies.id',
+        'movies.title',
+        'movies.posterPath',
+        'movies.trailerPath',
+        'movies.releaseYear',
+        'movies.ageRating',
+        'movies.durationMinutes',
         'genre.id',
         'genre.name',
         'country.code',
@@ -92,6 +98,15 @@ export class MoviesRepository implements IMoviesRepository {
         'credit.orderIndex',
       ])
       .getOne();
+  }
+
+  async getVideoPathById(id: string): Promise<string | null> {
+    const movie = await this.repository.findOne({
+      select: ['moviePath'],
+      where: { id },
+    });
+
+    return movie?.moviePath ?? null;
   }
 
   save(
