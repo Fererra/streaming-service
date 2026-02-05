@@ -53,7 +53,6 @@ describe('MoviesCreditsService (integration)', () => {
 
     country = (await dataSource.getRepository(CountryEntity).findOneBy({
       code: 'US',
-      countryName: 'United States',
     })) as CountryEntity;
 
     genre = (await dataSource.getRepository(GenreEntity).findOneBy({
