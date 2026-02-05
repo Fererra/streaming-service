@@ -25,6 +25,11 @@ export interface IMoviesRepository {
     movieId: string,
     newPosterPath: string,
   ): Promise<string | null>;
+  swapTrailerPath(
+    movieId: string,
+    newTrailerPath: string,
+  ): Promise<string | null>;
+  swapVideoPath(movieId: string, newVideoPath: string): Promise<string | null>;
   updateCountries(id: string, countryCodes: string[]): Promise<void>;
   updateGenres(id: string, genreIds: string[]): Promise<void>;
   delete(id: string): Promise<number>;

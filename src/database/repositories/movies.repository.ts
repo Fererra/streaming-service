@@ -162,6 +162,57 @@ export class MoviesRepository implements IMoviesRepository {
     });
   }
 
+  swapTrailerPath(
+    movieId: string,
+    newTrailerPath: string,
+  ): Promise<string | null> {
+    return this.repository.manager.transaction(async (manager) => {
+      const movie = await manager.findOne(MovieEntity, {
+        select: ['id', 'trailerPath'],
+        where: { id: movieId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!movie) {
+        throw new NotFoundException('Movie not found');
+      }
+
+      const oldTrailerPath = movie.trailerPath;
+
+      await manager.update(
+        MovieEntity,
+        { id: movieId },
+        { trailerPath: newTrailerPath },
+      );
+
+      return oldTrailerPath;
+    });
+  }
+
+  swapVideoPath(movieId: string, newVideoPath: string): Promise<string | null> {
+    return this.repository.manager.transaction(async (manager) => {
+      const movie = await manager.findOne(MovieEntity, {
+        select: ['id', 'moviePath'],
+        where: { id: movieId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!movie) {
+        throw new NotFoundException('Movie not found');
+      }
+
+      const oldMoviePath = movie.moviePath;
+
+      await manager.update(
+        MovieEntity,
+        { id: movieId },
+        { moviePath: newVideoPath },
+      );
+
+      return oldMoviePath;
+    });
+  }
+
   async updateCountries(id: string, countryCodes: string[]): Promise<void> {
     await this.repository.manager.transaction((manager) =>
       this.replaceManyToMany(
