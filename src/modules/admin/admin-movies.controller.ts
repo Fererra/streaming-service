@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  NotImplementedException,
   Param,
   ParseArrayPipe,
   ParseUUIDPipe,
@@ -31,6 +30,9 @@ import { CheckEmptyBodyPipe } from 'src/common/pipes/check-empty-body.pipe';
 import { MoviesCreditsService } from '../movies/services/movies-credits.service';
 import { AllowedImageContentTypesDto } from 'src/common/dto/image-content-types.dto';
 import { ConfirmPosterDto } from '../movies/dto/confirm-poster.dto';
+import { AllowedVideoContentTypesDto } from 'src/common/dto/video-content-types.dto';
+import { ConfirmTrailerDto } from '../movies/dto/confirm-trailer.dto';
+import { ConfirmVideoDto } from '../movies/dto/confirm-video.dto';
 
 @Controller('movies')
 @UseGuards(JwtGuard, RolesGuard)
@@ -70,14 +72,40 @@ export class AdminMoviesController {
     return { message: 'Movie poster updated successfully' };
   }
 
-  @Patch(':id/trailer')
-  async updateMovieTrailer() {
-    throw new NotImplementedException();
+  @Patch(':id/trailer/upload-intent')
+  async updateMovieTrailer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() { contentType }: AllowedVideoContentTypesDto,
+  ) {
+    return this.moviesMediaService.uploadTrailer(id, contentType);
   }
 
-  @Patch(':id/video')
-  async updateMovieVideo() {
-    throw new NotImplementedException();
+  @Post(':id/trailer/confirm')
+  async confirmTrailer(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() { storageKey }: ConfirmTrailerDto,
+  ) {
+    await this.moviesMediaService.confirmTrailer(id, storageKey);
+
+    return { message: 'Movie trailer updated successfully' };
+  }
+
+  @Patch(':id/video/upload-intent')
+  async updateMovieVideo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() { contentType }: AllowedVideoContentTypesDto,
+  ) {
+    return this.moviesMediaService.uploadVideo(id, contentType);
+  }
+
+  @Post(':id/video/confirm')
+  async confirmVideo(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() { storageKey }: ConfirmVideoDto,
+  ) {
+    await this.moviesMediaService.confirmVideo(id, storageKey);
+
+    return { message: 'Movie video updated successfully' };
   }
 
   @Patch(':id')
