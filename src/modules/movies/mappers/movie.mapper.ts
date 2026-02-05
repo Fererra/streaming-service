@@ -18,7 +18,10 @@ export class MovieMapper {
     ACTOR: 20,
   };
 
-  toMovieDetailsDto(movie: MovieEntity): MovieDetailsDto {
+  toMovieDetailsDto(
+    movie: MovieEntity,
+    media: { posterUrl: string; trailerUrl: string | null },
+  ): MovieDetailsDto {
     const groupedCredits = this.groupCreditsByRole(
       movie.credits,
       MovieMapper.ROLE_LIMITS,
@@ -27,6 +30,8 @@ export class MovieMapper {
     return {
       id: movie.id,
       title: movie.title,
+      posterUrl: media.posterUrl,
+      trailerUrl: media.trailerUrl,
       releaseYear: movie.releaseYear,
       ageRating: movie.ageRating,
       durationMinutes: movie.durationMinutes,

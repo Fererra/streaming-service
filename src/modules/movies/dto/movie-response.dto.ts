@@ -10,6 +10,8 @@ export class PersonRolePreviewDto {
 export class MovieDetailsDto {
   id: string;
   title: string;
+  posterUrl: string;
+  trailerUrl: string | null;
   releaseYear: number;
   ageRating: AgeRating;
   durationMinutes: number;
