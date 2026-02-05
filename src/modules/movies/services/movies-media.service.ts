@@ -16,6 +16,8 @@ import { randomUUID } from 'crypto';
 import type { IUploadIntentsRepository } from 'src/database/repositories/interfaces/upload-intents-repository.interface';
 import { IntentStatus } from 'src/modules/storage/intent-status.enum';
 
+const DEFAULT_POSTER_KEY = 'defaults/movie-poster-default.png';
+
 type MediaType = 'poster' | 'trailer' | 'video';
 
 interface MediaConfig {
@@ -173,6 +175,27 @@ export class MoviesMediaService {
 
   async confirmVideo(movieId: string, storageKey: string): Promise<void> {
     return this.confirmUpload(movieId, storageKey, 'video');
+  }
+
+  resolvePosterUrl(posterPath?: string | null) {
+    const key = posterPath ?? DEFAULT_POSTER_KEY;
+    return this.storage.getPublicUrl(key);
+  }
+
+  resolveTrailerUrl(trailerPath: string | null) {
+    if (!trailerPath) {
+      return null;
+    }
+
+    return this.storage.getPublicUrl(trailerPath);
+  }
+
+  resolveVideoUrl(videoPath: string | null) {
+    if (!videoPath) {
+      return null;
+    }
+
+    return this.storage.getSignedUrl(videoPath, 4 * 60 * 60 * 1000);
   }
 
   private extractExtension(contentType: string): string {

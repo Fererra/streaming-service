@@ -27,6 +27,11 @@ export class MoviesController {
     return this.moviesService.getMovieById(id);
   }
 
+  @Get(':id/video')
+  getMovieVideo(@Param('id', ParseUUIDPipe) id: string) {
+    return this.moviesService.getMovieVideo(id);
+  }
+
   @Get(':id/credits')
   getMovieCredits(@Param('id', ParseUUIDPipe) id: string) {
     return this.movieCreditsService.getMovieCredits(id);

@@ -17,6 +17,7 @@ import { PaginationOptions } from 'src/common/@types/pagination.types';
 import { MovieDetailsDto } from '../dto/movie-response.dto';
 import { MovieMapper } from '../mappers/movie.mapper';
 import { CreditEntityFactory } from '../factories/credit-entity.factory';
+import { MoviesMediaService } from './movies-media.service';
 
 @Injectable()
 export class MoviesService {
@@ -29,6 +30,7 @@ export class MoviesService {
     private readonly personsService: PersonsService,
     private readonly movieMapper: MovieMapper,
     private readonly creditEntityFactory: CreditEntityFactory,
+    private readonly moviesMediaService: MoviesMediaService,
   ) {}
 
   async findAll(paginationOptions: PaginationOptions) {
@@ -54,7 +56,26 @@ export class MoviesService {
       throw new NotFoundException('Movie does not exist.');
     }
 
-    return this.movieMapper.toMovieDetailsDto(movie);
+    const posterUrl = this.moviesMediaService.resolvePosterUrl(
+      movie.posterPath,
+    );
+    const trailerUrl = this.moviesMediaService.resolveTrailerUrl(
+      movie.trailerPath,
+    );
+
+    return this.movieMapper.toMovieDetailsDto(movie, {
+      posterUrl,
+      trailerUrl,
+    });
+  }
+
+  async getMovieVideo(id: string) {
+    await this.checkMovieExists(id);
+
+    const videoPath = await this.moviesRepository.getVideoPathById(id);
+    const videoUrl = await this.moviesMediaService.resolveVideoUrl(videoPath);
+
+    return { videoUrl };
   }
 
   async create(createMovieDto: CreateMovieDto) {
