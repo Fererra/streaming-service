@@ -1,6 +1,6 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { BaseJwtGuard } from 'src/modules/auth/base-jwt.guard';
-import { UsersService } from 'src/modules/users/users.service';
+import { UsersService } from 'src/modules/users/services/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 

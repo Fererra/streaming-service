@@ -6,31 +6,22 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { UserEntity } from 'src/database/entities/user.entity';
-import type { AuthUser } from '../auth/types/auth-user.type';
+import type { AuthUser } from '../../auth/types/auth-user.type';
 import type { IUsersRepository } from 'src/database/repositories/interfaces/users-repository.interface';
 import { USERS_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 import type {
   PaginationOptions,
   PaginationResponse,
 } from 'src/common/@types/pagination.types';
-import { UserRole } from './user-role.enum';
+import { UserRole } from '../user-role.enum';
 import { buildPaginationResponse } from 'src/common/utils/pagination.util';
-import { UserDto } from './dto/user.dto';
-import type {
-  ImageStorage,
-  InputOptions,
-} from '../storage/image-storage.interface';
-import { IMAGE_STORAGE } from '../storage/storage.token';
-import { ImageStoragePath } from '../storage/storage-path.enum';
-import { extension } from 'mime-types';
+import { UserDto } from '../dto/user.dto';
 
 @Injectable()
 export class UsersService {
   constructor(
     @Inject(USERS_REPOSITORY)
     private readonly usersRepository: IUsersRepository,
-    @Inject(IMAGE_STORAGE)
-    private readonly imageStorage: ImageStorage,
   ) {}
 
   findByEmail(email: string): Promise<UserEntity | null> {
@@ -55,27 +46,6 @@ export class UsersService {
 
   createUser(data: Partial<UserEntity>): Promise<UserEntity> {
     return this.usersRepository.createUser(data);
-  }
-
-  async updateAvatar(userId: string, avatar: InputOptions): Promise<void> {
-    const userAvatar = await this.usersRepository.getAvatarPath(userId);
-
-    const { storageKey } = await this.imageStorage.upload(avatar, {
-      path: ImageStoragePath.USER_AVATARS,
-      extension: extension(avatar.contentType) || 'bin',
-      isPublic: false,
-    });
-
-    try {
-      await this.usersRepository.update(userId, { avatarPath: storageKey });
-
-      if (userAvatar) {
-        await this.imageStorage.delete(userAvatar, false);
-      }
-    } catch (error) {
-      await this.imageStorage.delete(storageKey, false);
-      throw error;
-    }
   }
 
   async resolveAuthUser(userId: string): Promise<AuthUser> {

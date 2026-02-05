@@ -3,28 +3,31 @@ import {
   Controller,
   Delete,
   Param,
-  ParseFilePipe,
   ParseUUIDPipe,
   Patch,
   Post,
-  UploadedFile,
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/user-role.enum';
 import { JwtGuard } from '../auth/jwt.guard';
 import { RolesGuard } from '../auth/roles.guard';
-import { PersonsService } from '../persons/persons.service';
+import { PersonsService } from '../persons/services/persons.service';
 import { CreatePersonDto } from '../persons/dto/create-person.dto';
 import { UpdatePersonDto } from '../persons/dto/update-person.dto';
-import { ApiImageFile } from 'src/common/decorators/image-upload.decorator';
 import { CheckEmptyBodyPipe } from 'src/common/pipes/check-empty-body.pipe';
+import { PersonsMediaService } from '../persons/services/persons-media.service';
+import { AllowedImageContentTypesDto } from 'src/common/dto/image-content-types.dto';
+import { ConfirmPhotoDto } from '../persons/dto/confirm-photo.dto';
 
 @Controller('persons')
 @UseGuards(JwtGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
 export class AdminPersonsController {
-  constructor(private readonly personsService: PersonsService) {}
+  constructor(
+    private readonly personsService: PersonsService,
+    private readonly personsMediaService: PersonsMediaService,
+  ) {}
 
   @Post()
   async createPerson(@Body() createPersonDto: CreatePersonDto) {
@@ -48,21 +51,22 @@ export class AdminPersonsController {
     };
   }
 
-  @Patch(':id/photo')
-  @ApiImageFile()
+  @Patch(':id/photo/upload-intent')
   async updatePersonPhoto(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile(new ParseFilePipe({ fileIsRequired: true }))
-    photo: Express.Multer.File,
+    @Body() { contentType }: AllowedImageContentTypesDto,
   ) {
-    await this.personsService.updatePhoto(id, {
-      buffer: photo.buffer,
-      contentType: photo.mimetype,
-    });
+    return this.personsMediaService.updatePhoto(id, contentType);
+  }
 
-    return {
-      message: 'Person photo updated successfully',
-    };
+  @Post(':id/photo/confirm')
+  async confirmPhoto(
+    @Param('id', ParseUUIDPipe) personId: string,
+    @Body() { storageKey }: ConfirmPhotoDto,
+  ) {
+    await this.personsMediaService.confirmPhoto(personId, storageKey);
+
+    return { message: 'Photo updated successfully' };
   }
 
   @Delete(':id')

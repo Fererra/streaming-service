@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from 'src/modules/auth/auth.service';
-import { UsersService } from 'src/modules/users/users.service';
+import { UsersService } from 'src/modules/users/services/users.service';
 import { TokenService } from 'src/modules/token/token.service';
 import { ConflictException, ForbiddenException } from '@nestjs/common';
 import type { SignUpDto } from 'src/modules/auth/dto/sign-up.dto';

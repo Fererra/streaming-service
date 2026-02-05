@@ -16,13 +16,15 @@ import { RolesGuard } from '../auth/roles.guard';
 import { UserSearchQueryDto } from '../users/dto/user-search-query.dto';
 import { PaginationResponse } from 'src/common/@types/pagination.types';
 import { UserDto } from '../users/dto/user.dto';
-import { UsersService } from '../users/users.service';
+import { UsersService } from '../users/services/users.service';
 
 @Controller('users')
 @UseGuards(JwtGuard, RolesGuard)
 export class AdminUsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // /users?page=&limit=&
+  // /users/search?q=&page=&limit=&
   @Get()
   @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   searchUsers(

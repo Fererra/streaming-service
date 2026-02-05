@@ -15,6 +15,7 @@ export interface IUsersRepository {
   existsById(userId: string): Promise<boolean>;
   getAvatarPath(userId: string): Promise<string | null>;
   update(userId: string, data: Partial<UserEntity>): Promise<void>;
+  swapAvatarPath(userId: string, newAvatarPath: string): Promise<string | null>;
   createUser(data: Partial<UserEntity>): Promise<UserEntity>;
   resolveAuthUser(userId: string): Promise<AuthUser | null>;
   promoteToAdmin(userId: string): Promise<void>;

@@ -4,9 +4,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { CountryEntity } from './country.entity';
+import { MovieCreditEntity } from './movie-credit.entity';
 
 @Entity('persons')
 export class PersonEntity {
@@ -34,4 +36,7 @@ export class PersonEntity {
   })
   @JoinColumn({ name: 'country_code' })
   country: CountryEntity;
+
+  @OneToMany(() => MovieCreditEntity, (credit) => credit.person)
+  movieCredits: MovieCreditEntity[];
 }

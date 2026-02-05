@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { GcsImageService } from './gcs-image.service';
-import { IMAGE_STORAGE } from './storage.token';
+import { GcsObjectStorage } from './gcs-object-storage.service';
+import { OBJECT_STORAGE } from './storage.token';
 
 @Module({
-  providers: [{ provide: IMAGE_STORAGE, useClass: GcsImageService }],
-  exports: [IMAGE_STORAGE],
+  providers: [{ provide: OBJECT_STORAGE, useClass: GcsObjectStorage }],
+  exports: [OBJECT_STORAGE],
 })
 export class StorageModule {}

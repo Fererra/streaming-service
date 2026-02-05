@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { COUNTRY_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
-import { CountryService } from 'src/modules/country/country.service';
+import { CountryService } from 'src/modules/reference/country/country.service';
 
 describe('CountryService', () => {
   let service: CountryService;

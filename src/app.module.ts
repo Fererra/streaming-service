@@ -1,12 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
-import { CountryModule } from './modules/country/country.module';
 import { TasksModule } from './modules/tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AdminModule } from './modules/admin/admin.module';
 import { RouterModule } from '@nestjs/core';
+import { ReferenceModule } from './modules/reference/reference.module';
 import { PersonsModule } from './modules/persons/persons.module';
+import { MoviesModule } from './modules/movies/movies.module';
 
 @Module({
   imports: [
@@ -16,11 +17,12 @@ import { PersonsModule } from './modules/persons/persons.module';
     }),
     ScheduleModule.forRoot(),
     AuthModule,
-    CountryModule,
     TasksModule,
     AdminModule,
     RouterModule.register([{ path: 'admin', module: AdminModule }]),
+    ReferenceModule,
     PersonsModule,
+    MoviesModule,
   ],
 })
 export class AppModule {}

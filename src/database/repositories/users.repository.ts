@@ -9,6 +9,7 @@ import type {
   RepositoryPaginatedResult,
 } from 'src/common/@types/pagination.types';
 import { isUUID } from 'class-validator';
+import { NotFoundException } from '@nestjs/common';
 
 export class UsersRepository implements IUsersRepository {
   constructor(
@@ -73,6 +74,33 @@ export class UsersRepository implements IUsersRepository {
 
   async update(id: string, data: Partial<UserEntity>): Promise<void> {
     await this.repository.update({ id }, data);
+  }
+
+  async swapAvatarPath(
+    userId: string,
+    newAvatarPath: string,
+  ): Promise<string | null> {
+    return this.repository.manager.transaction(async (manager) => {
+      const user = await manager.findOne(UserEntity, {
+        select: ['id', 'avatarPath'],
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      const oldAvatarPath = user.avatarPath;
+
+      await manager.update(
+        UserEntity,
+        { id: userId },
+        { avatarPath: newAvatarPath },
+      );
+
+      return oldAvatarPath;
+    });
   }
 
   resolveAuthUser(userId: string): Promise<AuthUser | null> {

@@ -36,6 +36,11 @@ describe('AuthService (integration)', () => {
     authService = app.get(AuthService);
     dataSource = app.get(DataSource);
 
+    await dataSource.query('TRUNCATE TABLE users RESTART IDENTITY CASCADE');
+    await dataSource.query(
+      'TRUNCATE TABLE refresh_tokens RESTART IDENTITY CASCADE',
+    );
+
     const countryRepo = dataSource.getRepository(CountryEntity);
     country = countryRepo.create({ code: 'US', countryName: 'United States' });
     await countryRepo.save(country);
@@ -60,7 +65,7 @@ describe('AuthService (integration)', () => {
         firstName: 'Test',
         lastName: 'User',
         password: 'password123',
-        dateOfBirth: '2000-01-01',
+        dateOfBirth: new Date('2000-01-01'),
         country: 'US',
       });
 
@@ -79,7 +84,7 @@ describe('AuthService (integration)', () => {
         firstName: 'Test',
         lastName: 'User',
         password: 'password123',
-        dateOfBirth: '2000-01-01',
+        dateOfBirth: new Date('2000-01-01'),
         country: 'US',
       });
 
@@ -89,7 +94,7 @@ describe('AuthService (integration)', () => {
           firstName: 'Another',
           lastName: 'User',
           password: 'password456',
-          dateOfBirth: '1990-01-01',
+          dateOfBirth: new Date('1990-01-01'),
           country: 'US',
         }),
       ).rejects.toBeInstanceOf(ConflictException);
@@ -106,7 +111,7 @@ describe('AuthService (integration)', () => {
         lastName: 'User',
         email: 'login@mail.com',
         password: hashedPassword,
-        dateOfBirth: '2000-01-01',
+        dateOfBirth: new Date('2000-01-01'),
         country: { code: 'US' },
       });
 
@@ -133,7 +138,7 @@ describe('AuthService (integration)', () => {
         firstName: 'Login',
         lastName: 'User',
         password: 'correctpassword',
-        dateOfBirth: '2000-01-01',
+        dateOfBirth: new Date('2000-01-01'),
         country: 'US',
       });
 
@@ -153,7 +158,7 @@ describe('AuthService (integration)', () => {
         firstName: 'Rotate',
         lastName: 'User',
         password: 'password123',
-        dateOfBirth: '2000-01-01',
+        dateOfBirth: new Date('2000-01-01'),
         country: 'US',
       });
 
@@ -175,7 +180,7 @@ describe('AuthService (integration)', () => {
         firstName: 'Logout',
         lastName: 'User',
         password: 'password123',
-        dateOfBirth: '2000-01-01',
+        dateOfBirth: new Date('2000-01-01'),
         country: 'US',
       });
 
