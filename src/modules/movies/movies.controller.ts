@@ -1,8 +1,16 @@
-import { Controller, Get, Param, ParseUUIDPipe, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { MoviesService } from './services/movies.service';
 import { MovieSearchQueryDto } from './dto/movie-search-query.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { MoviesCreditsService } from './services/movies-credits.service';
+import { JwtGuard } from '../auth/jwt.guard';
 
 @Controller('movies')
 export class MoviesController {
@@ -27,6 +35,7 @@ export class MoviesController {
     return this.moviesService.getMovieById(id);
   }
 
+  @UseGuards(JwtGuard)
   @Get(':id/video')
   getMovieVideo(@Param('id', ParseUUIDPipe) id: string) {
     return this.moviesService.getMovieVideo(id);

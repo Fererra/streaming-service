@@ -9,9 +9,16 @@ import { StorageModule } from '../storage/storage.module';
 import { MoviesCreditsService } from './services/movies-credits.service';
 import { MovieMapper } from './mappers/movie.mapper';
 import { CreditEntityFactory } from './factories/credit-entity.factory';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [DatabaseModule, StorageModule, PersonsModule, ReferenceModule],
+  imports: [
+    DatabaseModule,
+    StorageModule,
+    PersonsModule,
+    ReferenceModule,
+    UsersModule,
+  ],
   controllers: [MoviesController],
   providers: [
     MoviesService,
