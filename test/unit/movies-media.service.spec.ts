@@ -15,6 +15,8 @@ describe('MoviesMediaService', () => {
   const moviesRepositoryMock = {
     existsBy: jest.fn(),
     swapPosterPath: jest.fn(),
+    swapTrailerPath: jest.fn(),
+    swapVideoPath: jest.fn(),
   };
 
   const storageMock = {
@@ -236,6 +238,282 @@ describe('MoviesMediaService', () => {
         mockIntent.id,
         IntentStatus.PENDING,
       );
+    });
+  });
+
+  describe('uploadTrailer', () => {
+    const movieId = 'movie-123';
+    const contentType = 'video/mp4';
+
+    it('should generate signed upload URL for existing movie', async () => {
+      const expectedUploadUrl = 'https://storage.example.com/signed-url';
+
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      intentsMock.createUploadIntent.mockResolvedValue({ id: 'intent-1' });
+      storageMock.generateSignedUploadUrl.mockResolvedValue(expectedUploadUrl);
+
+      const result = await service.uploadTrailer(movieId, contentType);
+
+      expect(moviesRepositoryMock.existsBy).toHaveBeenCalledWith({
+        id: movieId,
+      });
+      expect(intentsMock.createUploadIntent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: 'movie_trailer',
+          entityId: movieId,
+          contentType,
+        }),
+      );
+      expect(storageMock.generateSignedUploadUrl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bucket: BucketType.PUBLIC,
+          contentType,
+        }),
+      );
+      expect(result.uploadUrl).toBe(expectedUploadUrl);
+      expect(result.storageKey).toContain('trailer.mp4');
+    });
+
+    it('should throw NotFoundException if movie does not exist', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(false);
+
+      await expect(service.uploadTrailer(movieId, contentType)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(intentsMock.createUploadIntent).not.toHaveBeenCalled();
+      expect(storageMock.generateSignedUploadUrl).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for invalid content type', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+
+      await expect(
+        service.uploadTrailer(movieId, 'invalid/type'),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('should handle webm content type', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      intentsMock.createUploadIntent.mockResolvedValue({ id: 'intent-1' });
+      storageMock.generateSignedUploadUrl.mockResolvedValue('https://url');
+
+      const result = await service.uploadTrailer(movieId, 'video/webm');
+
+      expect(result.storageKey).toContain('trailer.webm');
+    });
+  });
+
+  describe('confirmTrailer', () => {
+    const movieId = 'movie-123';
+    const storageKey = 'movies/movie-123/trailer.mp4';
+    const mockIntent = {
+      id: 'intent-1',
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    };
+
+    it('should confirm trailer when intent is valid', async () => {
+      intentsMock.consumeIntent.mockResolvedValue(mockIntent);
+      storageMock.exists.mockResolvedValue(true);
+      moviesRepositoryMock.swapTrailerPath.mockResolvedValue(null);
+      intentsMock.updateStatus.mockResolvedValue(undefined);
+
+      await service.confirmTrailer(movieId, storageKey);
+
+      expect(intentsMock.consumeIntent).toHaveBeenCalledWith(
+        'movie_trailer',
+        movieId,
+        storageKey,
+        IntentStatus.IN_PROGRESS,
+      );
+      expect(storageMock.exists).toHaveBeenCalledWith(
+        storageKey,
+        BucketType.PUBLIC,
+      );
+      expect(moviesRepositoryMock.swapTrailerPath).toHaveBeenCalledWith(
+        movieId,
+        storageKey,
+      );
+      expect(intentsMock.updateStatus).toHaveBeenCalledWith(
+        mockIntent.id,
+        IntentStatus.COMPLETED,
+      );
+    });
+
+    it('should delete old trailer when it exists', async () => {
+      const oldTrailerKey = 'movies/movie-123/old-trailer.mp4';
+
+      intentsMock.consumeIntent.mockResolvedValue(mockIntent);
+      storageMock.exists.mockResolvedValue(true);
+      moviesRepositoryMock.swapTrailerPath.mockResolvedValue(oldTrailerKey);
+      intentsMock.updateStatus.mockResolvedValue(undefined);
+      storageMock.delete.mockResolvedValue(undefined);
+
+      await service.confirmTrailer(movieId, storageKey);
+
+      expect(storageMock.delete).toHaveBeenCalledWith(
+        oldTrailerKey,
+        BucketType.PUBLIC,
+      );
+    });
+
+    it('should throw BadRequestException when no valid intent found', async () => {
+      intentsMock.consumeIntent.mockResolvedValue(null);
+
+      await expect(service.confirmTrailer(movieId, storageKey)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(moviesRepositoryMock.swapTrailerPath).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when file not found in storage', async () => {
+      intentsMock.consumeIntent.mockResolvedValue(mockIntent);
+      storageMock.exists.mockResolvedValue(false);
+      intentsMock.updateStatus.mockResolvedValue(undefined);
+
+      await expect(service.confirmTrailer(movieId, storageKey)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(intentsMock.updateStatus).toHaveBeenCalledWith(
+        mockIntent.id,
+        IntentStatus.FAILED,
+      );
+      expect(moviesRepositoryMock.swapTrailerPath).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('uploadVideo', () => {
+    const movieId = 'movie-123';
+    const contentType = 'video/mp4';
+
+    it('should generate signed upload URL for existing movie with private bucket', async () => {
+      const expectedUploadUrl = 'https://storage.example.com/signed-url';
+
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+      intentsMock.createUploadIntent.mockResolvedValue({ id: 'intent-1' });
+      storageMock.generateSignedUploadUrl.mockResolvedValue(expectedUploadUrl);
+
+      const result = await service.uploadVideo(movieId, contentType);
+
+      expect(moviesRepositoryMock.existsBy).toHaveBeenCalledWith({
+        id: movieId,
+      });
+      expect(intentsMock.createUploadIntent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          entityType: 'movie_video',
+          entityId: movieId,
+          contentType,
+        }),
+      );
+      expect(storageMock.generateSignedUploadUrl).toHaveBeenCalledWith(
+        expect.objectContaining({
+          bucket: BucketType.PRIVATE,
+          contentType,
+        }),
+      );
+      expect(result.uploadUrl).toBe(expectedUploadUrl);
+      expect(result.storageKey).toContain('video.mp4');
+    });
+
+    it('should throw NotFoundException if movie does not exist', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(false);
+
+      await expect(service.uploadVideo(movieId, contentType)).rejects.toThrow(
+        NotFoundException,
+      );
+
+      expect(intentsMock.createUploadIntent).not.toHaveBeenCalled();
+      expect(storageMock.generateSignedUploadUrl).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException for invalid content type', async () => {
+      moviesRepositoryMock.existsBy.mockResolvedValue(true);
+
+      await expect(
+        service.uploadVideo(movieId, 'invalid/type'),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('confirmVideo', () => {
+    const movieId = 'movie-123';
+    const storageKey = 'movies/movie-123/video.mp4';
+    const mockIntent = {
+      id: 'intent-1',
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    };
+
+    it('should confirm video when intent is valid', async () => {
+      intentsMock.consumeIntent.mockResolvedValue(mockIntent);
+      storageMock.exists.mockResolvedValue(true);
+      moviesRepositoryMock.swapVideoPath.mockResolvedValue(null);
+      intentsMock.updateStatus.mockResolvedValue(undefined);
+
+      await service.confirmVideo(movieId, storageKey);
+
+      expect(intentsMock.consumeIntent).toHaveBeenCalledWith(
+        'movie_video',
+        movieId,
+        storageKey,
+        IntentStatus.IN_PROGRESS,
+      );
+      expect(storageMock.exists).toHaveBeenCalledWith(
+        storageKey,
+        BucketType.PRIVATE,
+      );
+      expect(moviesRepositoryMock.swapVideoPath).toHaveBeenCalledWith(
+        movieId,
+        storageKey,
+      );
+      expect(intentsMock.updateStatus).toHaveBeenCalledWith(
+        mockIntent.id,
+        IntentStatus.COMPLETED,
+      );
+    });
+
+    it('should delete old video when it exists', async () => {
+      const oldVideoKey = 'movies/movie-123/old-video.mp4';
+
+      intentsMock.consumeIntent.mockResolvedValue(mockIntent);
+      storageMock.exists.mockResolvedValue(true);
+      moviesRepositoryMock.swapVideoPath.mockResolvedValue(oldVideoKey);
+      intentsMock.updateStatus.mockResolvedValue(undefined);
+      storageMock.delete.mockResolvedValue(undefined);
+
+      await service.confirmVideo(movieId, storageKey);
+
+      expect(storageMock.delete).toHaveBeenCalledWith(
+        oldVideoKey,
+        BucketType.PRIVATE,
+      );
+    });
+
+    it('should throw BadRequestException when no valid intent found', async () => {
+      intentsMock.consumeIntent.mockResolvedValue(null);
+
+      await expect(service.confirmVideo(movieId, storageKey)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(moviesRepositoryMock.swapVideoPath).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when file not found in storage', async () => {
+      intentsMock.consumeIntent.mockResolvedValue(mockIntent);
+      storageMock.exists.mockResolvedValue(false);
+      intentsMock.updateStatus.mockResolvedValue(undefined);
+
+      await expect(service.confirmVideo(movieId, storageKey)).rejects.toThrow(
+        BadRequestException,
+      );
+
+      expect(intentsMock.updateStatus).toHaveBeenCalledWith(
+        mockIntent.id,
+        IntentStatus.FAILED,
+      );
+      expect(moviesRepositoryMock.swapVideoPath).not.toHaveBeenCalled();
     });
   });
 });
