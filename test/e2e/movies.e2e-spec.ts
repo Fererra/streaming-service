@@ -7,6 +7,8 @@ import { GenreEntity } from 'src/database/entities/genre.entity';
 import { CountryEntity } from 'src/database/entities/country.entity';
 import { MovieEntity } from 'src/database/entities/movie.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
+import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
+import type { ObjectStorage } from 'src/modules/storage/object-storage.interface';
 
 describe('MoviesController (e2e)', () => {
   let app: INestApplication;
@@ -16,10 +18,29 @@ describe('MoviesController (e2e)', () => {
   let genre: GenreEntity;
   let country: CountryEntity;
 
+  const mockObjectStorage: ObjectStorage = {
+    generateSignedUploadUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-upload-url'),
+    exists: jest.fn().mockResolvedValue(true),
+    getPublicUrl: jest
+      .fn()
+      .mockImplementation(
+        (key: string) => `https://storage.example.com/${key}`,
+      ),
+    getSignedUrl: jest
+      .fn()
+      .mockResolvedValue('https://storage.example.com/signed-video-url'),
+    delete: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(OBJECT_STORAGE)
+      .useValue(mockObjectStorage)
+      .compile();
 
     app = moduleFixture.createNestApplication();
 
@@ -146,6 +167,46 @@ describe('MoviesController (e2e)', () => {
       await request(app.getHttpServer())
         .get('/movies/00000000-0000-0000-0000-000000000000/credits')
         .expect(404);
+    });
+  });
+
+  describe('GET /movies/:id/video', () => {
+    it('200 + returns signed video URL', async () => {
+      await dataSource
+        .getRepository(MovieEntity)
+        .update(testMovieId, { moviePath: 'movies/test-video.mp4' });
+
+      const response = await request(app.getHttpServer())
+        .get(`/movies/${testMovieId}/video`)
+        .expect(200);
+
+      expect(response.body).toEqual({
+        videoUrl: 'https://storage.example.com/signed-video-url',
+      });
+    });
+
+    it('200 + returns null when no video available', async () => {
+      await dataSource
+        .getRepository(MovieEntity)
+        .update(testMovieId, { moviePath: null });
+
+      const response = await request(app.getHttpServer())
+        .get(`/movies/${testMovieId}/video`)
+        .expect(200);
+
+      expect(response.body).toEqual({ videoUrl: null });
+    });
+
+    it('404 on non-existent movie', async () => {
+      await request(app.getHttpServer())
+        .get('/movies/00000000-0000-0000-0000-000000000000/video')
+        .expect(404);
+    });
+
+    it('400 on invalid UUID', async () => {
+      await request(app.getHttpServer())
+        .get('/movies/invalid-id/video')
+        .expect(400);
     });
   });
 });

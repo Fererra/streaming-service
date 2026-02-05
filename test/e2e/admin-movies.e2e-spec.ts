@@ -407,8 +407,6 @@ describe('AdminMovies (e2e)', () => {
 
       const { storageKey } = intentRes.body;
 
-      console.log(storageKey);
-
       const confirmRes = await request(app.getHttpServer())
         .post(`/admin/movies/${testMovieId}/video/confirm`)
         .set('Authorization', `Bearer ${accessToken}`)
