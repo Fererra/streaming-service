@@ -307,6 +307,128 @@ describe('AdminMovies (e2e)', () => {
     });
   });
 
+  describe('PATCH /admin/movies/:id/trailer/upload-intent', () => {
+    it('200 + returns upload URL and storage key', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/trailer/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'video/mp4' })
+        .expect(200);
+
+      expect(res.body).toEqual({
+        uploadUrl: expect.any(String),
+        storageKey: expect.stringMatching(/^movies\/[a-f0-9-]+\/trailer\.mp4$/),
+      });
+    });
+
+    it('400 for invalid content type', async () => {
+      await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/trailer/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'image/jpeg' })
+        .expect(400);
+    });
+
+    it('404 for non-existent movie', async () => {
+      await request(app.getHttpServer())
+        .patch(`/admin/movies/${randomUUID()}/trailer/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'video/mp4' })
+        .expect(404);
+    });
+  });
+
+  describe('POST /admin/movies/:id/trailer/confirm', () => {
+    it('201 + confirms trailer upload successfully', async () => {
+      const intentRes = await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/trailer/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'video/mp4' });
+
+      const { storageKey } = intentRes.body;
+
+      const confirmRes = await request(app.getHttpServer())
+        .post(`/admin/movies/${testMovieId}/trailer/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey })
+        .expect(201);
+
+      expect(confirmRes.body).toEqual({
+        message: 'Movie trailer updated successfully',
+      });
+    });
+
+    it('400 for invalid storage key format', async () => {
+      await request(app.getHttpServer())
+        .post(`/admin/movies/${testMovieId}/trailer/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey: 'invalid-key' })
+        .expect(400);
+    });
+  });
+
+  describe('PATCH /admin/movies/:id/video/upload-intent', () => {
+    it('200 + returns upload URL and storage key', async () => {
+      const res = await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/video/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'video/mp4' })
+        .expect(200);
+
+      expect(res.body).toEqual({
+        uploadUrl: expect.any(String),
+        storageKey: expect.stringMatching(/^movies\/[a-f0-9-]+\/video\.mp4$/),
+      });
+    });
+
+    it('400 for invalid content type', async () => {
+      await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/video/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'image/jpeg' })
+        .expect(400);
+    });
+
+    it('404 for non-existent movie', async () => {
+      await request(app.getHttpServer())
+        .patch(`/admin/movies/${randomUUID()}/video/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'video/mp4' })
+        .expect(404);
+    });
+  });
+
+  describe('POST /admin/movies/:id/video/confirm', () => {
+    it('201 + confirms video upload successfully', async () => {
+      const intentRes = await request(app.getHttpServer())
+        .patch(`/admin/movies/${testMovieId}/video/upload-intent`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ contentType: 'video/mp4' });
+
+      const { storageKey } = intentRes.body;
+
+      console.log(storageKey);
+
+      const confirmRes = await request(app.getHttpServer())
+        .post(`/admin/movies/${testMovieId}/video/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey })
+        .expect(201);
+
+      expect(confirmRes.body).toEqual({
+        message: 'Movie video updated successfully',
+      });
+    });
+
+    it('400 for invalid storage key format', async () => {
+      await request(app.getHttpServer())
+        .post(`/admin/movies/${testMovieId}/video/confirm`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ storageKey: 'invalid-key' })
+        .expect(400);
+    });
+  });
+
   describe('PUT /admin/movies/:id/countries', () => {
     it('200 + updates countries', async () => {
       const res = await request(app.getHttpServer())
