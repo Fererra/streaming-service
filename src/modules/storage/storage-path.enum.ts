@@ -3,3 +3,7 @@ export enum ImageStoragePath {
   PERSON_PHOTOS = 'persons/photos',
   MOVIE_POSTERS = 'movies/posters',
 }
+
+export enum VideoStoragePath {
+  MOVIES = 'movies',
+}
