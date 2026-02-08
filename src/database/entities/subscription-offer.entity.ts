@@ -2,6 +2,7 @@ import {
   Check,
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -27,7 +28,7 @@ export class SubscriptionOfferEntity {
 
   @ManyToOne(() => SubscriptionPlanEntity, (plan) => plan.offers, {
     nullable: false,
-    onDelete: 'CASCADE',
+    onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'subscription_plan_id' })
   subscriptionPlan: SubscriptionPlanEntity;
@@ -37,4 +38,7 @@ export class SubscriptionOfferEntity {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at' })
+  deletedAt: Date | null;
 }
