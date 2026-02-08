@@ -1,6 +1,6 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubscriptionPlanEntity } from '../entities/subscription-plan.entity';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 import { SubscriptionOfferEntity } from '../entities/subscription-offer.entity';
 import { ISubscriptionPlanRepository } from './interfaces/subscription-plan-repository.interface';
 
@@ -10,8 +10,26 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     private repository: Repository<SubscriptionPlanEntity>,
   ) {}
 
-  existsBy(criteria: Partial<SubscriptionPlanEntity>): Promise<boolean> {
-    return this.repository.existsBy(criteria);
+  existsBy(
+    criteria: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
+  ): Promise<boolean> {
+    return this.repository.existsBy({
+      ...criteria,
+      deletedAt: criteria.deletedAt ?? IsNull(),
+    });
+  }
+
+  findById(
+    id: string,
+    options: { withDeleted?: boolean } = {},
+  ): Promise<SubscriptionPlanEntity | null> {
+    const { withDeleted = false } = options;
+
+    return this.repository.findOne({
+      where: { id },
+      relations: ['offers'],
+      withDeleted,
+    });
   }
 
   save(
@@ -26,12 +44,20 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
 
       const offersWithPlanId = offers.map((offer) => ({
         ...offer,
-        subscriptionPlanId: savedPlan.id,
+        subscriptionPlan: { id: savedPlan.id },
       }));
 
       await manager.save(SubscriptionOfferEntity, offersWithPlanId);
 
       return savedPlan;
     });
+  }
+
+  async activatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void> {
+    await this.repository.recover(plan);
+  }
+
+  async deactivatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void> {
+    await this.repository.softRemove(plan);
   }
 }
