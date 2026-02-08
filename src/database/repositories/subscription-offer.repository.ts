@@ -24,9 +24,35 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
     });
   }
 
+  findByIdAndPlanId(
+    offerId: string,
+    planId: string,
+    options: { withDeleted?: boolean } = {},
+  ): Promise<SubscriptionOfferEntity | null> {
+    const { withDeleted = false } = options;
+
+    return this.repository.findOne({
+      where: {
+        id: offerId,
+        subscriptionPlan: { id: planId },
+      },
+      withDeleted,
+    });
+  }
+
   save(
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]> {
     return this.repository.save(offers);
+  }
+
+  async activateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void> {
+    await this.repository.recover(offer);
+  }
+
+  async deactivateOffer(
+    offer: Partial<SubscriptionOfferEntity>,
+  ): Promise<void> {
+    await this.repository.softRemove(offer);
   }
 }
