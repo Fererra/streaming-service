@@ -8,6 +8,7 @@ import { RouterModule } from '@nestjs/core';
 import { ReferenceModule } from './modules/reference/reference.module';
 import { PersonsModule } from './modules/persons/persons.module';
 import { MoviesModule } from './modules/movies/movies.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { MoviesModule } from './modules/movies/movies.module';
       isGlobal: true,
     }),
     ScheduleModule.forRoot(),
+    UsersModule,
     AuthModule,
     TasksModule,
     AdminModule,
