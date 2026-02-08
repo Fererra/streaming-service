@@ -80,6 +80,19 @@ export class AdminSubscriptionsController {
     };
   }
 
+  @Patch(':planId/offers/:offerId')
+  async updateOffers(
+    @Param('planId', ParseUUIDPipe) planId: string,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+    @Body(CheckEmptyBodyPipe) updateOfferDto: UpdateOfferDto,
+  ) {
+    await this.subscriptionOfferService.update(planId, offerId, updateOfferDto);
+
+    return {
+      message: `Offers successfully updated`,
+    };
+  }
+
   @Patch(':id/activate')
   async activatePlan(@Param('id', ParseUUIDPipe) id: string) {
     await this.subscriptionPlanService.activatePlan(id);
