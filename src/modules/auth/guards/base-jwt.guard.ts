@@ -5,13 +5,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import type { Request } from 'express';
-import { UsersService } from '../users/services/users.service';
+import { UsersService } from '../../users/services/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import type {
   AccessTokenPayload,
   RefreshTokenPayload,
-} from '../token/types/payload.types';
+} from '../../token/types/payload.types';
 
 export abstract class BaseJwtGuard implements CanActivate {
   @Inject(UsersService) protected readonly usersService: UsersService;
