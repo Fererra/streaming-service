@@ -11,6 +11,16 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
     private readonly repository: Repository<SubscriptionOfferEntity>,
   ) {}
 
+  existsByDurationAndPlan(
+    planId: string,
+    durationMonths: number,
+  ): Promise<boolean> {
+    return this.repository.existsBy({
+      subscriptionPlan: { id: planId },
+      durationMonths,
+    });
+  }
+
   findOffersByPlanAndDurations(
     planId: string,
     durations: number[],
@@ -44,6 +54,19 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]> {
     return this.repository.save(offers);
+  }
+
+  async update(
+    offerId: string,
+    planId: string,
+    updateData: Partial<SubscriptionOfferEntity>,
+  ): Promise<number> {
+    const result = await this.repository.update(
+      { id: offerId, subscriptionPlan: { id: planId } },
+      updateData,
+    );
+
+    return result.affected ?? 0;
   }
 
   async activateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void> {

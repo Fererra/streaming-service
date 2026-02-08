@@ -1,6 +1,10 @@
 import { SubscriptionOfferEntity } from 'src/database/entities/subscription-offer.entity';
 
 export interface ISubscriptionOfferRepository {
+  existsByDurationAndPlan(
+    planId: string,
+    durationMonths: number,
+  ): Promise<boolean>;
   findOffersByPlanAndDurations(
     planId: string,
     durations: number[],
@@ -13,6 +17,11 @@ export interface ISubscriptionOfferRepository {
   save(
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]>;
+  update(
+    offerId: string,
+    planId: string,
+    updateData: Partial<SubscriptionOfferEntity>,
+  ): Promise<number>;
   activateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void>;
   deactivateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void>;
 }
