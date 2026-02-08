@@ -63,4 +63,31 @@ export class SubscriptionOfferService {
       );
     }
   }
+
+  async activateOffer(planId: string, offerId: string) {
+    const offer = await this.subscriptionOfferRepository.findByIdAndPlanId(
+      offerId,
+      planId,
+      { withDeleted: true },
+    );
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    await this.subscriptionOfferRepository.activateOffer(offer);
+  }
+
+  async deactivateOffer(planId: string, offerId: string) {
+    const offer = await this.subscriptionOfferRepository.findByIdAndPlanId(
+      offerId,
+      planId,
+    );
+
+    if (!offer) {
+      throw new NotFoundException('Offer not found');
+    }
+
+    await this.subscriptionOfferRepository.deactivateOffer(offer);
+  }
 }

@@ -86,7 +86,11 @@ export class AdminSubscriptionsController {
     @Param('planId', ParseUUIDPipe) planId: string,
     @Param('offerId', ParseUUIDPipe) offerId: string,
   ) {
-    throw new NotImplementedException();
+    await this.subscriptionOfferService.activateOffer(planId, offerId);
+
+    return {
+      message: `Offer activated successfully`,
+    };
   }
 
   @Patch(':planId/offers/:offerId/deactivate')
@@ -94,6 +98,10 @@ export class AdminSubscriptionsController {
     @Param('planId', ParseUUIDPipe) planId: string,
     @Param('offerId', ParseUUIDPipe) offerId: string,
   ) {
-    throw new NotImplementedException();
+    await this.subscriptionOfferService.deactivateOffer(planId, offerId);
+
+    return {
+      message: `Offer deactivated successfully`,
+    };
   }
 }
