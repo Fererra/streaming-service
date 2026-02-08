@@ -21,6 +21,10 @@ import {
   CreateSubscriptionDto,
 } from '../subscription/dto/create-subscription.dto';
 import { CheckEmptyBodyPipe } from 'src/common/pipes/check-empty-body.pipe';
+import {
+  UpdateOfferDto,
+  UpdateSubscriptionDto,
+} from '../subscription/dto/update-subscription.dto';
 
 @UseGuards(JwtGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
@@ -47,6 +51,19 @@ export class AdminSubscriptionsController {
     return {
       subscriptionId: subscription.id,
       message: `Subscription ${subscription.name} created successfully`,
+    };
+  }
+
+  @Patch(':id')
+  async updateSubscription(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(CheckEmptyBodyPipe)
+    updateSubscriptionDto: UpdateSubscriptionDto,
+  ) {
+    await this.subscriptionPlanService.update(id, updateSubscriptionDto);
+
+    return {
+      message: `Subscription updated successfully`,
     };
   }
 
