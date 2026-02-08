@@ -1,0 +1,32 @@
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
+import { OfferEntityFactory } from '../factories/offer-entity.factory';
+import type { ISubscriptionPlanRepository } from 'src/database/repositories/interfaces/subscription-plan-repository.interface';
+import { SUBSCRIPTION_PLAN_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
+
+@Injectable()
+export class SubscriptionPlanService {
+  constructor(
+    @Inject(SUBSCRIPTION_PLAN_REPOSITORY)
+    private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
+    private readonly offerEntityFactory: OfferEntityFactory,
+  ) {}
+
+  async create(createSubscriptionDto: CreateSubscriptionDto) {
+    const { name, description, offers: offerDtos } = createSubscriptionDto;
+
+    const isSubscriptionExist = await this.subscriptionPlanRepository.existsBy({
+      name,
+    });
+
+    if (isSubscriptionExist) {
+      throw new ConflictException(
+        `Subscription with name ${name} already exists`,
+      );
+    }
+
+    const offers = this.offerEntityFactory.createFromDto(offerDtos);
+
+    return this.subscriptionPlanRepository.save({ name, description }, offers);
+  }
+}
