@@ -10,7 +10,7 @@ import { MoviesService } from './services/movies.service';
 import { MovieSearchQueryDto } from './dto/movie-search-query.dto';
 import { PaginationQueryDto } from 'src/common/dto/pagination-query.dto';
 import { MoviesCreditsService } from './services/movies-credits.service';
-import { JwtGuard } from '../auth/jwt.guard';
+import { JwtGuard } from '../auth/guards/jwt.guard';
 
 @Controller('movies')
 export class MoviesController {

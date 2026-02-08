@@ -1,4 +1,4 @@
-import { RefreshTokenGuard } from 'src/modules/auth/refresh-token.guard';
+import { RefreshTokenGuard } from 'src/modules/auth/guards/refresh-token.guard';
 import { TokenType } from 'src/modules/token/types/token-types.enum';
 
 describe('RefreshTokenGuard', () => {

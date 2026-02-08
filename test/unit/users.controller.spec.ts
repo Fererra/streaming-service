@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from '../../src/modules/users/users.controller';
 import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { UsersMediaService } from 'src/modules/users/services/users-media.service';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
 
 describe('UsersController', () => {
   let controller: UsersController;

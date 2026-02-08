@@ -20,7 +20,7 @@ import { MovieEntity } from 'src/database/entities/movie.entity';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import { ObjectStorage } from 'src/modules/storage/object-storage.interface';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
 
 describe('MoviesService (integration)', () => {
   let app: INestApplication;

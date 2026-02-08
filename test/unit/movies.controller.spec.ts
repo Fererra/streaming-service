@@ -4,7 +4,7 @@ import { MoviesService } from 'src/modules/movies/services/movies.service';
 import { MoviesCreditsService } from 'src/modules/movies/services/movies-credits.service';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { CanActivate, ExecutionContext } from '@nestjs/common';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
 
 describe('MoviesController', () => {
   let controller: MoviesController;

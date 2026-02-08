@@ -18,7 +18,7 @@ import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import { IntentStatus } from 'src/modules/storage/intent-status.enum';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { MoviesModule } from 'src/modules/movies/movies.module';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
 
 describe('MoviesMediaService (integration)', () => {
   let app: INestApplication;

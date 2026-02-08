@@ -12,10 +12,10 @@ import type { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
 import { AuthResponse } from './types/auth-response.type';
-import { JwtGuard } from './jwt.guard';
+import { JwtGuard } from './guards/jwt.guard';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
 import { RefreshToken } from 'src/common/decorators/refresh-token.decorator';
-import { RefreshTokenGuard } from './refresh-token.guard';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
 
 @Controller('auth')
 export class AuthController {

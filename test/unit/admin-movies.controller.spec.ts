@@ -5,8 +5,8 @@ import { MoviesMediaService } from 'src/modules/movies/services/movies-media.ser
 import { MoviesCreditsService } from 'src/modules/movies/services/movies-credits.service';
 import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { CanActivate, ExecutionContext } from '@nestjs/common';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 
 describe('AdminMoviesController', () => {
   let controller: AdminMoviesController;

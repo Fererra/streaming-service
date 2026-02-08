@@ -1,4 +1,4 @@
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
 import { TokenType } from 'src/modules/token/types/token-types.enum';
 
 describe('JwtGuard', () => {

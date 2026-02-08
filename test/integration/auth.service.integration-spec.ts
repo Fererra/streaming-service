@@ -12,6 +12,7 @@ import { UserRole } from 'src/modules/users/user-role.enum';
 import { CountryEntity } from 'src/database/entities/country.entity';
 import { UserEntity } from 'src/database/entities/user.entity';
 import { ConfigModule } from '@nestjs/config';
+import { UsersModule } from 'src/modules/users/users.module';
 
 describe('AuthService (integration)', () => {
   let app: INestApplication;
@@ -27,6 +28,7 @@ describe('AuthService (integration)', () => {
           envFilePath: '.env.test.local',
         }),
         AuthModule,
+        UsersModule,
       ],
     }).compile();
 

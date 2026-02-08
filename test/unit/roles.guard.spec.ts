@@ -1,4 +1,4 @@
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { Reflector } from '@nestjs/core';
 import { ExecutionContext } from '@nestjs/common';
 import { UserRole } from 'src/modules/users/user-role.enum';

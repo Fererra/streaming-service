@@ -21,7 +21,7 @@ import { AgeRating } from 'src/modules/movies/age-rating.enum';
 import { OBJECT_STORAGE } from 'src/modules/storage/storage.token';
 import { ObjectStorage } from 'src/modules/storage/object-storage.interface';
 import { MoviesModule } from 'src/modules/movies/movies.module';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
 
 describe('MoviesCreditsService (integration)', () => {
   let app: INestApplication;

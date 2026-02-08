@@ -5,8 +5,8 @@ import { ConfigService } from '@nestjs/config';
 import type { SignUpDto } from 'src/modules/auth/dto/sign-up.dto';
 import type { LoginDto } from 'src/modules/auth/dto/login.dto';
 import { CanActivate, ExecutionContext } from '@nestjs/common';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
-import { RefreshTokenGuard } from 'src/modules/auth/refresh-token.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
+import { RefreshTokenGuard } from 'src/modules/auth/guards/refresh-token.guard';
 
 describe('AuthController', () => {
   let controller: AuthController;

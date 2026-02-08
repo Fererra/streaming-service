@@ -11,8 +11,8 @@ import {
 } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
 import { UserRole } from '../users/user-role.enum';
-import { JwtGuard } from '../auth/jwt.guard';
-import { RolesGuard } from '../auth/roles.guard';
+import { JwtGuard } from '../auth/guards/jwt.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserSearchQueryDto } from '../users/dto/user-search-query.dto';
 import { PaginationResponse } from 'src/common/@types/pagination.types';
 import { UserDto } from '../users/dto/user.dto';

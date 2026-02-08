@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminUsersController } from 'src/modules/admin/admin-users.controller';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { UsersService } from 'src/modules/users/services/users.service';
 
 describe('AdminUsersController', () => {

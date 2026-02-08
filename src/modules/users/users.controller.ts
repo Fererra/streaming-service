@@ -1,6 +1,6 @@
 import { Body, Controller, Patch, Post, UseGuards } from '@nestjs/common';
 import { CurrentUserId } from 'src/common/decorators/current-user-id.decorator';
-import { JwtGuard } from '../auth/jwt.guard';
+import { JwtGuard } from '../auth/guards/jwt.guard';
 import { UsersMediaService } from './services/users-media.service';
 import { AllowedImageContentTypesDto } from 'src/common/dto/image-content-types.dto';
 import { ConfirmAvatarDto } from './dto/confirm-avatar.dto';

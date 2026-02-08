@@ -1,8 +1,8 @@
 import { CanActivate, ExecutionContext } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AdminPersonsController } from 'src/modules/admin/admin-persons.controller';
-import { JwtGuard } from 'src/modules/auth/jwt.guard';
-import { RolesGuard } from 'src/modules/auth/roles.guard';
+import { JwtGuard } from 'src/modules/auth/guards/jwt.guard';
+import { RolesGuard } from 'src/modules/auth/guards/roles.guard';
 import { CreatePersonDto } from 'src/modules/persons/dto/create-person.dto';
 import { UpdatePersonDto } from 'src/modules/persons/dto/update-person.dto';
 import { PersonsService } from 'src/modules/persons/services/persons.service';
