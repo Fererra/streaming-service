@@ -13,6 +13,10 @@ export interface ISubscriptionPlanRepository {
     subscriptionPlan: Partial<SubscriptionPlanEntity>,
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionPlanEntity>;
+  update(
+    id: string,
+    updateData: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
+  ): Promise<number>;
   activatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void>;
   deactivatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void>;
 }

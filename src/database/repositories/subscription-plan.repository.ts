@@ -53,6 +53,14 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     });
   }
 
+  async update(
+    id: string,
+    updateData: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
+  ): Promise<number> {
+    const result = await this.repository.update({ id }, updateData);
+    return result.affected ?? 0;
+  }
+
   async activatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void> {
     await this.repository.recover(plan);
   }
