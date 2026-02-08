@@ -5,6 +5,7 @@ import {
   IsDecimal,
   IsInt,
   IsNotEmpty,
+  IsNumber,
   IsString,
   Min,
   ValidateNested,
@@ -17,7 +18,7 @@ export class CreateOfferDto {
   durationMonths: number;
 
   @IsNotEmpty()
-  @IsDecimal({ decimal_digits: '0,2' })
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   price: number;
 }
