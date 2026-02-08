@@ -1,4 +1,9 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { OfferEntityFactory } from '../factories/offer-entity.factory';
 import type { ISubscriptionPlanRepository } from 'src/database/repositories/interfaces/subscription-plan-repository.interface';
@@ -28,5 +33,27 @@ export class SubscriptionPlanService {
     const offers = this.offerEntityFactory.createFromDto(offerDtos);
 
     return this.subscriptionPlanRepository.save({ name, description }, offers);
+  }
+
+  async activatePlan(id: string) {
+    const plan = await this.subscriptionPlanRepository.findById(id, {
+      withDeleted: true,
+    });
+
+    if (!plan) {
+      throw new NotFoundException(`Subscription plan not found`);
+    }
+
+    await this.subscriptionPlanRepository.activatePlan(plan);
+  }
+
+  async deactivatePlan(id: string) {
+    const plan = await this.subscriptionPlanRepository.findById(id);
+
+    if (!plan) {
+      throw new NotFoundException(`Subscription plan not found`);
+    }
+
+    await this.subscriptionPlanRepository.deactivatePlan(plan);
   }
 }

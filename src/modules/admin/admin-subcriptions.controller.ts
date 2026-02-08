@@ -1,9 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
+  NotImplementedException,
   Param,
   ParseArrayPipe,
   ParseUUIDPipe,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -27,6 +30,11 @@ export class AdminSubscriptionsController {
     private readonly subscriptionPlanService: SubscriptionPlanService,
     private readonly subscriptionOfferService: SubscriptionOfferService,
   ) {}
+
+  @Get()
+  getAllSubscriptions() {
+    throw new NotImplementedException();
+  }
 
   @Post()
   async createSubscription(
@@ -53,5 +61,39 @@ export class AdminSubscriptionsController {
     return {
       message: `Offers successfully attached to subscription`,
     };
+  }
+
+  @Patch(':id/activate')
+  async activatePlan(@Param('id', ParseUUIDPipe) id: string) {
+    await this.subscriptionPlanService.activatePlan(id);
+
+    return {
+      message: `Subscription plan activated successfully`,
+    };
+  }
+
+  @Patch(':id/deactivate')
+  async deactivatePlan(@Param('id', ParseUUIDPipe) id: string) {
+    await this.subscriptionPlanService.deactivatePlan(id);
+
+    return {
+      message: `Subscription plan deactivated successfully`,
+    };
+  }
+
+  @Patch(':planId/offers/:offerId/activate')
+  async activateOffer(
+    @Param('planId', ParseUUIDPipe) planId: string,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+  ) {
+    throw new NotImplementedException();
+  }
+
+  @Patch(':planId/offers/:offerId/deactivate')
+  async deactivateOffer(
+    @Param('planId', ParseUUIDPipe) planId: string,
+    @Param('offerId', ParseUUIDPipe) offerId: string,
+  ) {
+    throw new NotImplementedException();
   }
 }
