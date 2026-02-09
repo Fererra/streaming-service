@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  NotImplementedException,
   Param,
   ParseArrayPipe,
   ParseUUIDPipe,
@@ -37,7 +36,7 @@ export class AdminSubscriptionsController {
 
   @Get()
   getAllSubscriptions() {
-    throw new NotImplementedException();
+    return this.subscriptionPlanService.findAllWithOffersForAdmin();
   }
 
   @Post()

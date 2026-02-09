@@ -18,6 +18,14 @@ export class SubscriptionPlanService {
     private readonly offerEntityFactory: OfferEntityFactory,
   ) {}
 
+  findAllWithOffersForAdmin() {
+    return this.subscriptionPlanRepository.findAllWithOffers();
+  }
+
+  findAllWithOffersForUser() {
+    return this.subscriptionPlanRepository.findActiveWithOffers();
+  }
+
   async create(createSubscriptionDto: CreateSubscriptionDto) {
     const { name, description, offers: offerDtos } = createSubscriptionDto;
 
