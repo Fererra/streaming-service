@@ -2,6 +2,8 @@ import { SubscriptionOfferEntity } from 'src/database/entities/subscription-offe
 import { SubscriptionPlanEntity } from 'src/database/entities/subscription-plan.entity';
 
 export interface ISubscriptionPlanRepository {
+  findAllWithOffers(): Promise<SubscriptionPlanEntity[]>;
+  findActiveWithOffers(): Promise<SubscriptionPlanEntity[]>;
   existsBy(
     criteria: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
   ): Promise<boolean>;

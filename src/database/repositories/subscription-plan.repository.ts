@@ -10,6 +10,45 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     private repository: Repository<SubscriptionPlanEntity>,
   ) {}
 
+  async findAllWithOffers(): Promise<SubscriptionPlanEntity[]> {
+    const plans = await this.repository
+      .createQueryBuilder('subscription_plans')
+      .select([
+        'subscription_plans.id',
+        'subscription_plans.name',
+        'subscription_plans.description',
+      ])
+      .withDeleted()
+      .getMany();
+
+    for (const plan of plans) {
+      plan.offers = await this.repository.manager
+        .createQueryBuilder(SubscriptionOfferEntity, 'offer')
+        .where('offer.subscriptionPlan.id = :planId', { planId: plan.id })
+        .select(['offer.id', 'offer.durationMonths', 'offer.price'])
+        .withDeleted()
+        .getMany();
+    }
+
+    return plans;
+  }
+
+  findActiveWithOffers(): Promise<SubscriptionPlanEntity[]> {
+    return this.repository
+      .createQueryBuilder('subscription_plans')
+      .innerJoinAndSelect('subscription_plans.offers', 'offer')
+      .where('subscription_plans.deletedAt IS NULL')
+      .select([
+        'subscription_plans.id',
+        'subscription_plans.name',
+        'subscription_plans.description',
+        'offer.id',
+        'offer.durationMonths',
+        'offer.price',
+      ])
+      .getMany();
+  }
+
   existsBy(
     criteria: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
   ): Promise<boolean> {
