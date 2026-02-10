@@ -8,10 +8,15 @@ export class OfferEntityFactory {
     offers: CreateOfferDto[],
     subscriptionPlanId?: string,
   ): Partial<SubscriptionOfferEntity>[] {
-    return offers.map((offer) => ({
-      durationMonths: offer.durationMonths,
-      price: offer.price,
-      ...(subscriptionPlanId && { subscriptionPlanId }),
-    }));
+    return offers.map(
+      (offer) =>
+        ({
+          durationMonths: offer.durationMonths,
+          price: offer.price,
+          ...(subscriptionPlanId && {
+            subscriptionPlan: { id: subscriptionPlanId },
+          }),
+        }) as Partial<SubscriptionOfferEntity>,
+    );
   }
 }
