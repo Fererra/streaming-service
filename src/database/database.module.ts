@@ -13,6 +13,8 @@ import {
   MOVIES_REPOSITORY,
   PERSONS_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
+  SUBSCRIPTION_OFFER_REPOSITORY,
+  SUBSCRIPTION_PLAN_REPOSITORY,
   UPLOAD_INTENTS_REPOSITORY,
   USERS_REPOSITORY,
 } from './repositories/tokens/repository.tokens';
@@ -30,6 +32,10 @@ import { MovieCreditEntity } from './entities/movie-credit.entity';
 import { MovieCreditsRepository } from './repositories/movie-credits.repository';
 import { UploadIntentEntity } from './entities/upload-intent.entity';
 import { UploadIntentsRepository } from './repositories/upload-intents.repository';
+import { SubscriptionPlanEntity } from './entities/subscription-plan.entity';
+import { SubscriptionOfferEntity } from './entities/subscription-offer.entity';
+import { SubscriptionPlanRepository } from './repositories/subscription-plan.repository';
+import { SubscriptionOfferRepository } from './repositories/subscription-offer.repository';
 
 @Module({
   imports: [
@@ -48,6 +54,8 @@ import { UploadIntentsRepository } from './repositories/upload-intents.repositor
       MovieEntity,
       MovieCreditEntity,
       UploadIntentEntity,
+      SubscriptionPlanEntity,
+      SubscriptionOfferEntity,
     ]),
   ],
   providers: [
@@ -60,6 +68,14 @@ import { UploadIntentsRepository } from './repositories/upload-intents.repositor
     { provide: MOVIES_REPOSITORY, useClass: MoviesRepository },
     { provide: MOVIE_CREDITS_REPOSITORY, useClass: MovieCreditsRepository },
     { provide: UPLOAD_INTENTS_REPOSITORY, useClass: UploadIntentsRepository },
+    {
+      provide: SUBSCRIPTION_PLAN_REPOSITORY,
+      useClass: SubscriptionPlanRepository,
+    },
+    {
+      provide: SUBSCRIPTION_OFFER_REPOSITORY,
+      useClass: SubscriptionOfferRepository,
+    },
   ],
   exports: [
     USERS_REPOSITORY,
@@ -71,6 +87,8 @@ import { UploadIntentsRepository } from './repositories/upload-intents.repositor
     MOVIES_REPOSITORY,
     MOVIE_CREDITS_REPOSITORY,
     UPLOAD_INTENTS_REPOSITORY,
+    SUBSCRIPTION_PLAN_REPOSITORY,
+    SUBSCRIPTION_OFFER_REPOSITORY,
   ],
 })
 export class DatabaseModule {}

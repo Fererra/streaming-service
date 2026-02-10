@@ -9,6 +9,7 @@ import { ReferenceModule } from './modules/reference/reference.module';
 import { PersonsModule } from './modules/persons/persons.module';
 import { MoviesModule } from './modules/movies/movies.module';
 import { UsersModule } from './modules/users/users.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { UsersModule } from './modules/users/users.module';
     ReferenceModule,
     PersonsModule,
     MoviesModule,
+    SubscriptionModule,
   ],
 })
 export class AppModule {}
