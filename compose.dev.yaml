@@ -18,6 +18,14 @@ services:
       dev_db:
         condition: service_healthy
 
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    command: listen --forward-to server:3000/payments/webhook/stripe --api-key ${STRIPE_SECRET_KEY}
+    networks:
+      - backend
+    depends_on:
+      - server
+
   dev_db:
     image: postgres:18-alpine
     restart: always
