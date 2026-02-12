@@ -88,7 +88,10 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
 
       await manager.save(SubscriptionOfferEntity, offersWithPlanId);
 
-      return savedPlan;
+      return {
+        ...savedPlan,
+        offers: offersWithPlanId as SubscriptionOfferEntity[],
+      };
     });
   }
 
