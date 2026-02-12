@@ -8,9 +8,12 @@ import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import {
   COUNTRY_REPOSITORY,
   CREDITS_REPOSITORY,
+  GATEWAY_CUSTOMER_REPOSITORY,
+  GATEWAY_PRICE_REPOSITORY,
   GENRES_REPOSITORY,
   MOVIE_CREDITS_REPOSITORY,
   MOVIES_REPOSITORY,
+  PAYMENT_REPOSITORY,
   PERSONS_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   SUBSCRIPTION_OFFER_REPOSITORY,
@@ -36,6 +39,12 @@ import { SubscriptionPlanEntity } from './entities/subscription-plan.entity';
 import { SubscriptionOfferEntity } from './entities/subscription-offer.entity';
 import { SubscriptionPlanRepository } from './repositories/subscription-plan.repository';
 import { SubscriptionOfferRepository } from './repositories/subscription-offer.repository';
+import { PaymentEntity } from './entities/payment.entity';
+import { PaymentRepository } from './repositories/payment.repository';
+import { SubscriptionOfferGatewayPriceEntity } from './entities/gateway-price.entity';
+import { GatewayPriceRepository } from './repositories/gateway-price.repository';
+import { UserGatewayCustomerEntity } from './entities/gateway-customer.entity';
+import { GatewayCustomerRepository } from './repositories/gateway-customer.repository';
 
 @Module({
   imports: [
@@ -56,6 +65,9 @@ import { SubscriptionOfferRepository } from './repositories/subscription-offer.r
       UploadIntentEntity,
       SubscriptionPlanEntity,
       SubscriptionOfferEntity,
+      PaymentEntity,
+      SubscriptionOfferGatewayPriceEntity,
+      UserGatewayCustomerEntity,
     ]),
   ],
   providers: [
@@ -76,6 +88,12 @@ import { SubscriptionOfferRepository } from './repositories/subscription-offer.r
       provide: SUBSCRIPTION_OFFER_REPOSITORY,
       useClass: SubscriptionOfferRepository,
     },
+    { provide: PAYMENT_REPOSITORY, useClass: PaymentRepository },
+    { provide: GATEWAY_PRICE_REPOSITORY, useClass: GatewayPriceRepository },
+    {
+      provide: GATEWAY_CUSTOMER_REPOSITORY,
+      useClass: GatewayCustomerRepository,
+    },
   ],
   exports: [
     USERS_REPOSITORY,
@@ -89,6 +107,9 @@ import { SubscriptionOfferRepository } from './repositories/subscription-offer.r
     UPLOAD_INTENTS_REPOSITORY,
     SUBSCRIPTION_PLAN_REPOSITORY,
     SUBSCRIPTION_OFFER_REPOSITORY,
+    PAYMENT_REPOSITORY,
+    GATEWAY_PRICE_REPOSITORY,
+    GATEWAY_CUSTOMER_REPOSITORY,
   ],
 })
 export class DatabaseModule {}
