@@ -9,12 +9,14 @@ import { OfferEntityFactory } from '../factories/offer-entity.factory';
 import type { ISubscriptionPlanRepository } from 'src/database/repositories/interfaces/subscription-plan-repository.interface';
 import { SUBSCRIPTION_PLAN_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
+import { SubscriptionOfferService } from './subscription-offer.service';
 
 @Injectable()
 export class SubscriptionPlanService {
   constructor(
     @Inject(SUBSCRIPTION_PLAN_REPOSITORY)
     private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
+    private readonly subscriptionOfferService: SubscriptionOfferService,
     private readonly offerEntityFactory: OfferEntityFactory,
   ) {}
 
@@ -40,8 +42,19 @@ export class SubscriptionPlanService {
     }
 
     const offers = this.offerEntityFactory.createFromDto(offerDtos);
+    const plan = await this.subscriptionPlanRepository.save(
+      { name, description },
+      offers,
+    );
 
-    return this.subscriptionPlanRepository.save({ name, description }, offers);
+    await Promise.all(
+      plan.offers.map((offer) => {
+        offer.subscriptionPlan = plan;
+        return this.subscriptionOfferService.syncOfferToGateway(offer);
+      }),
+    );
+
+    return plan;
   }
 
   async update(id: string, updateSubscriptionDto: UpdateSubscriptionDto) {

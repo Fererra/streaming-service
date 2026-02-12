@@ -14,6 +14,7 @@ import {
 import type { ISubscriptionPlanRepository } from 'src/database/repositories/interfaces/subscription-plan-repository.interface';
 import type { ISubscriptionOfferRepository } from 'src/database/repositories/interfaces/subscription-offer-repository.interface';
 import { UpdateOfferDto } from '../dto/update-subscription.dto';
+import { PaymentService } from 'src/modules/payment/payment.service';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -23,19 +24,31 @@ export class SubscriptionOfferService {
     @Inject(SUBSCRIPTION_OFFER_REPOSITORY)
     private readonly subscriptionOfferRepository: ISubscriptionOfferRepository,
     private readonly offerEntityFactory: OfferEntityFactory,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async attachOffersToPlan(id: string, createOffersDto: CreateOfferDto[]) {
-    const isPlanExist = await this.subscriptionPlanRepository.existsBy({ id });
+    const plan = await this.subscriptionPlanRepository.findById(id);
 
-    if (!isPlanExist) {
+    if (!plan) {
       throw new NotFoundException('Subscription plan not found');
     }
 
     const offers = this.offerEntityFactory.createFromDto(createOffersDto, id);
     await this.validateOffersUniqueness(id, offers);
 
-    await this.subscriptionOfferRepository.save(offers);
+    const savedOffers = await this.subscriptionOfferRepository.save(offers);
+
+    await Promise.all(
+      savedOffers.map((offer) => {
+        offer.subscriptionPlan = plan;
+        return this.syncOfferToGateway(offer);
+      }),
+    );
+  }
+
+  async syncOfferToGateway(offer: SubscriptionOfferEntity) {
+    await this.paymentService.syncOfferToGateway(offer);
   }
 
   private async validateOffersUniqueness(
