@@ -10,6 +10,7 @@ import { PersonsModule } from './modules/persons/persons.module';
 import { MoviesModule } from './modules/movies/movies.module';
 import { UsersModule } from './modules/users/users.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { PaymentModule } from './modules/payment/payment.module';
 
 @Module({
   imports: [
@@ -22,11 +23,15 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     AuthModule,
     TasksModule,
     AdminModule,
-    RouterModule.register([{ path: 'admin', module: AdminModule }]),
     ReferenceModule,
     PersonsModule,
     MoviesModule,
     SubscriptionModule,
+    PaymentModule,
+    RouterModule.register([
+      { path: 'admin', module: AdminModule },
+      { path: 'payments', module: PaymentModule },
+    ]),
   ],
 })
 export class AppModule {}

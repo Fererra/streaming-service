@@ -4,9 +4,10 @@ import { SubscriptionOfferService } from './services/subscription-offer.service'
 import { OfferEntityFactory } from './factories/offer-entity.factory';
 import { DatabaseModule } from 'src/database/database.module';
 import { SubscriptionController } from './subscription.controller';
+import { PaymentModule } from '../payment/payment.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, PaymentModule],
   controllers: [SubscriptionController],
   providers: [
     SubscriptionPlanService,
