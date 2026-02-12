@@ -6,12 +6,13 @@ import {
   SUBSCRIPTION_PLAN_REPOSITORY,
   SUBSCRIPTION_OFFER_REPOSITORY,
 } from 'src/database/repositories/tokens/repository.tokens';
+import { PaymentService } from 'src/modules/payment/payment.service';
 
 describe('SubscriptionOfferService', () => {
   let service: SubscriptionOfferService;
 
   const subscriptionPlanRepositoryMock = {
-    existsBy: jest.fn(),
+    findById: jest.fn(),
   };
 
   const subscriptionOfferRepositoryMock = {
@@ -22,6 +23,10 @@ describe('SubscriptionOfferService', () => {
     update: jest.fn(),
     activateOffer: jest.fn(),
     deactivateOffer: jest.fn(),
+  };
+
+  const paymentServiceMock = {
+    syncOfferToGateway: jest.fn(),
   };
 
   const offerEntityFactoryMock = {
@@ -43,6 +48,7 @@ describe('SubscriptionOfferService', () => {
           useValue: subscriptionOfferRepositoryMock,
         },
         { provide: OfferEntityFactory, useValue: offerEntityFactoryMock },
+        { provide: PaymentService, useValue: paymentServiceMock },
       ],
     }).compile();
 
@@ -61,7 +67,8 @@ describe('SubscriptionOfferService', () => {
     ];
 
     it('should attach offers to a plan successfully', async () => {
-      subscriptionPlanRepositoryMock.existsBy.mockResolvedValue(true);
+      const mockPlan = { id: planId, name: 'Test Plan' };
+      subscriptionPlanRepositoryMock.findById.mockResolvedValue(mockPlan);
       const mockOfferEntities = [
         { durationMonths: 1, price: 9.99, subscriptionPlanId: planId },
         { durationMonths: 6, price: 49.99, subscriptionPlanId: planId },
@@ -70,12 +77,13 @@ describe('SubscriptionOfferService', () => {
       subscriptionOfferRepositoryMock.findOffersByPlanAndDurations.mockResolvedValue(
         [],
       );
+      subscriptionOfferRepositoryMock.save.mockResolvedValue(mockOfferEntities);
 
       await service.attachOffersToPlan(planId, createOffersDto);
 
-      expect(subscriptionPlanRepositoryMock.existsBy).toHaveBeenCalledWith({
-        id: planId,
-      });
+      expect(subscriptionPlanRepositoryMock.findById).toHaveBeenCalledWith(
+        planId,
+      );
       expect(offerEntityFactoryMock.createFromDto).toHaveBeenCalledWith(
         createOffersDto,
         planId,
@@ -89,7 +97,7 @@ describe('SubscriptionOfferService', () => {
     });
 
     it('should throw NotFoundException if plan does not exist', async () => {
-      subscriptionPlanRepositoryMock.existsBy.mockResolvedValue(false);
+      subscriptionPlanRepositoryMock.findById.mockResolvedValue(null);
 
       await expect(
         service.attachOffersToPlan(planId, createOffersDto),
@@ -101,7 +109,7 @@ describe('SubscriptionOfferService', () => {
     });
 
     it('should throw ConflictException if offers with same duration already exist', async () => {
-      subscriptionPlanRepositoryMock.existsBy.mockResolvedValue(true);
+      subscriptionPlanRepositoryMock.findById.mockResolvedValue({ id: planId });
       const mockOfferEntities = [
         { durationMonths: 1, price: 9.99, subscriptionPlanId: planId },
       ];
@@ -126,7 +134,7 @@ describe('SubscriptionOfferService', () => {
     });
 
     it('should report multiple conflicting durations sorted', async () => {
-      subscriptionPlanRepositoryMock.existsBy.mockResolvedValue(true);
+      subscriptionPlanRepositoryMock.findById.mockResolvedValue({ id: planId });
       const mockOfferEntities = [
         { durationMonths: 6, price: 49.99, subscriptionPlanId: planId },
         { durationMonths: 1, price: 9.99, subscriptionPlanId: planId },

@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { SubscriptionPlanService } from 'src/modules/subscription/services/subscription-plan.service';
 import { OfferEntityFactory } from 'src/modules/subscription/factories/offer-entity.factory';
 import { SUBSCRIPTION_PLAN_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
+import { SubscriptionOfferService } from 'src/modules/subscription/services/subscription-offer.service';
 
 describe('SubscriptionPlanService', () => {
   let service: SubscriptionPlanService;
@@ -18,6 +19,10 @@ describe('SubscriptionPlanService', () => {
     deactivatePlan: jest.fn(),
   };
 
+  const subscriptionOfferServiceMock = {
+    syncOfferToGateway: jest.fn(),
+  };
+
   const offerEntityFactoryMock = {
     createFromDto: jest.fn(),
   };
@@ -31,6 +36,10 @@ describe('SubscriptionPlanService', () => {
         {
           provide: SUBSCRIPTION_PLAN_REPOSITORY,
           useValue: subscriptionPlanRepositoryMock,
+        },
+        {
+          provide: SubscriptionOfferService,
+          useValue: subscriptionOfferServiceMock,
         },
         { provide: OfferEntityFactory, useValue: offerEntityFactoryMock },
       ],
@@ -89,7 +98,11 @@ describe('SubscriptionPlanService', () => {
       subscriptionPlanRepositoryMock.existsBy.mockResolvedValue(false);
       const mockOfferEntities = [{ durationMonths: 1, price: 9.99 }];
       offerEntityFactoryMock.createFromDto.mockReturnValue(mockOfferEntities);
-      const mockSavedPlan = { id: 'plan-1', name: 'Premium' };
+      const mockSavedPlan = {
+        id: 'plan-1',
+        name: 'Premium',
+        offers: mockOfferEntities,
+      };
       subscriptionPlanRepositoryMock.save.mockResolvedValue(mockSavedPlan);
 
       const result = await service.create(createDto);
