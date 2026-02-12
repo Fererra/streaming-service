@@ -28,6 +28,10 @@ export class UsersService {
     return this.usersRepository.findByEmail(email);
   }
 
+  findUserEmailById(userId: string): Promise<string | null> {
+    return this.usersRepository.findUserEmailById(userId);
+  }
+
   async searchUsers(
     paginationOptions: PaginationOptions,
     search?: string,

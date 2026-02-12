@@ -8,6 +8,7 @@ import { AuthUser } from 'src/modules/auth/types/auth-user.type';
 export interface IUsersRepository {
   findByEmail(email: string): Promise<UserEntity | null>;
   findByUserId(userId: string): Promise<UserEntity | null>;
+  findUserEmailById(userId: string): Promise<string | null>;
   searchUsers(
     options: PaginationOptions,
     search?: string,

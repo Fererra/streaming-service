@@ -31,6 +31,15 @@ export class UsersRepository implements IUsersRepository {
     });
   }
 
+  async findUserEmailById(userId: string): Promise<string | null> {
+    const user = await this.repository.findOne({
+      select: ['email'],
+      where: { id: userId },
+    });
+
+    return user?.email ?? null;
+  }
+
   searchUsers(
     options: PaginationOptions,
     search?: string,
@@ -73,7 +82,7 @@ export class UsersRepository implements IUsersRepository {
   }
 
   async update(id: string, data: Partial<UserEntity>): Promise<void> {
-    await this.repository.update({ id }, data);
+    await this.repository.update({ id }, data as any);
   }
 
   async swapAvatarPath(
