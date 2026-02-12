@@ -10,6 +10,8 @@ import {
 import { RefreshTokenEntity } from './refresh-token.entity';
 import { UserRole } from '../../modules/users/user-role.enum';
 import { CountryEntity } from './country.entity';
+import { PaymentEntity } from './payment.entity';
+import { UserGatewayCustomerEntity } from './gateway-customer.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -51,4 +53,13 @@ export class UserEntity {
 
   @OneToMany(() => RefreshTokenEntity, (refreshToken) => refreshToken.user)
   refreshTokens: RefreshTokenEntity[];
+
+  @OneToMany(
+    () => UserGatewayCustomerEntity,
+    (gatewayCustomer) => gatewayCustomer.user,
+  )
+  gatewayCustomers: UserGatewayCustomerEntity[];
+
+  @OneToMany(() => PaymentEntity, (payment) => payment.user)
+  payments: PaymentEntity[];
 }

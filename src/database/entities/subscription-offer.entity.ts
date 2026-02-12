@@ -6,11 +6,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   Unique,
   UpdateDateColumn,
 } from 'typeorm';
 import { SubscriptionPlanEntity } from './subscription-plan.entity';
+import { SubscriptionOfferGatewayPriceEntity } from './gateway-price.entity';
 
 @Entity('subscription_offers')
 @Unique(['subscriptionPlan', 'durationMonths'])
@@ -26,13 +28,6 @@ export class SubscriptionOfferEntity {
   @Check('price >= 0')
   price: number;
 
-  @ManyToOne(() => SubscriptionPlanEntity, (plan) => plan.offers, {
-    nullable: false,
-    onDelete: 'RESTRICT',
-  })
-  @JoinColumn({ name: 'subscription_plan_id' })
-  subscriptionPlan: SubscriptionPlanEntity;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
@@ -41,4 +36,14 @@ export class SubscriptionOfferEntity {
 
   @DeleteDateColumn({ name: 'deleted_at' })
   deletedAt: Date | null;
+
+  @ManyToOne(() => SubscriptionPlanEntity, (plan) => plan.offers, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'subscription_plan_id' })
+  subscriptionPlan: SubscriptionPlanEntity;
+
+  @OneToMany(() => SubscriptionOfferGatewayPriceEntity, (price) => price.offer)
+  gatewayPrices: SubscriptionOfferGatewayPriceEntity[];
 }
