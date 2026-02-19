@@ -10,9 +10,12 @@ import {
   STRIPE_CLIENT,
   WEBHOOK_EVENT_HANDLERS,
 } from './payment.tokens';
-import { DatabaseModule } from 'src/database/database.module';
+import { DatabaseModule } from '../../database/database.module';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
+import { WebhookEventHandler } from './interfaces/webhook-event-handler.interface';
+import { CheckoutExpiredHandler } from './handlers/checkout-expired.handler';
+import { InvoiceFailedHandler } from './handlers/invoice-payment-failed.handler';
 
 @Module({
   imports: [DatabaseModule],
@@ -32,11 +35,13 @@ import Stripe from 'stripe';
     },
     {
       provide: WEBHOOK_EVENT_HANDLERS,
-      useFactory: (
-        checkout: CheckoutCompletedHandler,
-        invoice: InvoicePaidHandler,
-      ) => [checkout, invoice],
-      inject: [CheckoutCompletedHandler, InvoicePaidHandler],
+      useFactory: (...handlers: WebhookEventHandler[]) => handlers,
+      inject: [
+        CheckoutCompletedHandler,
+        CheckoutExpiredHandler,
+        InvoicePaidHandler,
+        InvoiceFailedHandler,
+      ],
     },
     { provide: PAYMENT_GATEWAY, useClass: StripePaymentGateway },
   ],

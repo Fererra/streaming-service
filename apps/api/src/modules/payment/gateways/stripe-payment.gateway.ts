@@ -110,6 +110,19 @@ export class StripePaymentGateway implements PaymentGateway {
       },
     ],
     [
+      'checkout.session.expired',
+      (obj) => {
+        const session = obj as Stripe.Checkout.Session;
+        return {
+          type: 'checkout.expired',
+          externalSessionId: session.id,
+          externalSubscriptionId: session.subscription as string,
+          externalPaymentId: session.payment_intent as string,
+          metadata: (session.metadata as Record<string, string>) ?? {},
+        };
+      },
+    ],
+    [
       'invoice.paid',
       (obj) => {
         const invoice = obj as Stripe.Invoice;
@@ -122,6 +135,23 @@ export class StripePaymentGateway implements PaymentGateway {
           externalPaymentId: invoice.id as string,
           metadata: (invoice.metadata as Record<string, string>) ?? {},
           amount: invoice.amount_paid / 100,
+          currency: invoice.currency,
+        };
+      },
+    ],
+    [
+      'invoice.payment_failed',
+      (obj) => {
+        const invoice = obj as Stripe.Invoice;
+        return {
+          type: 'invoice.payment_failed',
+          billingReason: invoice.billing_reason,
+          externalSessionId: null,
+          externalSubscriptionId: invoice.parent?.subscription_details
+            ?.subscription as string,
+          externalPaymentId: invoice.id as string,
+          metadata: (invoice.metadata as Record<string, string>) ?? {},
+          amount: invoice.amount_due / 100,
           currency: invoice.currency,
         };
       },

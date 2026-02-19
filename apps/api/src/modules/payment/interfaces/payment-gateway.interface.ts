@@ -26,17 +26,34 @@ export interface CheckoutSessionResponse {
   checkoutUrl: string;
 }
 
+export type WebhookEventType =
+  | 'checkout.completed'
+  | 'checkout.expired'
+  | 'invoice.paid'
+  | 'invoice.payment_failed';
+
+export type Status =
+  | 'active'
+  | 'canceled'
+  | 'incomplete'
+  | 'incomplete_expired'
+  | 'past_due'
+  | 'paused'
+  | 'trialing'
+  | 'unpaid';
+
 export interface WebhookEventResult {
-  type: 'checkout.completed' | 'invoice.paid';
+  type: WebhookEventType;
   billingReason?: string | null;
   externalSessionId: string | null;
   externalSubscriptionId: string | null;
   externalPaymentId: string | null;
+  cancelAtPeriodEnd?: boolean;
+  status?: Status;
   metadata: Record<string, string>;
   amount?: number;
   currency?: string;
 }
-
 export interface PaymentGateway {
   readonly gateway: PaymentGatewayProvider;
 
