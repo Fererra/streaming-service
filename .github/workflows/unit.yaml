@@ -1,5 +1,4 @@
 name: Unit tests
-
 on:
   push:
     branches: ['**']
@@ -8,17 +7,17 @@ on:
 jobs:
   unit:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [api, worker]
     steps:
       - uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
-      - name: Run Unit Tests
-        run: npm run test
+      - name: Run unit tests
+        run: npm run test:${{ matrix.service }}:unit
