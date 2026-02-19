@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { WebhookEventResult } from '../interfaces/payment-gateway.interface';
 import type { WebhookEventHandler } from '../interfaces/webhook-event-handler.interface';
-import type { IPaymentRepository } from 'src/database/repositories/interfaces/payment-repository.interface';
-import { PAYMENT_REPOSITORY } from 'src/database/repositories/tokens/repository.tokens';
+import type { IPaymentRepository } from '../../../database/repositories/interfaces/payment-repository.interface';
+import { PAYMENT_REPOSITORY } from '../../../database/repositories/tokens/repository.tokens';
 import { PaymentStatus } from '../enums/payment-status.enum';
 
 @Injectable()

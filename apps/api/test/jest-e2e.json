@@ -1,0 +1,6 @@
+{
+  "extends": "../../../jest.config.base.json",
+  "rootDir": "..",
+  "testRegex": ".e2e-spec.ts$",
+  "roots": ["<rootDir>/test/e2e"]
+}

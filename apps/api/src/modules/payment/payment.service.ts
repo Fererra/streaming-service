@@ -1,28 +1,27 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PAYMENT_GATEWAY, WEBHOOK_EVENT_HANDLERS } from './payment.tokens';
-import type { PaymentGateway } from './interfaces/payment-gateway.interface';
-import type { WebhookEventResult } from './interfaces/payment-gateway.interface';
+import type {
+  PaymentGateway,
+  WebhookEventType,
+} from './interfaces/payment-gateway.interface';
 import type { WebhookEventHandler } from './interfaces/webhook-event-handler.interface';
-import type { IPaymentRepository } from 'src/database/repositories/interfaces/payment-repository.interface';
+import type { IPaymentRepository } from '../../database/repositories/interfaces/payment-repository.interface';
 import {
   GATEWAY_CUSTOMER_REPOSITORY,
   GATEWAY_PRICE_REPOSITORY,
   PAYMENT_REPOSITORY,
-} from 'src/database/repositories/tokens/repository.tokens';
+} from '../../database/repositories/tokens/repository.tokens';
 import { PaymentStatus } from './enums/payment-status.enum';
 import { PaymentGatewayProvider } from './enums/payment-gateway-provider.enum';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { UsersService } from '../users/services/users.service';
-import { SubscriptionOfferEntity } from 'src/database/entities/subscription-offer.entity';
-import type { IGatewayPriceRepository } from 'src/database/repositories/interfaces/gateway-price-repository.interface';
-import type { IGatewayCustomerRepository } from 'src/database/repositories/interfaces/gateway-customer.repository';
+import { SubscriptionOfferEntity } from '../../database/entities/subscription-offer.entity';
+import type { IGatewayPriceRepository } from '../../database/repositories/interfaces/gateway-price-repository.interface';
+import type { IGatewayCustomerRepository } from '../../database/repositories/interfaces/gateway-customer.repository';
 
 @Injectable()
 export class PaymentService {
-  private readonly handlerMap: Map<
-    WebhookEventResult['type'],
-    WebhookEventHandler
-  >;
+  private readonly handlerMap: Map<WebhookEventType, WebhookEventHandler>;
 
   constructor(
     @Inject(PAYMENT_GATEWAY)
