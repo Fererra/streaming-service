@@ -21,8 +21,6 @@ const AppDataSource = new DataSource({
     __dirname + '/../libs/**/*.entity{.ts,.js}',
   ],
   migrations: [__dirname + '/migrations/*{.ts,.js}'],
-  synchronize: false,
-  migrationsRun: false,
 });
 
 export default AppDataSource;
