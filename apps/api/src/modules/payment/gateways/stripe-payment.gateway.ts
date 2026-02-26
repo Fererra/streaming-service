@@ -10,7 +10,7 @@ import {
   CreateCustomerRequest,
 } from '../interfaces/payment-gateway.interface';
 import { STRIPE_CLIENT } from '../payment.tokens';
-import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
+import { PaymentGatewayProvider, PaymentMetadata } from '@app/payment';
 
 @Injectable()
 export class StripePaymentGateway implements PaymentGateway {
@@ -100,12 +100,12 @@ export class StripePaymentGateway implements PaymentGateway {
       'checkout.session.completed',
       (obj) => {
         const session = obj as Stripe.Checkout.Session;
+
         return {
           type: 'checkout.completed',
           externalSessionId: session.id,
-          externalSubscriptionId: session.subscription as string,
-          externalPaymentId: session.payment_intent as string,
-          metadata: (session.metadata as Record<string, string>) ?? {},
+          externalInvoiceId: session.invoice as string,
+          metadata: (session.metadata as unknown as PaymentMetadata) ?? {},
         };
       },
     ],
@@ -116,9 +116,8 @@ export class StripePaymentGateway implements PaymentGateway {
         return {
           type: 'checkout.expired',
           externalSessionId: session.id,
-          externalSubscriptionId: session.subscription as string,
-          externalPaymentId: session.payment_intent as string,
-          metadata: (session.metadata as Record<string, string>) ?? {},
+          externalInvoiceId: session.invoice as string,
+          metadata: (session.metadata as unknown as PaymentMetadata) ?? {},
         };
       },
     ],
@@ -126,14 +125,19 @@ export class StripePaymentGateway implements PaymentGateway {
       'invoice.paid',
       (obj) => {
         const invoice = obj as Stripe.Invoice;
+
         return {
           type: 'invoice.paid',
           billingReason: invoice.billing_reason,
           externalSessionId: null,
           externalSubscriptionId: invoice.parent?.subscription_details
             ?.subscription as string,
-          externalPaymentId: invoice.id as string,
-          metadata: (invoice.metadata as Record<string, string>) ?? {},
+          externalInvoiceId: invoice.id as string,
+          paidAt: this.fromStripeTs(invoice.status_transitions.paid_at),
+          currentPeriodEnd: this.fromStripeTs(invoice.lines.data[0].period.end),
+          metadata:
+            (invoice.lines.data[0].metadata as unknown as PaymentMetadata) ??
+            {},
           amount: invoice.amount_paid / 100,
           currency: invoice.currency,
         };
@@ -149,14 +153,22 @@ export class StripePaymentGateway implements PaymentGateway {
           externalSessionId: null,
           externalSubscriptionId: invoice.parent?.subscription_details
             ?.subscription as string,
-          externalPaymentId: invoice.id as string,
-          metadata: (invoice.metadata as Record<string, string>) ?? {},
+          externalInvoiceId: invoice.id as string,
+          paidAt: null,
+          currentPeriodEnd: null,
+          metadata:
+            (invoice.lines.data[0].metadata as unknown as PaymentMetadata) ??
+            {},
           amount: invoice.amount_due / 100,
           currency: invoice.currency,
         };
       },
     ],
+    // ['customer.subscription.deleted', (obj) => {}],
   ]);
+
+  private fromStripeTs = (ts?: number | null): Date | null =>
+    ts ? new Date(ts * 1000) : null;
 
   async constructWebhookEvent(
     payload: Buffer,

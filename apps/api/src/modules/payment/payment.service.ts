@@ -1,18 +1,18 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { PAYMENT_GATEWAY, WEBHOOK_EVENT_HANDLERS } from './payment.tokens';
-import type {
-  PaymentGateway,
-  WebhookEventType,
-} from './interfaces/payment-gateway.interface';
-import type { WebhookEventHandler } from './interfaces/webhook-event-handler.interface';
-import type { IPaymentRepository } from '../../database/repositories/interfaces/payment-repository.interface';
+import { PAYMENT_GATEWAY } from './payment.tokens';
+import type { PaymentGateway } from './interfaces/payment-gateway.interface';
 import {
   GATEWAY_CUSTOMER_REPOSITORY,
   GATEWAY_PRICE_REPOSITORY,
-  PAYMENT_REPOSITORY,
 } from '../../database/repositories/tokens/repository.tokens';
-import { PaymentStatus } from './enums/payment-status.enum';
-import { PaymentGatewayProvider } from './enums/payment-gateway-provider.enum';
+import {
+  type IPaymentRepository,
+  PAYMENT_REPOSITORY,
+  PaymentStatus,
+  PaymentGatewayProvider,
+  PAYMENT_QUEUE_SERVICE,
+  type IPaymentQueueService,
+} from '@app/payment';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { UsersService } from '../users/services/users.service';
 import { SubscriptionOfferEntity } from '../../database/entities/subscription-offer.entity';
@@ -21,8 +21,6 @@ import type { IGatewayCustomerRepository } from '../../database/repositories/int
 
 @Injectable()
 export class PaymentService {
-  private readonly handlerMap: Map<WebhookEventType, WebhookEventHandler>;
-
   constructor(
     @Inject(PAYMENT_GATEWAY)
     private readonly paymentGateway: PaymentGateway,
@@ -32,14 +30,10 @@ export class PaymentService {
     private readonly gatewayPriceRepository: IGatewayPriceRepository,
     @Inject(GATEWAY_CUSTOMER_REPOSITORY)
     private readonly gatewayCustomerRepository: IGatewayCustomerRepository,
-    @Inject(WEBHOOK_EVENT_HANDLERS)
-    private readonly webhookEventHandlers: WebhookEventHandler[],
+    @Inject(PAYMENT_QUEUE_SERVICE)
+    private readonly paymentQueueService: IPaymentQueueService,
     private readonly usersService: UsersService,
-  ) {
-    this.handlerMap = new Map(
-      this.webhookEventHandlers.map((h) => [h.eventType, h]),
-    );
-  }
+  ) {}
 
   async syncOfferToGateway(offer: SubscriptionOfferEntity) {
     const { id: externalPriceId } = await this.paymentGateway.createPrice({
@@ -85,12 +79,13 @@ export class PaymentService {
     });
 
     await this.paymentRepository.create({
+      userId,
+      subscriptionOfferId: dto.offerId,
       externalSessionId: checkoutResponse.sessionId,
       status: PaymentStatus.PENDING,
       amount: Number(gatewayOffer.offer.price),
       currency: dto.currency ?? 'USD',
       gateway: PaymentGatewayProvider.STRIPE,
-      user: { id: userId } as any,
     });
 
     return { checkoutUrl: checkoutResponse.checkoutUrl };
@@ -128,10 +123,6 @@ export class PaymentService {
       signature,
     );
 
-    const handler = this.handlerMap.get(event.type);
-
-    if (handler) {
-      await handler.handle(event);
-    }
+    await this.paymentQueueService.dispatchEvent(event.type, event);
   }
 }

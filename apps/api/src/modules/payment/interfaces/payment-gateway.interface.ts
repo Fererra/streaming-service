@@ -1,4 +1,5 @@
-import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
+import { EventPayload, EventType } from '@app/payment';
+import { PaymentGatewayProvider } from '@app/payment';
 
 export interface CreatePriceRequest {
   id: string;
@@ -26,34 +27,10 @@ export interface CheckoutSessionResponse {
   checkoutUrl: string;
 }
 
-export type WebhookEventType =
-  | 'checkout.completed'
-  | 'checkout.expired'
-  | 'invoice.paid'
-  | 'invoice.payment_failed';
+export type WebhookEventResult = EventPayload<EventType> & {
+  type: EventType;
+};
 
-export type Status =
-  | 'active'
-  | 'canceled'
-  | 'incomplete'
-  | 'incomplete_expired'
-  | 'past_due'
-  | 'paused'
-  | 'trialing'
-  | 'unpaid';
-
-export interface WebhookEventResult {
-  type: WebhookEventType;
-  billingReason?: string | null;
-  externalSessionId: string | null;
-  externalSubscriptionId: string | null;
-  externalPaymentId: string | null;
-  cancelAtPeriodEnd?: boolean;
-  status?: Status;
-  metadata: Record<string, string>;
-  amount?: number;
-  currency?: string;
-}
 export interface PaymentGateway {
   readonly gateway: PaymentGatewayProvider;
 
