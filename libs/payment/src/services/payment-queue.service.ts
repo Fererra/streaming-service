@@ -1,11 +1,11 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { PAYMENT_QUEUE } from './constants/constants';
+import { PAYMENT_QUEUE } from '../constants/constants';
 import { Queue } from 'bullmq';
 import {
   EventType,
   PaymentEventMap,
-} from './interfaces/payment-events.interface';
-import { IPaymentQueueService } from './interfaces/payment-queue-service.interface';
+} from '../interfaces/payment-events.interface';
+import { IPaymentQueueService } from '../interfaces/payment-queue-service.interface';
 
 export class PaymentQueueService implements IPaymentQueueService {
   constructor(@InjectQueue(PAYMENT_QUEUE) private readonly queue: Queue) {}

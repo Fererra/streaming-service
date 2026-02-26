@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
-import { UserSubscriptionEntity } from './entities/user-subscription.entity';
-import { SubscriptionStatus } from './enums/subscription-status.enum';
+import { UserSubscriptionEntity } from '../entities/user-subscription.entity';
+import { SubscriptionStatus } from '../enums/subscription-status.enum';
 import { PaymentEntity } from '@app/payment/entities/payment.entity';
 import {
   InvoicePaidPayload,
