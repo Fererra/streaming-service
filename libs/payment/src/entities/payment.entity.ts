@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -40,6 +41,9 @@ export class PaymentEntity {
     length: 255,
     nullable: true,
   })
+  @Index('idx_payments_external_invoice_id', {
+    where: '"external_invoice_id" IS NOT NULL',
+  })
   externalInvoiceId: string | null;
 
   @Column({
@@ -47,6 +51,9 @@ export class PaymentEntity {
     type: 'varchar',
     length: 255,
     nullable: true,
+  })
+  @Index('idx_payments_external_session_id', {
+    where: '"external_session_id" IS NOT NULL',
   })
   externalSessionId: string | null;
 
