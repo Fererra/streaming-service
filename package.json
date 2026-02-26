@@ -30,7 +30,7 @@
     "docker:dev:infra": "docker compose -f compose.infra.dev.yaml up -d",
     "docker:prod": "docker compose -f compose.prod.yaml --env-file .env.production.local up --build -d",
     "docker:test": "docker compose -f compose.test.yaml up --build",
-    "typeorm": "NODE_ENV=development typeorm-ts-node-commonjs -d ./database/data-source.ts",
+    "typeorm": "NODE_ENV=development ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js -d ./database/data-source.ts",
     "migration:create": "npx typeorm migration:create",
     "migration:generate": "npm run typeorm migration:generate",
     "migration:run": "npm run typeorm migration:run",
