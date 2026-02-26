@@ -24,7 +24,7 @@ export class SubscriptionOfferEntity {
   @Check('duration_months > 0')
   durationMonths: number;
 
-  @Column({ name: 'price', type: 'decimal', precision: 5, scale: 2 })
+  @Column({ type: 'int' })
   @Check('price >= 0')
   price: number;
 
