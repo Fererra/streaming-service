@@ -21,6 +21,13 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
-    "paths": {}
+    "paths": {
+      "@app/config": ["libs/config/src"],
+      "@app/config/*": ["libs/config/src/*"],
+      "@app/payment": ["libs/payment/src"],
+      "@app/payment/*": ["libs/payment/src/*"],
+      "@app/user-subscription": ["libs/user-subscription/src"],
+      "@app/user-subscription/*": ["libs/user-subscription/src/*"]
+    }
   }
 }

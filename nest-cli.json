@@ -19,6 +19,24 @@
         "tsConfigPath": "apps/api/tsconfig.app.json"
       }
     },
+    "config": {
+      "type": "library",
+      "root": "libs/config",
+      "entryFile": "index",
+      "sourceRoot": "libs/config/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/config/tsconfig.lib.json"
+      }
+    },
+    "payment": {
+      "type": "library",
+      "root": "libs/payment",
+      "entryFile": "index",
+      "sourceRoot": "libs/payment/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/payment/tsconfig.lib.json"
+      }
+    },
     "payment-worker": {
       "type": "application",
       "root": "apps/payment-worker",
@@ -26,6 +44,15 @@
       "sourceRoot": "apps/payment-worker/src",
       "compilerOptions": {
         "tsConfigPath": "apps/payment-worker/tsconfig.app.json"
+      }
+    },
+    "subscription": {
+      "type": "library",
+      "root": "libs/subscription",
+      "entryFile": "index",
+      "sourceRoot": "libs/subscription/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/subscription/tsconfig.lib.json"
       }
     }
   }
