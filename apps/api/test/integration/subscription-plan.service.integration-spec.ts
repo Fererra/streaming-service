@@ -9,7 +9,8 @@ import { SubscriptionPlanService } from '../../src/modules/subscription/services
 import { OfferEntityFactory } from '../../src/modules/subscription/factories/offer-entity.factory';
 import { DatabaseModule } from '../../src/database/database.module';
 import { SubscriptionPlanEntity } from '../../src/database/entities/subscription-plan.entity';
-import { SubscriptionOfferEntity } from '../../src/database/entities/subscription-offer.entity';
+import { SubscriptionOfferService } from '../../src/modules/subscription/services/subscription-offer.service';
+import { PaymentService } from '../../src/modules/payment/payment.service';
 import { randomUUID } from 'crypto';
 
 describe('SubscriptionPlanService (integration)', () => {
@@ -17,10 +18,19 @@ describe('SubscriptionPlanService (integration)', () => {
   let subscriptionPlanService: SubscriptionPlanService;
   let dataSource: DataSource;
 
+  const mockPaymentService = {
+    syncOfferToGateway: jest.fn().mockResolvedValue(undefined),
+  };
+
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [DatabaseModule],
-      providers: [SubscriptionPlanService, OfferEntityFactory],
+      providers: [
+        SubscriptionPlanService,
+        SubscriptionOfferService,
+        OfferEntityFactory,
+        { provide: PaymentService, useValue: mockPaymentService },
+      ],
     }).compile();
 
     app = moduleRef.createNestApplication();

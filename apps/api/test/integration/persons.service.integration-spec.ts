@@ -35,11 +35,9 @@ describe('PersonsService (integration)', () => {
     personsService = app.get(PersonsService);
     dataSource = app.get(DataSource);
 
-    country = dataSource.getRepository(CountryEntity).create({
+    country = (await dataSource.getRepository(CountryEntity).findOneBy({
       code: 'US',
-      countryName: 'United States',
-    });
-    await dataSource.getRepository(CountryEntity).save(country);
+    })) as CountryEntity;
   });
 
   afterEach(async () => {
@@ -58,7 +56,7 @@ describe('PersonsService (integration)', () => {
         firstName: 'John',
         lastName: 'Doe',
         dateOfBirth: new Date('1990-01-01'),
-        country: 'US',
+        country: country.code,
       });
 
       expect(person).toBeDefined();
