@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InvoicePaidPayload } from '@app/payment';
 import { IPaymentEventHandler } from '../interfaces/payment-event-handler.interface';
 
-import { UserSubscriptionService } from '@app/user-subscription/user-subscription.service';
+import { UserSubscriptionService } from '@app/user-subscription';
 
 @Injectable()
 export class InvoicePaidHandler implements IPaymentEventHandler<'invoice.paid'> {
