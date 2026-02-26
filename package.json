@@ -19,6 +19,7 @@
     "start:prod:payment-worker": "node dist/apps/payment-worker/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test:api:unit": "jest --config apps/api/test/jest-unit.js",
+    "test:libs:unit": "jest --config libs/jest.config.js",
     "test:api:integration": "NODE_ENV=test docker compose -f compose.test.yaml --profile integration up -d --wait && jest --config apps/api/test/jest-integration.js --runInBand && docker compose -f compose.test.yaml --profile integration down -v",
     "test:api:e2e": "docker compose -f compose.test.yaml --profile e2e up --build -d --wait && jest --config apps/api/test/jest-e2e.js --runInBand && docker compose -f compose.test.yaml --profile e2e down -v",
     "test:all": "jest --projects apps/*/test/jest-unit.js",
