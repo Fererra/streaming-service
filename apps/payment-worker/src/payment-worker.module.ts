@@ -10,8 +10,8 @@ import { databaseConfig, queueConfig } from '@app/config';
 import { EventType, PaymentModule } from '@app/payment';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentProcessor } from './payment.processor';
-import { UserSubscriptionPersistenceModule } from '@app/user-subscription';
 import { PaymentEventService } from './services/payment-event.service';
+import { UserSubscriptionModule } from '@app/user-subscription';
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { PaymentEventService } from './services/payment-event.service';
       }),
     }),
     PaymentModule,
-    UserSubscriptionPersistenceModule,
+    UserSubscriptionModule,
   ],
   providers: [
     PaymentProcessor,
