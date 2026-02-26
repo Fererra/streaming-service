@@ -37,7 +37,7 @@ export class StripePaymentGateway implements PaymentGateway {
     const price = await this.stripe.prices.create({
       product: product.id,
       currency: request?.currency ?? 'USD',
-      unit_amount: Math.round(request.amount * 100),
+      unit_amount: request.amount,
       recurring: {
         interval: 'month',
         interval_count: request.durationMonths,
