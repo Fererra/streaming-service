@@ -10,13 +10,22 @@ import { PersonsModule } from './modules/persons/persons.module';
 import { MoviesModule } from './modules/movies/movies.module';
 import { UsersModule } from './modules/users/users.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
-import { PaymentModule } from './modules/payment/payment.module';
+import { PaymentApiModule } from './modules/payment/payment-api.module';
+import { queueConfig } from '@app/config';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       envFilePath: `.env.${process.env.NODE_ENV}.local`,
       isGlobal: true,
+    }),
+    BullModule.forRootAsync({
+      useFactory: async () => ({
+        connection: {
+          ...queueConfig(),
+        },
+      }),
     }),
     ScheduleModule.forRoot(),
     UsersModule,
@@ -27,10 +36,10 @@ import { PaymentModule } from './modules/payment/payment.module';
     PersonsModule,
     MoviesModule,
     SubscriptionModule,
-    PaymentModule,
+    PaymentApiModule,
     RouterModule.register([
       { path: 'admin', module: AdminModule },
-      { path: 'payments', module: PaymentModule },
+      { path: 'payments', module: PaymentApiModule },
     ]),
   ],
 })
