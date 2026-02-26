@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import AppDataSource from './data-source';
 import { UsersRepository } from './repositories/users.repository';
 import { UserEntity } from './entities/user.entity';
 import { RefreshTokenRepository } from './repositories/refresh-token.repository';
@@ -13,7 +12,6 @@ import {
   GENRES_REPOSITORY,
   MOVIE_CREDITS_REPOSITORY,
   MOVIES_REPOSITORY,
-  PAYMENT_REPOSITORY,
   PERSONS_REPOSITORY,
   REFRESH_TOKEN_REPOSITORY,
   SUBSCRIPTION_OFFER_REPOSITORY,
@@ -39,18 +37,17 @@ import { SubscriptionPlanEntity } from './entities/subscription-plan.entity';
 import { SubscriptionOfferEntity } from './entities/subscription-offer.entity';
 import { SubscriptionPlanRepository } from './repositories/subscription-plan.repository';
 import { SubscriptionOfferRepository } from './repositories/subscription-offer.repository';
-import { PaymentEntity } from './entities/payment.entity';
-import { PaymentRepository } from './repositories/payment.repository';
 import { SubscriptionOfferGatewayPriceEntity } from './entities/gateway-price.entity';
 import { GatewayPriceRepository } from './repositories/gateway-price.repository';
 import { UserGatewayCustomerEntity } from './entities/gateway-customer.entity';
 import { GatewayCustomerRepository } from './repositories/gateway-customer.repository';
+import { databaseConfig } from '@app/config';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync({
       useFactory: async () => ({
-        ...AppDataSource.options,
+        ...databaseConfig(),
       }),
     }),
     TypeOrmModule.forFeature([
@@ -65,7 +62,6 @@ import { GatewayCustomerRepository } from './repositories/gateway-customer.repos
       UploadIntentEntity,
       SubscriptionPlanEntity,
       SubscriptionOfferEntity,
-      PaymentEntity,
       SubscriptionOfferGatewayPriceEntity,
       UserGatewayCustomerEntity,
     ]),
@@ -88,7 +84,6 @@ import { GatewayCustomerRepository } from './repositories/gateway-customer.repos
       provide: SUBSCRIPTION_OFFER_REPOSITORY,
       useClass: SubscriptionOfferRepository,
     },
-    { provide: PAYMENT_REPOSITORY, useClass: PaymentRepository },
     { provide: GATEWAY_PRICE_REPOSITORY, useClass: GatewayPriceRepository },
     {
       provide: GATEWAY_CUSTOMER_REPOSITORY,
@@ -107,7 +102,6 @@ import { GatewayCustomerRepository } from './repositories/gateway-customer.repos
     UPLOAD_INTENTS_REPOSITORY,
     SUBSCRIPTION_PLAN_REPOSITORY,
     SUBSCRIPTION_OFFER_REPOSITORY,
-    PAYMENT_REPOSITORY,
     GATEWAY_PRICE_REPOSITORY,
     GATEWAY_CUSTOMER_REPOSITORY,
   ],

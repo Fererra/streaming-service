@@ -1,7 +1,7 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserGatewayCustomerEntity } from '../entities/gateway-customer.entity';
 import { Repository } from 'typeorm';
-import { PaymentGatewayProvider } from '../../modules/payment/enums/payment-gateway-provider.enum';
+import { PaymentGatewayProvider } from '@app/payment';
 import { IGatewayCustomerRepository } from './interfaces/gateway-customer.repository';
 
 export class GatewayCustomerRepository implements IGatewayCustomerRepository {

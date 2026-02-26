@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubscriptionOfferGatewayPriceEntity } from '../entities/gateway-price.entity';
 import { Repository } from 'typeorm';
-import { PaymentGatewayProvider } from '../../modules/payment/enums/payment-gateway-provider.enum';
+import { PaymentGatewayProvider } from '@app/payment';
 import { IGatewayPriceRepository } from './interfaces/gateway-price-repository.interface';
 
 @Injectable()

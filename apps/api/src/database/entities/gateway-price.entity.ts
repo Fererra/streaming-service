@@ -1,4 +1,4 @@
-import { PaymentGatewayProvider } from '../../modules/payment/enums/payment-gateway-provider.enum';
+import { PaymentGatewayProvider } from '@app/payment';
 import {
   Entity,
   PrimaryGeneratedColumn,
