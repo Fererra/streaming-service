@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { SubscriptionStatus } from '../enums/subscription-status.enum';
 
 @Entity('user_subscriptions')
@@ -23,6 +23,7 @@ export class UserSubscriptionEntity {
     type: 'varchar',
     length: 255,
   })
+  @Index('idx_external_subscription_id')
   externalSubscriptionId: string;
 
   @Column({
