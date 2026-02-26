@@ -1,4 +1,5 @@
 import {
+  Check,
   Column,
   CreateDateColumn,
   Entity,
@@ -65,7 +66,8 @@ export class PaymentEntity {
   })
   status: PaymentStatus;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  @Column({ type: 'integer' })
+  @Check(`"amount" >= 0`)
   amount: number;
 
   @Column({ type: 'varchar', length: 3, default: 'USD' })

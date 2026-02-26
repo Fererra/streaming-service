@@ -138,7 +138,7 @@ export class StripePaymentGateway implements PaymentGateway {
           metadata:
             (invoice.lines.data[0].metadata as unknown as PaymentMetadata) ??
             {},
-          amount: invoice.amount_paid / 100,
+          amount: invoice.amount_paid,
           currency: invoice.currency,
         };
       },
@@ -159,7 +159,7 @@ export class StripePaymentGateway implements PaymentGateway {
           metadata:
             (invoice.lines.data[0].metadata as unknown as PaymentMetadata) ??
             {},
-          amount: invoice.amount_due / 100,
+          amount: invoice.amount_due,
           currency: invoice.currency,
         };
       },

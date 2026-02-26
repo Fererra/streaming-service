@@ -83,7 +83,7 @@ export class PaymentService {
       subscriptionOfferId: dto.offerId,
       externalSessionId: checkoutResponse.sessionId,
       status: PaymentStatus.PENDING,
-      amount: Number(gatewayOffer.offer.price),
+      amount: Number(gatewayOffer.offer.price) * 100,
       currency: dto.currency ?? 'USD',
       gateway: PaymentGatewayProvider.STRIPE,
     });
