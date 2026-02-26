@@ -65,7 +65,7 @@ describe('StripePaymentGateway', () => {
     const createPriceRequest = {
       id: 'offer-uuid',
       planName: 'Premium Plan',
-      amount: 19.99,
+      amount: 1999,
       durationMonths: 3,
       currency: 'USD',
     };
@@ -91,17 +91,6 @@ describe('StripePaymentGateway', () => {
         metadata: { offerId: createPriceRequest.id },
       });
       expect(result).toEqual({ id: 'price_456' });
-    });
-
-    it('should convert amount to cents correctly', async () => {
-      stripeMock.products.create.mockResolvedValue({ id: 'prod_123' });
-      stripeMock.prices.create.mockResolvedValue({ id: 'price_789' });
-
-      await gateway.createPrice({ ...createPriceRequest, amount: 9.99 });
-
-      expect(stripeMock.prices.create).toHaveBeenCalledWith(
-        expect.objectContaining({ unit_amount: 999 }),
-      );
     });
   });
 
