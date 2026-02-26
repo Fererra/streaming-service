@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PaymentEntity } from './entities/payment.entity';
-import { PAYMENT_REPOSITORY } from './constants/constants';
-import { PaymentRepository } from './repositories/payment.repository';
+import { PaymentEntity } from '../entities/payment.entity';
+import { PAYMENT_REPOSITORY } from '../constants/constants';
+import { PaymentRepository } from '../repositories/payment.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([PaymentEntity])],

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { UserSubscriptionPersistenceModule } from './user-subscription-persistence.module';
-import { UserSubscriptionService } from './services/user-subscription.service';
+import { UserSubscriptionService } from '../services/user-subscription.service';
 
 @Module({
   imports: [UserSubscriptionPersistenceModule],
