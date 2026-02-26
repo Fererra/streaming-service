@@ -18,7 +18,7 @@ describe('UserSubscriptionService', () => {
     billingReason: 'subscription_create',
     currentPeriodEnd: new Date('2026-03-26'),
     paidAt: new Date('2026-02-26'),
-    amount: 9.99,
+    amount: 999,
     currency: 'USD',
     metadata: {
       userId: 'user-uuid-123',
