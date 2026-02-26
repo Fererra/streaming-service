@@ -1,11 +1,13 @@
 services:
-  server:
+  api:
     build:
       context: .
       target: production
+      args:
+        APP_NAME: api
     restart: unless-stopped
     ports:
-      - '${APP_PORT:-80}:3000'
+      - '${API_PORT:-80}:3000'
     environment:
       NODE_ENV: production
     env_file:
@@ -15,3 +17,28 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
+    networks:
+      - backend
+
+  payment-worker:
+    build:
+      context: .
+      target: production
+      args:
+        APP_NAME: payment-worker
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    env_file:
+      - .env.production.local
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '10m'
+        max-file: '3'
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge

@@ -1,10 +1,12 @@
 services:
-  server:
+  api:
     build:
       context: .
+      dockerfile: apps/api/Dockerfile
       target: development
     volumes:
-      - ./src:/usr/src/app/src
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
       - ~/.config/gcloud:/root/.config/gcloud:ro
     environment:
       NODE_ENV: development
@@ -15,38 +17,53 @@ services:
     ports:
       - 3000:3000
     depends_on:
-      dev_db:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  payment-worker:
+    build:
+      context: .
+      dockerfile: apps/payment-worker/Dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development.local
+    networks:
+      - backend
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   stripe-cli:
     image: stripe/stripe-cli:latest
-    command: listen --forward-to server:3000/payments/webhook/stripe --api-key ${STRIPE_SECRET_KEY}
+    command: listen --forward-to api:3000/payments/webhook/stripe --api-key ${STRIPE_SECRET_KEY}
     networks:
       - backend
     depends_on:
-      - server
+      - api
 
-  dev_db:
-    image: postgres:18-alpine
-    restart: always
-    volumes:
-      - pgdata:/var/lib/postgresql
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: streaming-service-dev
-    networks:
-      - backend
-    expose:
-      - 5432
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER']
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  db:
+    extends:
+      file: compose.infra.dev.yaml
+      service: db
 
-volumes:
-  pgdata:
+  redis:
+    extends:
+      file: compose.infra.dev.yaml
+      service: redis
+
 networks:
   backend:
     driver: bridge
+
+volumes:
+  pgdata:
+  redisdata:

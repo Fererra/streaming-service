@@ -1,16 +1,22 @@
 services:
-  server:
+  api:
     build:
       context: .
       target: test
+      args:
+        APP_NAME: api
     environment:
       NODE_ENV: test
     env_file:
       - .env.test.local
     ports:
       - '3000:3000'
+    networks:
+      - backend
     depends_on:
       test_db:
+        condition: service_healthy
+      test_redis:
         condition: service_healthy
     profiles:
       - e2e
@@ -28,6 +34,27 @@ services:
       interval: 1s
       timeout: 5s
       retries: 10
+    networks:
+      - backend
     profiles:
       - integration
       - e2e
+
+  test_redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 1s
+      timeout: 5s
+      retries: 10
+    networks:
+      - backend
+    profiles:
+      - integration
+      - e2e
+
+networks:
+  backend:
+    driver: bridge
