@@ -11,8 +11,8 @@ describe('OfferEntityFactory', () => {
   describe('createFromDto', () => {
     it('should create offer entities from DTO without subscriptionPlanId', () => {
       const offers: CreateOfferDto[] = [
-        { durationMonths: 1, price: 9.99 },
-        { durationMonths: 6, price: 49.99 },
+        { durationMonths: 1, price: 999 },
+        { durationMonths: 6, price: 4999 },
       ];
 
       const result = factory.createFromDto(offers);
@@ -29,7 +29,7 @@ describe('OfferEntityFactory', () => {
     });
 
     it('should create offer entities from DTO with subscriptionPlanId', () => {
-      const offers: CreateOfferDto[] = [{ durationMonths: 12, price: 89.99 }];
+      const offers: CreateOfferDto[] = [{ durationMonths: 12, price: 8999 }];
 
       const result = factory.createFromDto(offers, 'plan-123');
 
@@ -43,9 +43,9 @@ describe('OfferEntityFactory', () => {
 
     it('should handle multiple offers with subscriptionPlanId', () => {
       const offers: CreateOfferDto[] = [
-        { durationMonths: 1, price: 9.99 },
-        { durationMonths: 3, price: 24.99 },
-        { durationMonths: 12, price: 89.99 },
+        { durationMonths: 1, price: 999 },
+        { durationMonths: 3, price: 2499 },
+        { durationMonths: 12, price: 8999 },
       ];
 
       const result = factory.createFromDto(offers, 'plan-456');
@@ -69,7 +69,7 @@ describe('OfferEntityFactory', () => {
     });
 
     it('should not include subscriptionPlan when subscriptionPlanId is undefined', () => {
-      const offers: CreateOfferDto[] = [{ durationMonths: 1, price: 5.0 }];
+      const offers: CreateOfferDto[] = [{ durationMonths: 1, price: 500 }];
 
       const result = factory.createFromDto(offers, undefined);
 
@@ -80,11 +80,11 @@ describe('OfferEntityFactory', () => {
       expect(result[0]).not.toHaveProperty('subscriptionPlan');
     });
 
-    it('should convert prices to cents correctly', () => {
+    it('should pass through price values as-is', () => {
       const offers: CreateOfferDto[] = [
-        { durationMonths: 1, price: 10.5 },
-        { durationMonths: 3, price: 25.99 },
-        { durationMonths: 12, price: 100.0 },
+        { durationMonths: 1, price: 1050 },
+        { durationMonths: 3, price: 2599 },
+        { durationMonths: 12, price: 10000 },
       ];
 
       const result = factory.createFromDto(offers);
@@ -92,18 +92,6 @@ describe('OfferEntityFactory', () => {
       expect(result[0].price).toBe(1050);
       expect(result[1].price).toBe(2599);
       expect(result[2].price).toBe(10000);
-    });
-
-    it('should round prices to nearest cent', () => {
-      const offers: CreateOfferDto[] = [
-        { durationMonths: 1, price: 10.006 },
-        { durationMonths: 3, price: 9.994 },
-      ];
-
-      const result = factory.createFromDto(offers);
-
-      expect(result[0].price).toBe(1001); // 10.006 * 100 = 1000.6 rounds to 1001
-      expect(result[1].price).toBe(999); // 9.994 * 100 = 999.4 rounds to 999
     });
 
     it('should handle zero price', () => {

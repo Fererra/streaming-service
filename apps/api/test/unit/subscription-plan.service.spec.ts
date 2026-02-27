@@ -53,37 +53,68 @@ describe('SubscriptionPlanService', () => {
   });
 
   describe('findAllWithOffersForAdmin', () => {
-    it('should return all subscription plans with offers', () => {
+    it('should return all subscription plans with normalized prices', async () => {
       const mockPlans = [
-        { id: 'plan-1', name: 'Basic', offers: [] },
-        { id: 'plan-2', name: 'Premium', offers: [] },
+        {
+          id: 'plan-1',
+          name: 'Basic',
+          offers: [{ id: 'offer-1', durationMonths: 1, price: 999 }],
+        },
+        {
+          id: 'plan-2',
+          name: 'Premium',
+          offers: [{ id: 'offer-2', durationMonths: 12, price: 9999 }],
+        },
       ];
-      subscriptionPlanRepositoryMock.findAllWithOffers.mockReturnValue(
+      subscriptionPlanRepositoryMock.findAllWithOffers.mockResolvedValue(
         mockPlans,
       );
 
-      const result = service.findAllWithOffersForAdmin();
+      const result = await service.findAllWithOffersForAdmin();
 
       expect(
         subscriptionPlanRepositoryMock.findAllWithOffers,
       ).toHaveBeenCalled();
-      expect(result).toEqual(mockPlans);
+      expect(result).toEqual([
+        {
+          id: 'plan-1',
+          name: 'Basic',
+          offers: [{ id: 'offer-1', durationMonths: 1, price: '9.99' }],
+        },
+        {
+          id: 'plan-2',
+          name: 'Premium',
+          offers: [{ id: 'offer-2', durationMonths: 12, price: '99.99' }],
+        },
+      ]);
     });
   });
 
   describe('findAllWithOffersForUser', () => {
-    it('should return active subscription plans with offers', () => {
-      const mockPlans = [{ id: 'plan-1', name: 'Basic', offers: [] }];
-      subscriptionPlanRepositoryMock.findActiveWithOffers.mockReturnValue(
+    it('should return active subscription plans with normalized prices', async () => {
+      const mockPlans = [
+        {
+          id: 'plan-1',
+          name: 'Basic',
+          offers: [{ id: 'offer-1', durationMonths: 1, price: 999 }],
+        },
+      ];
+      subscriptionPlanRepositoryMock.findActiveWithOffers.mockResolvedValue(
         mockPlans,
       );
 
-      const result = service.findAllWithOffersForUser();
+      const result = await service.findAllWithOffersForUser();
 
       expect(
         subscriptionPlanRepositoryMock.findActiveWithOffers,
       ).toHaveBeenCalled();
-      expect(result).toEqual(mockPlans);
+      expect(result).toEqual([
+        {
+          id: 'plan-1',
+          name: 'Basic',
+          offers: [{ id: 'offer-1', durationMonths: 1, price: '9.99' }],
+        },
+      ]);
     });
   });
 
@@ -96,7 +127,7 @@ describe('SubscriptionPlanService', () => {
 
     it('should create a subscription plan successfully', async () => {
       subscriptionPlanRepositoryMock.existsBy.mockResolvedValue(false);
-      const mockOfferEntities = [{ durationMonths: 1, price: 9.99 }];
+      const mockOfferEntities = [{ durationMonths: 1, price: 999 }];
       offerEntityFactoryMock.createFromDto.mockReturnValue(mockOfferEntities);
       const mockSavedPlan = {
         id: 'plan-1',
@@ -110,8 +141,9 @@ describe('SubscriptionPlanService', () => {
       expect(subscriptionPlanRepositoryMock.existsBy).toHaveBeenCalledWith({
         name: 'Premium',
       });
+      const normalizedOffers = [{ durationMonths: 1, price: 999 }];
       expect(offerEntityFactoryMock.createFromDto).toHaveBeenCalledWith(
-        createDto.offers,
+        normalizedOffers,
       );
       expect(subscriptionPlanRepositoryMock.save).toHaveBeenCalledWith(
         { name: 'Premium', description: 'Premium plan' },

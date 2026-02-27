@@ -70,8 +70,8 @@ describe('SubscriptionOfferService', () => {
       const mockPlan = { id: planId, name: 'Test Plan' };
       subscriptionPlanRepositoryMock.findById.mockResolvedValue(mockPlan);
       const mockOfferEntities = [
-        { durationMonths: 1, price: 9.99, subscriptionPlanId: planId },
-        { durationMonths: 6, price: 49.99, subscriptionPlanId: planId },
+        { durationMonths: 1, price: 999, subscriptionPlanId: planId },
+        { durationMonths: 6, price: 4999, subscriptionPlanId: planId },
       ];
       offerEntityFactoryMock.createFromDto.mockReturnValue(mockOfferEntities);
       subscriptionOfferRepositoryMock.findOffersByPlanAndDurations.mockResolvedValue(
@@ -84,8 +84,12 @@ describe('SubscriptionOfferService', () => {
       expect(subscriptionPlanRepositoryMock.findById).toHaveBeenCalledWith(
         planId,
       );
+      const normalizedOffersDto = [
+        { durationMonths: 1, price: 999 },
+        { durationMonths: 6, price: 4999 },
+      ];
       expect(offerEntityFactoryMock.createFromDto).toHaveBeenCalledWith(
-        createOffersDto,
+        normalizedOffersDto,
         planId,
       );
       expect(
@@ -165,7 +169,7 @@ describe('SubscriptionOfferService', () => {
       expect(subscriptionOfferRepositoryMock.update).toHaveBeenCalledWith(
         offerId,
         planId,
-        updateDto,
+        { price: 1499 },
       );
     });
 
