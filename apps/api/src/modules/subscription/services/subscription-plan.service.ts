@@ -10,6 +10,8 @@ import type { ISubscriptionPlanRepository } from '../../../database/repositories
 import { SUBSCRIPTION_PLAN_REPOSITORY } from '../../../database/repositories/tokens/repository.tokens';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import { SubscriptionOfferService } from './subscription-offer.service';
+import { Money } from '../helper/money';
+import { SubscriptionPlanEntity } from '../../../../src/database/entities/subscription-plan.entity';
 
 @Injectable()
 export class SubscriptionPlanService {
@@ -20,12 +22,26 @@ export class SubscriptionPlanService {
     private readonly offerEntityFactory: OfferEntityFactory,
   ) {}
 
-  findAllWithOffersForAdmin() {
-    return this.subscriptionPlanRepository.findAllWithOffers();
+  async findAllWithOffersForAdmin() {
+    const plans = await this.subscriptionPlanRepository.findAllWithOffers();
+
+    return this.normalizeSubscriptionPlans(plans);
   }
 
-  findAllWithOffersForUser() {
-    return this.subscriptionPlanRepository.findActiveWithOffers();
+  async findAllWithOffersForUser() {
+    const plans = await this.subscriptionPlanRepository.findActiveWithOffers();
+
+    return this.normalizeSubscriptionPlans(plans);
+  }
+
+  private normalizeSubscriptionPlans(plans: SubscriptionPlanEntity[]) {
+    return plans.map((plan) => ({
+      ...plan,
+      offers: plan.offers.map((o) => ({
+        ...o,
+        price: Money.fromCents(o.price).toString(),
+      })),
+    }));
   }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
@@ -41,7 +57,12 @@ export class SubscriptionPlanService {
       );
     }
 
-    const offers = this.offerEntityFactory.createFromDto(offerDtos);
+    const normalizedOfferDtos = offerDtos.map((offer) => ({
+      ...offer,
+      price: Money.fromMajor(offer.price).value,
+    }));
+
+    const offers = this.offerEntityFactory.createFromDto(normalizedOfferDtos);
     const plan = await this.subscriptionPlanRepository.save(
       { name, description },
       offers,

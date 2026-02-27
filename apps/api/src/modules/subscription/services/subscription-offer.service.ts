@@ -15,6 +15,7 @@ import type { ISubscriptionPlanRepository } from '../../../database/repositories
 import type { ISubscriptionOfferRepository } from '../../../database/repositories/interfaces/subscription-offer-repository.interface';
 import { UpdateOfferDto } from '../dto/update-subscription.dto';
 import { PaymentService } from '../../payment/payment.service';
+import { Money } from '../helper/money';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -34,7 +35,15 @@ export class SubscriptionOfferService {
       throw new NotFoundException('Subscription plan not found');
     }
 
-    const offers = this.offerEntityFactory.createFromDto(createOffersDto, id);
+    const normalizedOffersDto = createOffersDto.map((offer) => ({
+      ...offer,
+      price: Money.fromMajor(offer.price).value,
+    }));
+
+    const offers = this.offerEntityFactory.createFromDto(
+      normalizedOffersDto,
+      id,
+    );
     await this.validateOffersUniqueness(id, offers);
 
     const savedOffers = await this.subscriptionOfferRepository.save(offers);
@@ -84,6 +93,10 @@ export class SubscriptionOfferService {
         planId,
         updateOfferDto.durationMonths,
       );
+    }
+
+    if (updateOfferDto.price) {
+      updateOfferDto.price = Money.fromMajor(updateOfferDto.price).value;
     }
 
     const updatedCount = await this.subscriptionOfferRepository.update(

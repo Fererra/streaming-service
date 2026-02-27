@@ -12,15 +12,11 @@ export class OfferEntityFactory {
       (offer) =>
         ({
           durationMonths: offer.durationMonths,
-          price: this.priceToCents(offer.price),
+          price: offer.price,
           ...(subscriptionPlanId && {
             subscriptionPlan: { id: subscriptionPlanId },
           }),
         }) as Partial<SubscriptionOfferEntity>,
     );
-  }
-
-  private priceToCents(price: number): number {
-    return Math.round(price * 100);
   }
 }
