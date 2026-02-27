@@ -60,7 +60,7 @@ describe('SubscriptionOfferService (integration)', () => {
   const createPlan = async (
     name?: string,
     offers: { durationMonths: number; price: number }[] = [
-      { durationMonths: 1, price: 999 },
+      { durationMonths: 1, price: 9.99 },
     ],
   ): Promise<SubscriptionPlanEntity> => {
     return subscriptionPlanService.create({
@@ -78,7 +78,7 @@ describe('SubscriptionOfferService (integration)', () => {
 
       await subscriptionOfferService.attachOffersToPlan(plan.id, [
         { durationMonths: 3, price: 14.99 },
-        { durationMonths: 6, price: 2999 },
+        { durationMonths: 6, price: 29.99 },
       ]);
 
       const offers = await dataSource
@@ -97,7 +97,7 @@ describe('SubscriptionOfferService (integration)', () => {
     it('throws NotFoundException when plan does not exist', async () => {
       await expect(
         subscriptionOfferService.attachOffersToPlan(randomUUID(), [
-          { durationMonths: 1, price: 999 },
+          { durationMonths: 1, price: 9.99 },
         ]),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
@@ -109,7 +109,7 @@ describe('SubscriptionOfferService (integration)', () => {
 
       await expect(
         subscriptionOfferService.attachOffersToPlan(plan.id, [
-          { durationMonths: 1, price: 999 },
+          { durationMonths: 1, price: 9.99 },
         ]),
       ).rejects.toBeInstanceOf(ConflictException);
     });
@@ -122,8 +122,8 @@ describe('SubscriptionOfferService (integration)', () => {
 
       await expect(
         subscriptionOfferService.attachOffersToPlan(plan.id, [
-          { durationMonths: 1, price: 999 },
-          { durationMonths: 3, price: 1999 },
+          { durationMonths: 1, price: 9.99 },
+          { durationMonths: 3, price: 19.99 },
         ]),
       ).rejects.toBeInstanceOf(ConflictException);
     });
@@ -132,7 +132,7 @@ describe('SubscriptionOfferService (integration)', () => {
   describe('update', () => {
     it('updates offer price', async () => {
       const plan = await createPlan('Update Price', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
@@ -143,7 +143,7 @@ describe('SubscriptionOfferService (integration)', () => {
       const offerId = offers[0].id;
 
       await subscriptionOfferService.update(plan.id, offerId, {
-        price: 1499,
+        price: 14.99,
       });
 
       const updated = await dataSource
@@ -155,7 +155,7 @@ describe('SubscriptionOfferService (integration)', () => {
 
     it('updates offer duration', async () => {
       const plan = await createPlan('Update Duration', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
@@ -203,14 +203,14 @@ describe('SubscriptionOfferService (integration)', () => {
 
       await expect(
         subscriptionOfferService.update(plan.id, randomUUID(), {
-          price: 1999,
+          price: 19.99,
         }),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws NotFoundException when plan does not match', async () => {
       const plan = await createPlan('Mismatch', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
@@ -221,7 +221,7 @@ describe('SubscriptionOfferService (integration)', () => {
 
       await expect(
         subscriptionOfferService.update(randomUUID(), offers[0].id, {
-          price: 1999,
+          price: 19.99,
         }),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
@@ -230,7 +230,7 @@ describe('SubscriptionOfferService (integration)', () => {
   describe('activateOffer', () => {
     it('activates a deactivated offer', async () => {
       const plan = await createPlan('Activate Offer', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
@@ -266,7 +266,7 @@ describe('SubscriptionOfferService (integration)', () => {
 
     it('throws NotFoundException when plan does not match', async () => {
       const plan = await createPlan('Wrong Plan Activate', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
@@ -286,7 +286,7 @@ describe('SubscriptionOfferService (integration)', () => {
   describe('deactivateOffer', () => {
     it('soft-deletes an active offer', async () => {
       const plan = await createPlan('Deactivate Offer', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
@@ -316,7 +316,7 @@ describe('SubscriptionOfferService (integration)', () => {
 
     it('throws NotFoundException when plan does not match', async () => {
       const plan = await createPlan('Wrong Plan Deactivate', [
-        { durationMonths: 1, price: 999 },
+        { durationMonths: 1, price: 9.99 },
       ]);
 
       const offers = await dataSource
