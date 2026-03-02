@@ -20,10 +20,7 @@ import {
   CreateSubscriptionDto,
 } from '../subscription/dto/create-subscription.dto';
 import { CheckEmptyBodyPipe } from '../../common/pipes/check-empty-body.pipe';
-import {
-  UpdateOfferDto,
-  UpdateSubscriptionDto,
-} from '../subscription/dto/update-subscription.dto';
+import { UpdateSubscriptionDto } from '../subscription/dto/update-subscription.dto';
 
 @UseGuards(JwtGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
@@ -76,19 +73,6 @@ export class AdminSubscriptionsController {
 
     return {
       message: `Offers successfully attached to subscription`,
-    };
-  }
-
-  @Patch(':planId/offers/:offerId')
-  async updateOffers(
-    @Param('planId', ParseUUIDPipe) planId: string,
-    @Param('offerId', ParseUUIDPipe) offerId: string,
-    @Body(CheckEmptyBodyPipe) updateOfferDto: UpdateOfferDto,
-  ) {
-    await this.subscriptionOfferService.update(planId, offerId, updateOfferDto);
-
-    return {
-      message: `Offers successfully updated`,
     };
   }
 

@@ -13,7 +13,6 @@ import {
 } from '../../../database/repositories/tokens/repository.tokens';
 import type { ISubscriptionPlanRepository } from '../../../database/repositories/interfaces/subscription-plan-repository.interface';
 import type { ISubscriptionOfferRepository } from '../../../database/repositories/interfaces/subscription-offer-repository.interface';
-import { UpdateOfferDto } from '../dto/update-subscription.dto';
 import { PaymentService } from '../../payment/payment.service';
 import { Money } from '../helper/money';
 
@@ -83,50 +82,6 @@ export class SubscriptionOfferService {
 
       throw new ConflictException(
         `Offer(s) with duration ${existingDurations.join(', ')} month(s) already exist for this plan`,
-      );
-    }
-  }
-
-  async update(
-    planId: string,
-    offerId: string,
-    updateOfferDto: UpdateOfferDto,
-  ) {
-    if (updateOfferDto.durationMonths) {
-      await this.validateDurationUniquenessForUpdate(
-        planId,
-        updateOfferDto.durationMonths,
-      );
-    }
-
-    if (updateOfferDto.price) {
-      updateOfferDto.price = Money.fromMajor(updateOfferDto.price).value;
-    }
-
-    const updatedCount = await this.subscriptionOfferRepository.update(
-      offerId,
-      planId,
-      updateOfferDto,
-    );
-
-    if (updatedCount === 0) {
-      throw new NotFoundException('Offer not found');
-    }
-  }
-
-  private async validateDurationUniquenessForUpdate(
-    planId: string,
-    newDuration: number,
-  ): Promise<void> {
-    const existingOffer =
-      await this.subscriptionOfferRepository.existsByDurationAndPlan(
-        planId,
-        newDuration,
-      );
-
-    if (existingOffer) {
-      throw new ConflictException(
-        `An offer with duration ${newDuration} month(s) already exists for this plan`,
       );
     }
   }
