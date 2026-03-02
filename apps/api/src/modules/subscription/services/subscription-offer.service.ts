@@ -87,6 +87,8 @@ export class SubscriptionOfferService {
   }
 
   async deactivateOffer(planId: string, offerId: string) {
+    await this.paymentService.deactivateOfferInGateway(offerId);
+
     const affected = await this.subscriptionOfferRepository.deactivateOffer(
       offerId,
       planId,

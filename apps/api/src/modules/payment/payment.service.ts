@@ -174,6 +174,23 @@ export class PaymentService {
     return newCustomerId;
   }
 
+  async deactivateOfferInGateway(offerId: string) {
+    const gatewayPrice =
+      await this.gatewayPriceRepository.findByOfferIdAndGateway(
+        offerId,
+        this.paymentGateway.gateway,
+      );
+
+    if (!gatewayPrice) {
+      throw new NotFoundException('Gateway price not found for offer');
+    }
+
+    await this.paymentGateway.deactivatePrice(gatewayPrice.externalPriceId);
+    await this.paymentGateway.deactivateSubscriptions(
+      gatewayPrice.externalPriceId,
+    );
+  }
+
   async handleWebhookEvent(payload: Buffer, signature: string): Promise<void> {
     const event = await this.paymentGateway.constructWebhookEvent(
       payload,

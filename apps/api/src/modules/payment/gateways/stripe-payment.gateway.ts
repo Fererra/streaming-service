@@ -112,6 +112,25 @@ export class StripePaymentGateway implements PaymentGateway {
     };
   }
 
+  async deactivatePrice(externalPriceId: string): Promise<void> {
+    await this.stripe.prices.update(externalPriceId, { active: false });
+  }
+
+  async deactivateSubscriptions(externalPriceId: string): Promise<void> {
+    const subscriptions = await this.stripe.subscriptions.list({
+      price: externalPriceId,
+      status: 'active',
+    });
+
+    await Promise.all(
+      subscriptions.data.map((sub) =>
+        this.stripe.subscriptions.update(sub.id, {
+          cancel_at_period_end: true,
+        }),
+      ),
+    );
+  }
+
   private readonly eventHandlers = new Map<
     string,
     (data: Stripe.Event.Data.Object) => WebhookEventResult
