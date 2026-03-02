@@ -9,6 +9,7 @@ import {
   CREDITS_REPOSITORY,
   GATEWAY_CUSTOMER_REPOSITORY,
   GATEWAY_PRICE_REPOSITORY,
+  GATEWAY_PRODUCT_REPOSITORY,
   GENRES_REPOSITORY,
   MOVIE_CREDITS_REPOSITORY,
   MOVIES_REPOSITORY,
@@ -42,6 +43,8 @@ import { GatewayPriceRepository } from './repositories/gateway-price.repository'
 import { UserGatewayCustomerEntity } from './entities/gateway-customer.entity';
 import { GatewayCustomerRepository } from './repositories/gateway-customer.repository';
 import { databaseConfig } from '@app/config';
+import { SubscriptionPlanGatewayProductEntity } from './entities/gateway-product.entity';
+import { GatewayProductRepository } from './repositories/gateway-product.repository';
 
 @Module({
   imports: [
@@ -62,6 +65,7 @@ import { databaseConfig } from '@app/config';
       UploadIntentEntity,
       SubscriptionPlanEntity,
       SubscriptionOfferEntity,
+      SubscriptionPlanGatewayProductEntity,
       SubscriptionOfferGatewayPriceEntity,
       UserGatewayCustomerEntity,
     ]),
@@ -89,6 +93,10 @@ import { databaseConfig } from '@app/config';
       provide: GATEWAY_CUSTOMER_REPOSITORY,
       useClass: GatewayCustomerRepository,
     },
+    {
+      provide: GATEWAY_PRODUCT_REPOSITORY,
+      useClass: GatewayProductRepository,
+    },
   ],
   exports: [
     USERS_REPOSITORY,
@@ -104,6 +112,7 @@ import { databaseConfig } from '@app/config';
     SUBSCRIPTION_OFFER_REPOSITORY,
     GATEWAY_PRICE_REPOSITORY,
     GATEWAY_CUSTOMER_REPOSITORY,
+    GATEWAY_PRODUCT_REPOSITORY,
   ],
 })
 export class DatabaseModule {}
