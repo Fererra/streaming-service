@@ -100,6 +100,8 @@ export class SubscriptionPlanService {
     if (affected === 0) {
       throw new NotFoundException(`Subscription plan not found`);
     }
+
+    await this.paymentService.updateProductInGateway(id, updateSubscriptionDto);
   }
 
   async activatePlan(id: string) {

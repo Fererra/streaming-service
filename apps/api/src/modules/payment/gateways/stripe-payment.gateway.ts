@@ -9,6 +9,7 @@ import {
   CreatePriceRequest,
   CreateCustomerRequest,
   CreateProductRequest,
+  UpdateProductRequest,
 } from '../interfaces/payment-gateway.interface';
 import { STRIPE_CLIENT } from '../payment.tokens';
 import { PaymentGatewayProvider, PaymentMetadata } from '@app/payment';
@@ -37,6 +38,16 @@ export class StripePaymentGateway implements PaymentGateway {
     });
 
     return { id: product.id };
+  }
+
+  async updateProduct(
+    externalProductId: string,
+    request: UpdateProductRequest,
+  ): Promise<void> {
+    await this.stripe.products.update(externalProductId, {
+      name: request.name,
+      description: request.description,
+    });
   }
 
   async createPrice(

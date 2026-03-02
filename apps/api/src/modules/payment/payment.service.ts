@@ -60,6 +60,26 @@ export class PaymentService {
     return product;
   }
 
+  async updateProductInGateway(
+    planId: string,
+    updateSubscriptionDto: Partial<SubscriptionPlanEntity>,
+  ) {
+    const productId =
+      await this.gatewayProductRepository.findByPlanIdAndGateway(
+        planId,
+        this.paymentGateway.gateway,
+      );
+
+    if (!productId) {
+      throw new NotFoundException('Product not found in gateway');
+    }
+
+    await this.paymentGateway.updateProduct(productId, {
+      name: updateSubscriptionDto.name,
+      description: updateSubscriptionDto.description,
+    });
+  }
+
   async syncOfferToGateway(offer: SubscriptionOfferEntity) {
     const productId =
       await this.gatewayProductRepository.findByPlanIdAndGateway(

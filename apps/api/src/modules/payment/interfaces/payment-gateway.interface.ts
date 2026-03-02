@@ -6,6 +6,12 @@ export interface CreateProductRequest {
   name: string;
   description: string;
 }
+
+export interface UpdateProductRequest {
+  name?: string;
+  description?: string;
+}
+
 export interface CreatePriceRequest {
   id: string;
   amount: number;
@@ -39,6 +45,10 @@ export interface PaymentGateway {
   readonly gateway: PaymentGatewayProvider;
 
   createProduct(request: CreateProductRequest): Promise<{ id: string }>;
+  updateProduct(
+    externalProductId: string,
+    request: UpdateProductRequest,
+  ): Promise<void>;
   createPrice(
     offer: CreatePriceRequest,
     externalProductId: string,
