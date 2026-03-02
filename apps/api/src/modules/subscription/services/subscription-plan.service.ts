@@ -5,13 +5,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
-import { OfferEntityFactory } from '../factories/offer-entity.factory';
 import type { ISubscriptionPlanRepository } from '../../../database/repositories/interfaces/subscription-plan-repository.interface';
 import { SUBSCRIPTION_PLAN_REPOSITORY } from '../../../database/repositories/tokens/repository.tokens';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import { SubscriptionOfferService } from './subscription-offer.service';
 import { Money } from '../helper/money';
-import { SubscriptionPlanEntity } from '../../../../src/database/entities/subscription-plan.entity';
+import { SubscriptionPlanEntity } from '../../../database/entities/subscription-plan.entity';
+import { PaymentService } from '../../payment/payment.service';
 
 @Injectable()
 export class SubscriptionPlanService {
@@ -19,7 +19,7 @@ export class SubscriptionPlanService {
     @Inject(SUBSCRIPTION_PLAN_REPOSITORY)
     private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
     private readonly subscriptionOfferService: SubscriptionOfferService,
-    private readonly offerEntityFactory: OfferEntityFactory,
+    private readonly paymentService: PaymentService,
   ) {}
 
   async findAllWithOffersForAdmin() {
@@ -57,23 +57,22 @@ export class SubscriptionPlanService {
       );
     }
 
-    const normalizedOfferDtos = offerDtos.map((offer) => ({
-      ...offer,
-      price: Money.fromMajor(offer.price).value,
-    }));
+    const plan = await this.subscriptionPlanRepository.save({
+      name,
+      description,
+    });
 
-    const offers = this.offerEntityFactory.createFromDto(normalizedOfferDtos);
-    const plan = await this.subscriptionPlanRepository.save(
-      { name, description },
-      offers,
+    await this.paymentService.createProductInGateway(plan);
+
+    await this.subscriptionOfferService.createOffers(plan.id, offerDtos);
+
+    const affected = await this.subscriptionPlanRepository.activatePlan(
+      plan.id,
     );
 
-    await Promise.all(
-      plan.offers.map((offer) => {
-        offer.subscriptionPlan = plan;
-        return this.subscriptionOfferService.syncOfferToGateway(offer);
-      }),
-    );
+    if (affected === 0) {
+      throw new NotFoundException(`Subscription plan not found`);
+    }
 
     return plan;
   }
@@ -104,24 +103,18 @@ export class SubscriptionPlanService {
   }
 
   async activatePlan(id: string) {
-    const plan = await this.subscriptionPlanRepository.findById(id, {
-      withDeleted: true,
-    });
+    const affected = await this.subscriptionPlanRepository.activatePlan(id);
 
-    if (!plan) {
+    if (affected === 0) {
       throw new NotFoundException(`Subscription plan not found`);
     }
-
-    await this.subscriptionPlanRepository.activatePlan(plan);
   }
 
   async deactivatePlan(id: string) {
-    const plan = await this.subscriptionPlanRepository.findById(id);
+    const affected = await this.subscriptionPlanRepository.deactivatePlan(id);
 
-    if (!plan) {
+    if (affected === 0) {
       throw new NotFoundException(`Subscription plan not found`);
     }
-
-    await this.subscriptionPlanRepository.deactivatePlan(plan);
   }
 }

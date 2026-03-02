@@ -1,4 +1,3 @@
-import { SubscriptionOfferEntity } from '../../entities/subscription-offer.entity';
 import { SubscriptionPlanEntity } from '../../entities/subscription-plan.entity';
 
 export interface ISubscriptionPlanRepository {
@@ -13,12 +12,11 @@ export interface ISubscriptionPlanRepository {
   ): Promise<SubscriptionPlanEntity | null>;
   save(
     subscriptionPlan: Partial<SubscriptionPlanEntity>,
-    offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionPlanEntity>;
   update(
     id: string,
     updateData: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
   ): Promise<number>;
-  activatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void>;
-  deactivatePlan(plan: Partial<SubscriptionPlanEntity>): Promise<void>;
+  activatePlan(planId: string): Promise<number>;
+  deactivatePlan(planId: string): Promise<number>;
 }
