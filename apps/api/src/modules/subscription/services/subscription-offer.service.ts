@@ -28,36 +28,40 @@ export class SubscriptionOfferService {
     private readonly paymentService: PaymentService,
   ) {}
 
-  async attachOffersToPlan(id: string, createOffersDto: CreateOfferDto[]) {
-    const plan = await this.subscriptionPlanRepository.findById(id);
+  async createOffers(
+    planId: string,
+    createOffersDto: CreateOfferDto[],
+  ): Promise<SubscriptionOfferEntity[]> {
+    const plan = await this.subscriptionPlanRepository.findById(planId);
 
     if (!plan) {
       throw new NotFoundException('Subscription plan not found');
     }
 
-    const normalizedOffersDto = createOffersDto.map((offer) => ({
-      ...offer,
-      price: Money.fromMajor(offer.price).value,
+    const normalizedOffers = createOffersDto.map((o) => ({
+      ...o,
+      price: Money.fromMajor(o.price).value,
     }));
 
     const offers = this.offerEntityFactory.createFromDto(
-      normalizedOffersDto,
-      id,
+      normalizedOffers,
+      plan.id,
     );
-    await this.validateOffersUniqueness(id, offers);
-
+    await this.validateOffersUniqueness(plan.id, offers);
     const savedOffers = await this.subscriptionOfferRepository.save(offers);
 
+    // що якщо в процесі синку трапиться помилка? Чи треба буде відкотити всі успішні синки назад?
     await Promise.all(
       savedOffers.map((offer) => {
         offer.subscriptionPlan = plan;
-        return this.syncOfferToGateway(offer);
+        return this.paymentService.syncOfferToGateway(offer);
       }),
     );
-  }
 
-  async syncOfferToGateway(offer: SubscriptionOfferEntity) {
-    await this.paymentService.syncOfferToGateway(offer);
+    const offerIds = savedOffers.map((o) => o.id);
+    await this.subscriptionOfferRepository.activateOffersByIds(offerIds);
+
+    return savedOffers;
   }
 
   private async validateOffersUniqueness(
@@ -128,29 +132,24 @@ export class SubscriptionOfferService {
   }
 
   async activateOffer(planId: string, offerId: string) {
-    const offer = await this.subscriptionOfferRepository.findByIdAndPlanId(
+    const affected = await this.subscriptionOfferRepository.activateOffer(
       offerId,
       planId,
-      { withDeleted: true },
     );
 
-    if (!offer) {
+    if (affected === 0) {
       throw new NotFoundException('Offer not found');
     }
-
-    await this.subscriptionOfferRepository.activateOffer(offer);
   }
 
   async deactivateOffer(planId: string, offerId: string) {
-    const offer = await this.subscriptionOfferRepository.findByIdAndPlanId(
+    const affected = await this.subscriptionOfferRepository.deactivateOffer(
       offerId,
       planId,
     );
 
-    if (!offer) {
+    if (affected === 0) {
       throw new NotFoundException('Offer not found');
     }
-
-    await this.subscriptionOfferRepository.deactivateOffer(offer);
   }
 }

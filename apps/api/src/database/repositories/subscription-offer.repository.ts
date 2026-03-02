@@ -34,22 +34,6 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
     });
   }
 
-  findByIdAndPlanId(
-    offerId: string,
-    planId: string,
-    options: { withDeleted?: boolean } = {},
-  ): Promise<SubscriptionOfferEntity | null> {
-    const { withDeleted = false } = options;
-
-    return this.repository.findOne({
-      where: {
-        id: offerId,
-        subscriptionPlan: { id: planId },
-      },
-      withDeleted,
-    });
-  }
-
   save(
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]> {
@@ -63,19 +47,27 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
   ): Promise<number> {
     const result = await this.repository.update(
       { id: offerId, subscriptionPlan: { id: planId } },
-      updateData as any,
+      updateData,
     );
 
     return result.affected ?? 0;
   }
 
-  async activateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void> {
-    await this.repository.recover(offer);
+  async activateOffersByIds(offerIds: string[]): Promise<number> {
+    if (offerIds.length === 0) return 0;
+
+    const result = await this.repository.update(
+      { id: In(offerIds) },
+      { isActive: true },
+    );
+    return result.affected ?? 0;
   }
 
-  async deactivateOffer(
-    offer: Partial<SubscriptionOfferEntity>,
-  ): Promise<void> {
-    await this.repository.softRemove(offer);
+  activateOffer(offerId: string, planId: string): Promise<number> {
+    return this.update(offerId, planId, { isActive: true });
+  }
+
+  deactivateOffer(offerId: string, planId: string): Promise<number> {
+    return this.update(offerId, planId, { isActive: false });
   }
 }

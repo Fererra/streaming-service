@@ -72,7 +72,7 @@ export class AdminSubscriptionsController {
     @Body(new ParseArrayPipe({ items: CreateOfferDto }))
     createOffersDto: CreateOfferDto[],
   ) {
-    await this.subscriptionOfferService.attachOffersToPlan(id, createOffersDto);
+    await this.subscriptionOfferService.createOffers(id, createOffersDto);
 
     return {
       message: `Offers successfully attached to subscription`,

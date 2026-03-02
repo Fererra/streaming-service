@@ -11,6 +11,7 @@ export class OfferEntityFactory {
     return offers.map(
       (offer) =>
         ({
+          isActive: false,
           durationMonths: offer.durationMonths,
           price: offer.price,
           ...(subscriptionPlanId && {

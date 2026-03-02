@@ -9,11 +9,6 @@ export interface ISubscriptionOfferRepository {
     planId: string,
     durations: number[],
   ): Promise<SubscriptionOfferEntity[]>;
-  findByIdAndPlanId(
-    offerId: string,
-    planId: string,
-    options?: { withDeleted?: boolean },
-  ): Promise<SubscriptionOfferEntity | null>;
   save(
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]>;
@@ -22,6 +17,7 @@ export interface ISubscriptionOfferRepository {
     planId: string,
     updateData: Partial<SubscriptionOfferEntity>,
   ): Promise<number>;
-  activateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void>;
-  deactivateOffer(offer: Partial<SubscriptionOfferEntity>): Promise<void>;
+  activateOffersByIds(offerIds: string[]): Promise<number>;
+  activateOffer(offerId: string, planId: string): Promise<number>;
+  deactivateOffer(offerId: string, planId: string): Promise<number>;
 }
