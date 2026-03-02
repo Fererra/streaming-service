@@ -2,7 +2,6 @@ import {
   Check,
   Column,
   CreateDateColumn,
-  DeleteDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -28,14 +27,14 @@ export class SubscriptionOfferEntity {
   @Check('price >= 0')
   price: number;
 
+  @Column({ name: 'isActive', type: 'boolean', default: false })
+  isActive: boolean;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
-
-  @DeleteDateColumn({ name: 'deleted_at' })
-  deletedAt: Date | null;
 
   @ManyToOne(() => SubscriptionPlanEntity, (plan) => plan.offers, {
     nullable: false,

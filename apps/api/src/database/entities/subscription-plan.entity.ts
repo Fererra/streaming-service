@@ -5,9 +5,9 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  DeleteDateColumn,
 } from 'typeorm';
 import { SubscriptionOfferEntity } from './subscription-offer.entity';
+import { SubscriptionPlanGatewayProductEntity } from './gateway-product.entity';
 
 @Entity('subscription_plans')
 export class SubscriptionPlanEntity {
@@ -20,10 +20,8 @@ export class SubscriptionPlanEntity {
   @Column({ type: 'text' })
   description: string;
 
-  @OneToMany(() => SubscriptionOfferEntity, (offer) => offer.subscriptionPlan, {
-    cascade: ['soft-remove', 'recover'],
-  })
-  offers: SubscriptionOfferEntity[];
+  @Column({ name: 'isActive', type: 'boolean', default: false })
+  isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
@@ -31,6 +29,12 @@ export class SubscriptionPlanEntity {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at' })
-  deletedAt: Date | null;
+  @OneToMany(() => SubscriptionOfferEntity, (offer) => offer.subscriptionPlan)
+  offers: SubscriptionOfferEntity[];
+
+  @OneToMany(
+    () => SubscriptionPlanGatewayProductEntity,
+    (product) => product.plan,
+  )
+  gatewayProducts: SubscriptionPlanGatewayProductEntity[];
 }
