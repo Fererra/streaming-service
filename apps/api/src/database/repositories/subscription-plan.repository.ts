@@ -11,25 +11,20 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
   ) {}
 
   async findAllWithOffers(): Promise<SubscriptionPlanEntity[]> {
-    const plans = await this.repository
+    return this.repository
       .createQueryBuilder('subscription_plans')
+      .leftJoinAndSelect('subscription_plans.offers', 'offer')
       .select([
         'subscription_plans.id',
         'subscription_plans.name',
         'subscription_plans.description',
         'subscription_plans.isActive',
+        'offer.id',
+        'offer.durationMonths',
+        'offer.price',
+        'offer.isActive',
       ])
       .getMany();
-
-    for (const plan of plans) {
-      plan.offers = await this.repository.manager
-        .createQueryBuilder(SubscriptionOfferEntity, 'offer')
-        .where('offer.subscriptionPlan.id = :planId', { planId: plan.id })
-        .select(['offer.id', 'offer.durationMonths', 'offer.price'])
-        .getMany();
-    }
-
-    return plans;
   }
 
   findActiveWithOffers(): Promise<SubscriptionPlanEntity[]> {
