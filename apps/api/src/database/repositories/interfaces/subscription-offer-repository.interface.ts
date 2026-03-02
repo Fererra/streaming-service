@@ -9,6 +9,5 @@ export interface ISubscriptionOfferRepository {
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]>;
   activateOffersByIds(offerIds: string[]): Promise<number>;
-  activateOffer(offerId: string, planId: string): Promise<number>;
   deactivateOffer(offerId: string, planId: string): Promise<number>;
 }

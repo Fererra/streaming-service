@@ -37,25 +37,14 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
       { id: In(offerIds) },
       { isActive: true },
     );
+
     return result.affected ?? 0;
   }
 
-  activateOffer(offerId: string, planId: string): Promise<number> {
-    return this.update(offerId, planId, { isActive: true });
-  }
-
-  deactivateOffer(offerId: string, planId: string): Promise<number> {
-    return this.update(offerId, planId, { isActive: false });
-  }
-
-  private async update(
-    offerId: string,
-    planId: string,
-    updateData: Partial<SubscriptionOfferEntity>,
-  ): Promise<number> {
+  async deactivateOffer(offerId: string, planId: string): Promise<number> {
     const result = await this.repository.update(
       { id: offerId, subscriptionPlan: { id: planId } },
-      updateData,
+      { isActive: false },
     );
 
     return result.affected ?? 0;

@@ -86,17 +86,6 @@ export class SubscriptionOfferService {
     }
   }
 
-  async activateOffer(planId: string, offerId: string) {
-    const affected = await this.subscriptionOfferRepository.activateOffer(
-      offerId,
-      planId,
-    );
-
-    if (affected === 0) {
-      throw new NotFoundException('Offer not found');
-    }
-  }
-
   async deactivateOffer(planId: string, offerId: string) {
     const affected = await this.subscriptionOfferRepository.deactivateOffer(
       offerId,

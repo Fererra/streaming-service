@@ -94,18 +94,6 @@ export class AdminSubscriptionsController {
     };
   }
 
-  @Patch(':planId/offers/:offerId/activate')
-  async activateOffer(
-    @Param('planId', ParseUUIDPipe) planId: string,
-    @Param('offerId', ParseUUIDPipe) offerId: string,
-  ) {
-    await this.subscriptionOfferService.activateOffer(planId, offerId);
-
-    return {
-      message: `Offer activated successfully`,
-    };
-  }
-
   @Patch(':planId/offers/:offerId/deactivate')
   async deactivateOffer(
     @Param('planId', ParseUUIDPipe) planId: string,
