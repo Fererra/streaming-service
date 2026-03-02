@@ -1,9 +1,13 @@
 import { EventPayload, EventType } from '@app/payment';
 import { PaymentGatewayProvider } from '@app/payment';
 
+export interface CreateProductRequest {
+  id: string;
+  name: string;
+  description: string;
+}
 export interface CreatePriceRequest {
   id: string;
-  planName: string;
   amount: number;
   durationMonths: number;
   currency: string;
@@ -34,7 +38,11 @@ export type WebhookEventResult = EventPayload<EventType> & {
 export interface PaymentGateway {
   readonly gateway: PaymentGatewayProvider;
 
-  createPrice(offer: CreatePriceRequest): Promise<{ id: string }>;
+  createProduct(request: CreateProductRequest): Promise<{ id: string }>;
+  createPrice(
+    offer: CreatePriceRequest,
+    externalProductId: string,
+  ): Promise<{ id: string }>;
   createCustomer(request: CreateCustomerRequest): Promise<{ id: string }>;
   createCheckoutSession(
     request: CheckoutSessionRequest,

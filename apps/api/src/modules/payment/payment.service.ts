@@ -1,15 +1,20 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PAYMENT_GATEWAY } from './payment.tokens';
 import type { PaymentGateway } from './interfaces/payment-gateway.interface';
 import {
   GATEWAY_CUSTOMER_REPOSITORY,
   GATEWAY_PRICE_REPOSITORY,
+  GATEWAY_PRODUCT_REPOSITORY,
 } from '../../database/repositories/tokens/repository.tokens';
 import {
   type IPaymentRepository,
   PAYMENT_REPOSITORY,
   PaymentStatus,
-  PaymentGatewayProvider,
   PAYMENT_QUEUE_SERVICE,
   type IPaymentQueueService,
 } from '@app/payment';
@@ -18,6 +23,8 @@ import { UsersService } from '../users/services/users.service';
 import { SubscriptionOfferEntity } from '../../database/entities/subscription-offer.entity';
 import type { IGatewayPriceRepository } from '../../database/repositories/interfaces/gateway-price-repository.interface';
 import type { IGatewayCustomerRepository } from '../../database/repositories/interfaces/gateway-customer.repository';
+import { SubscriptionPlanEntity } from '../../database/entities/subscription-plan.entity';
+import type { IGatewayProductRepository } from '../../database/repositories/interfaces/gateway-product-repository.interface';
 
 @Injectable()
 export class PaymentService {
@@ -32,17 +39,47 @@ export class PaymentService {
     private readonly gatewayCustomerRepository: IGatewayCustomerRepository,
     @Inject(PAYMENT_QUEUE_SERVICE)
     private readonly paymentQueueService: IPaymentQueueService,
+    @Inject(GATEWAY_PRODUCT_REPOSITORY)
+    private readonly gatewayProductRepository: IGatewayProductRepository,
     private readonly usersService: UsersService,
   ) {}
 
-  async syncOfferToGateway(offer: SubscriptionOfferEntity) {
-    const { id: externalPriceId } = await this.paymentGateway.createPrice({
-      id: offer.id,
-      planName: offer.subscriptionPlan.name,
-      amount: offer.price,
-      durationMonths: offer.durationMonths,
-      currency: 'USD',
+  async createProductInGateway(plan: SubscriptionPlanEntity) {
+    const product = await this.paymentGateway.createProduct({
+      id: plan.id,
+      name: plan.name,
+      description: plan.description,
     });
+
+    await this.gatewayProductRepository.createGatewayProduct(
+      this.paymentGateway.gateway,
+      product.id,
+      plan.id,
+    );
+
+    return product;
+  }
+
+  async syncOfferToGateway(offer: SubscriptionOfferEntity) {
+    const productId =
+      await this.gatewayProductRepository.findByPlanIdAndGateway(
+        offer.subscriptionPlan.id,
+        this.paymentGateway.gateway,
+      );
+
+    if (!productId) {
+      throw new InternalServerErrorException('Plan is not synced to gateway');
+    }
+
+    const { id: externalPriceId } = await this.paymentGateway.createPrice(
+      {
+        id: offer.id,
+        amount: offer.price,
+        durationMonths: offer.durationMonths,
+        currency: 'USD',
+      },
+      productId,
+    );
 
     await this.gatewayPriceRepository.createGatewayPrice(
       this.paymentGateway.gateway,
@@ -85,7 +122,7 @@ export class PaymentService {
       status: PaymentStatus.PENDING,
       amount: Number(gatewayOffer.offer.price) * 100,
       currency: dto.currency ?? 'USD',
-      gateway: PaymentGatewayProvider.STRIPE,
+      gateway: this.paymentGateway.gateway,
     });
 
     return { checkoutUrl: checkoutResponse.checkoutUrl };

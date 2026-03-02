@@ -8,6 +8,7 @@ import {
   WebhookEventResult,
   CreatePriceRequest,
   CreateCustomerRequest,
+  CreateProductRequest,
 } from '../interfaces/payment-gateway.interface';
 import { STRIPE_CLIENT } from '../payment.tokens';
 import { PaymentGatewayProvider, PaymentMetadata } from '@app/payment';
@@ -26,16 +27,24 @@ export class StripePaymentGateway implements PaymentGateway {
     );
   }
 
-  async createPrice(request: CreatePriceRequest): Promise<{ id: string }> {
+  async createProduct(request: CreateProductRequest): Promise<{ id: string }> {
     const product = await this.stripe.products.create({
-      name: request.planName,
+      name: request.name,
+      description: request.description,
       metadata: {
-        offerId: request.id,
+        productId: request.id,
       },
     });
 
+    return { id: product.id };
+  }
+
+  async createPrice(
+    request: CreatePriceRequest,
+    externalProductId: string,
+  ): Promise<{ id: string }> {
     const price = await this.stripe.prices.create({
-      product: product.id,
+      product: externalProductId,
       currency: request?.currency ?? 'USD',
       unit_amount: request.amount,
       recurring: {
