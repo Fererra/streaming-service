@@ -57,6 +57,9 @@ export interface PaymentGateway {
   createCheckoutSession(
     request: CheckoutSessionRequest,
   ): Promise<CheckoutSessionResponse>;
+  activateProduct(externalProductId: string): Promise<void>;
+  getProductPrices(externalProductId: string): Promise<string[]>;
+  deactivateProduct(externalProductId: string): Promise<void>;
   deactivatePrice(externalPriceId: string): Promise<void>;
   deactivateSubscriptions(externalPriceId: string): Promise<void>;
   constructWebhookEvent(

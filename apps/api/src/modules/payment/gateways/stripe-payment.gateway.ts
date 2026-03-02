@@ -112,6 +112,23 @@ export class StripePaymentGateway implements PaymentGateway {
     };
   }
 
+  async activateProduct(externalProductId: string): Promise<void> {
+    await this.stripe.products.update(externalProductId, { active: true });
+  }
+
+  async getProductPrices(externalProductId: string): Promise<string[]> {
+    const prices = await this.stripe.prices.list({
+      product: externalProductId,
+      active: true,
+    });
+
+    return prices.data.map((price) => price.id);
+  }
+
+  async deactivateProduct(externalProductId: string): Promise<void> {
+    await this.stripe.products.update(externalProductId, { active: false });
+  }
+
   async deactivatePrice(externalPriceId: string): Promise<void> {
     await this.stripe.prices.update(externalPriceId, { active: false });
   }

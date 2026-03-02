@@ -105,6 +105,8 @@ export class SubscriptionPlanService {
   }
 
   async activatePlan(id: string) {
+    await this.paymentService.activateProductInGateway(id);
+
     const affected = await this.subscriptionPlanRepository.activatePlan(id);
 
     if (affected === 0) {
@@ -113,6 +115,8 @@ export class SubscriptionPlanService {
   }
 
   async deactivatePlan(id: string) {
+    await this.paymentService.deactivateProductInGateway(id);
+
     const affected = await this.subscriptionPlanRepository.deactivatePlan(id);
 
     if (affected === 0) {

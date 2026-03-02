@@ -191,6 +191,44 @@ export class PaymentService {
     );
   }
 
+  async activateProductInGateway(planId: string) {
+    const productId =
+      await this.gatewayProductRepository.findByPlanIdAndGateway(
+        planId,
+        this.paymentGateway.gateway,
+      );
+
+    if (!productId) {
+      throw new NotFoundException('Product not found in gateway');
+    }
+
+    await this.paymentGateway.activateProduct(productId);
+  }
+
+  async deactivateProductInGateway(planId: string) {
+    const productId =
+      await this.gatewayProductRepository.findByPlanIdAndGateway(
+        planId,
+        this.paymentGateway.gateway,
+      );
+
+    if (!productId) {
+      throw new NotFoundException('Product not found in gateway');
+    }
+
+    await this.paymentGateway.deactivateProduct(productId);
+    const productPrices = await this.paymentGateway.getProductPrices(productId);
+
+    await Promise.all(
+      productPrices.map((priceId) => {
+        return Promise.all([
+          this.paymentGateway.deactivatePrice(priceId),
+          this.paymentGateway.deactivateSubscriptions(priceId),
+        ]);
+      }),
+    );
+  }
+
   async handleWebhookEvent(payload: Buffer, signature: string): Promise<void> {
     const event = await this.paymentGateway.constructWebhookEvent(
       payload,
