@@ -19,7 +19,9 @@ import { PaymentModule } from '@app/payment';
       useFactory: (configService: ConfigService) => {
         const secretKey = configService.getOrThrow<string>('STRIPE_SECRET_KEY');
 
-        return new Stripe(secretKey);
+        return new Stripe(secretKey, {
+          maxNetworkRetries: 3,
+        });
       },
       inject: [ConfigService],
     },
