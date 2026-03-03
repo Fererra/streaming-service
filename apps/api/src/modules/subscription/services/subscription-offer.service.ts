@@ -13,8 +13,9 @@ import {
 } from '../../../database/repositories/tokens/repository.tokens';
 import type { ISubscriptionPlanRepository } from '../../../database/repositories/interfaces/subscription-plan-repository.interface';
 import type { ISubscriptionOfferRepository } from '../../../database/repositories/interfaces/subscription-offer-repository.interface';
-import { PaymentService } from '../../payment/payment.service';
 import { Money } from '../helper/money';
+import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
+import { OfferStatus } from '../enums/status.enum';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -24,13 +25,14 @@ export class SubscriptionOfferService {
     @Inject(SUBSCRIPTION_OFFER_REPOSITORY)
     private readonly subscriptionOfferRepository: ISubscriptionOfferRepository,
     private readonly offerEntityFactory: OfferEntityFactory,
-    private readonly paymentService: PaymentService,
+    @Inject(PAYMENT_QUEUE_SERVICE)
+    private readonly paymentQueueService: IPaymentQueueService,
   ) {}
 
   async createOffers(
     planId: string,
     createOffersDto: CreateOfferDto[],
-  ): Promise<SubscriptionOfferEntity[]> {
+  ): Promise<void> {
     const plan = await this.subscriptionPlanRepository.findById(planId);
 
     if (!plan) {
@@ -49,18 +51,11 @@ export class SubscriptionOfferService {
     await this.validateOffersUniqueness(plan.id, offers);
     const savedOffers = await this.subscriptionOfferRepository.save(offers);
 
-    // що якщо в процесі синку трапиться помилка? Чи треба буде відкотити всі успішні синки назад?
-    await Promise.all(
-      savedOffers.map((offer) => {
-        offer.subscriptionPlan = plan;
-        return this.paymentService.syncOfferToGateway(offer);
-      }),
-    );
-
-    const offerIds = savedOffers.map((o) => o.id);
-    await this.subscriptionOfferRepository.activateOffersByIds(offerIds);
-
-    return savedOffers;
+    savedOffers.forEach((offer) => {
+      this.paymentQueueService.dispatchCommand('command.syncOffer', {
+        offerId: offer.id,
+      });
+    });
   }
 
   private async validateOffersUniqueness(
@@ -87,15 +82,19 @@ export class SubscriptionOfferService {
   }
 
   async deactivateOffer(planId: string, offerId: string) {
-    await this.paymentService.deactivateOfferInGateway(offerId);
-
-    const affected = await this.subscriptionOfferRepository.deactivateOffer(
+    const affected = await this.subscriptionOfferRepository.updateStatus(
       offerId,
       planId,
+      OfferStatus.DEACTIVATING,
     );
 
     if (affected === 0) {
       throw new NotFoundException('Offer not found');
     }
+
+    await this.paymentQueueService.dispatchCommand('command.deactivateOffer', {
+      planId,
+      offerId,
+    });
   }
 }

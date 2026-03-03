@@ -33,7 +33,7 @@ export class StripePaymentGateway implements PaymentGateway {
       name: request.name,
       description: request.description,
       metadata: {
-        productId: request.id,
+        planId: request.id,
       },
     });
 
@@ -133,6 +133,7 @@ export class StripePaymentGateway implements PaymentGateway {
     await this.stripe.prices.update(externalPriceId, { active: false });
   }
 
+  // Separate to getSubscriptions and cancelSubscription methods if we want to support multiple gateways with different subscription handling logic
   async deactivateSubscriptions(externalPriceId: string): Promise<void> {
     const subscriptions = await this.stripe.subscriptions.list({
       price: externalPriceId,
@@ -153,12 +154,48 @@ export class StripePaymentGateway implements PaymentGateway {
     (data: Stripe.Event.Data.Object) => WebhookEventResult
   >([
     [
+      'product.created',
+      (obj) => {
+        const product = obj as Stripe.Product;
+
+        return {
+          type: 'event.product.created',
+          externalId: product.id,
+          planId: product.metadata.productId,
+        };
+      },
+    ],
+    [
+      'product.updated',
+      (obj) => {
+        const product = obj as Stripe.Product;
+
+        return {
+          type: 'event.product.updated',
+          externalId: product.id,
+          planId: product.metadata.productId,
+        };
+      },
+    ],
+    [
+      'price.created',
+      (obj) => {
+        const price = obj as Stripe.Price;
+
+        return {
+          type: 'event.price.created',
+          externalId: price.id,
+          offerId: price.metadata.offerId,
+        };
+      },
+    ],
+    [
       'checkout.session.completed',
       (obj) => {
         const session = obj as Stripe.Checkout.Session;
 
         return {
-          type: 'checkout.completed',
+          type: 'event.checkout.completed',
           externalSessionId: session.id,
           externalInvoiceId: session.invoice as string,
           metadata: (session.metadata as unknown as PaymentMetadata) ?? {},
@@ -170,7 +207,7 @@ export class StripePaymentGateway implements PaymentGateway {
       (obj) => {
         const session = obj as Stripe.Checkout.Session;
         return {
-          type: 'checkout.expired',
+          type: 'event.checkout.expired',
           externalSessionId: session.id,
           externalInvoiceId: session.invoice as string,
           metadata: (session.metadata as unknown as PaymentMetadata) ?? {},
@@ -183,7 +220,7 @@ export class StripePaymentGateway implements PaymentGateway {
         const invoice = obj as Stripe.Invoice;
 
         return {
-          type: 'invoice.paid',
+          type: 'event.invoice.paid',
           billingReason: invoice.billing_reason,
           externalSessionId: null,
           externalSubscriptionId: invoice.parent?.subscription_details
@@ -204,7 +241,7 @@ export class StripePaymentGateway implements PaymentGateway {
       (obj) => {
         const invoice = obj as Stripe.Invoice;
         return {
-          type: 'invoice.payment_failed',
+          type: 'event.invoice.payment_failed',
           billingReason: invoice.billing_reason,
           externalSessionId: null,
           externalSubscriptionId: invoice.parent?.subscription_details

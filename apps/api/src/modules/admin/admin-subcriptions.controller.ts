@@ -40,13 +40,10 @@ export class AdminSubscriptionsController {
   async createSubscription(
     @Body() createSubscriptionDto: CreateSubscriptionDto,
   ) {
-    const subscription = await this.subscriptionPlanService.create(
-      createSubscriptionDto,
-    );
+    await this.subscriptionPlanService.create(createSubscriptionDto);
 
     return {
-      subscriptionId: subscription.id,
-      message: `Subscription ${subscription.name} created successfully`,
+      message: `Process of creating subscription plan is in progress`,
     };
   }
 
@@ -59,7 +56,7 @@ export class AdminSubscriptionsController {
     await this.subscriptionPlanService.update(id, updateSubscriptionDto);
 
     return {
-      message: `Subscription updated successfully`,
+      message: `Update of subscription plan is in progress`,
     };
   }
 
@@ -72,7 +69,7 @@ export class AdminSubscriptionsController {
     await this.subscriptionOfferService.createOffers(id, createOffersDto);
 
     return {
-      message: `Offers successfully attached to subscription`,
+      message: `Process of creating offers for subscription plan is in progress`,
     };
   }
 
@@ -81,7 +78,7 @@ export class AdminSubscriptionsController {
     await this.subscriptionPlanService.activatePlan(id);
 
     return {
-      message: `Subscription plan activated successfully`,
+      message: `Plan activating is in progress`,
     };
   }
 
@@ -90,7 +87,7 @@ export class AdminSubscriptionsController {
     await this.subscriptionPlanService.deactivatePlan(id);
 
     return {
-      message: `Subscription plan deactivated successfully`,
+      message: `Plan deactivating is in progress`,
     };
   }
 
@@ -102,7 +99,7 @@ export class AdminSubscriptionsController {
     await this.subscriptionOfferService.deactivateOffer(planId, offerId);
 
     return {
-      message: `Offer deactivated successfully`,
+      message: `Offer deactivating is in progress`,
     };
   }
 }

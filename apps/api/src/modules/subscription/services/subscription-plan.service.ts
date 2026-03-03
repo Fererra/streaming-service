@@ -8,18 +8,18 @@ import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import type { ISubscriptionPlanRepository } from '../../../database/repositories/interfaces/subscription-plan-repository.interface';
 import { SUBSCRIPTION_PLAN_REPOSITORY } from '../../../database/repositories/tokens/repository.tokens';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
-import { SubscriptionOfferService } from './subscription-offer.service';
 import { Money } from '../helper/money';
 import { SubscriptionPlanEntity } from '../../../database/entities/subscription-plan.entity';
-import { PaymentService } from '../../payment/payment.service';
+import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
+import { PlanStatus } from '../enums/status.enum';
 
 @Injectable()
 export class SubscriptionPlanService {
   constructor(
     @Inject(SUBSCRIPTION_PLAN_REPOSITORY)
     private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
-    private readonly subscriptionOfferService: SubscriptionOfferService,
-    private readonly paymentService: PaymentService,
+    @Inject(PAYMENT_QUEUE_SERVICE)
+    private readonly paymentQueueService: IPaymentQueueService,
   ) {}
 
   async findAllWithOffersForAdmin() {
@@ -45,7 +45,7 @@ export class SubscriptionPlanService {
   }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
-    const { name, description, offers: offerDtos } = createSubscriptionDto;
+    const { name, description } = createSubscriptionDto;
 
     const isSubscriptionExist = await this.subscriptionPlanRepository.existsBy({
       name,
@@ -62,19 +62,9 @@ export class SubscriptionPlanService {
       description,
     });
 
-    await this.paymentService.createProductInGateway(plan);
-
-    await this.subscriptionOfferService.createOffers(plan.id, offerDtos);
-
-    const affected = await this.subscriptionPlanRepository.activatePlan(
-      plan.id,
-    );
-
-    if (affected === 0) {
-      throw new NotFoundException(`Subscription plan not found`);
-    }
-
-    return plan;
+    await this.paymentQueueService.dispatchCommand('command.syncPlan', {
+      planId: plan.id,
+    });
   }
 
   async update(id: string, updateSubscriptionDto: UpdateSubscriptionDto) {
@@ -92,35 +82,42 @@ export class SubscriptionPlanService {
       }
     }
 
-    const affected = await this.subscriptionPlanRepository.update(
+    await this.paymentQueueService.dispatchCommand('command.updatePlan', {
+      planId: id,
+      updates: {
+        name: updateSubscriptionDto.name,
+        description: updateSubscriptionDto.description,
+      },
+    });
+  }
+
+  async activatePlan(id: string) {
+    const affected = await this.subscriptionPlanRepository.updateStatus(
       id,
-      updateSubscriptionDto,
+      PlanStatus.ACTIVATING,
     );
 
     if (affected === 0) {
       throw new NotFoundException(`Subscription plan not found`);
     }
 
-    await this.paymentService.updateProductInGateway(id, updateSubscriptionDto);
-  }
-
-  async activatePlan(id: string) {
-    await this.paymentService.activateProductInGateway(id);
-
-    const affected = await this.subscriptionPlanRepository.activatePlan(id);
-
-    if (affected === 0) {
-      throw new NotFoundException(`Subscription plan not found`);
-    }
+    await this.paymentQueueService.dispatchCommand('command.activatePlan', {
+      planId: id,
+    });
   }
 
   async deactivatePlan(id: string) {
-    await this.paymentService.deactivateProductInGateway(id);
-
-    const affected = await this.subscriptionPlanRepository.deactivatePlan(id);
+    const affected = await this.subscriptionPlanRepository.updateStatus(
+      id,
+      PlanStatus.DEACTIVATING,
+    );
 
     if (affected === 0) {
       throw new NotFoundException(`Subscription plan not found`);
     }
+
+    await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
+      planId: id,
+    });
   }
 }
