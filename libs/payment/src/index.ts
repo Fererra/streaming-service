@@ -4,6 +4,7 @@ export * from './modules/payment-queue.module';
 export * from './interfaces/payment-queue-service.interface';
 export * from './interfaces/payment-repository.interface';
 export * from './interfaces/payment-events.interface';
+export * from './interfaces/payment-command.interface';
 export * from './entities/payment.entity';
 export * from './enums/payment-gateway-provider.enum';
 export * from './enums/payment-status.enum';
