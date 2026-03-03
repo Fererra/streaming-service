@@ -1,3 +1,4 @@
+import { PlanStatus } from 'apps/api/src/modules/subscription/enums/status.enum';
 import { SubscriptionPlanEntity } from '../../entities/subscription-plan.entity';
 
 export interface ISubscriptionPlanRepository {
@@ -17,6 +18,5 @@ export interface ISubscriptionPlanRepository {
     id: string,
     updateData: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
   ): Promise<number>;
-  activatePlan(planId: string): Promise<number>;
-  deactivatePlan(planId: string): Promise<number>;
+  updateStatus(id: string, status: PlanStatus): Promise<number>;
 }

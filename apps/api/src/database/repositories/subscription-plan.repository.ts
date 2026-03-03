@@ -1,8 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubscriptionPlanEntity } from '../entities/subscription-plan.entity';
 import { Repository } from 'typeorm';
-import { SubscriptionOfferEntity } from '../entities/subscription-offer.entity';
 import { ISubscriptionPlanRepository } from './interfaces/subscription-plan-repository.interface';
+import { PlanStatus } from '../../modules/subscription/enums/status.enum';
 
 export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
   constructor(
@@ -18,11 +18,11 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
         'subscription_plans.id',
         'subscription_plans.name',
         'subscription_plans.description',
-        'subscription_plans.isActive',
+        'subscription_plans.status',
         'offer.id',
         'offer.durationMonths',
         'offer.price',
-        'offer.isActive',
+        'offer.status',
       ])
       .getMany();
   }
@@ -31,7 +31,9 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     return this.repository
       .createQueryBuilder('subscription_plans')
       .innerJoinAndSelect('subscription_plans.offers', 'offer')
-      .where('subscription_plans.isActive = :isActive', { isActive: true })
+      .where('subscription_plans.status = :status', {
+        status: PlanStatus.ACTIVE,
+      })
       .select([
         'subscription_plans.id',
         'subscription_plans.name',
@@ -48,7 +50,7 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
   ): Promise<boolean> {
     return this.repository.existsBy({
       ...criteria,
-      isActive: criteria.isActive ?? true,
+      status: criteria.status ?? PlanStatus.ACTIVE,
     });
   }
 
@@ -79,29 +81,7 @@ export class SubscriptionPlanRepository implements ISubscriptionPlanRepository {
     return result.affected ?? 0;
   }
 
-  async activatePlan(planId: string): Promise<number> {
-    return this.update(planId, { isActive: true });
-  }
-
-  async deactivatePlan(planId: string): Promise<number> {
-    return this.repository.manager.transaction(async (manager) => {
-      const result = await manager.update(
-        SubscriptionPlanEntity,
-        { id: planId },
-        { isActive: false },
-      );
-
-      if ((result.affected ?? 0) === 0) {
-        return 0;
-      }
-
-      await manager.update(
-        SubscriptionOfferEntity,
-        { subscriptionPlan: { id: planId } },
-        { isActive: false },
-      );
-
-      return result.affected ?? 0;
-    });
+  async updateStatus(id: string, status: PlanStatus): Promise<number> {
+    return this.update(id, { status });
   }
 }

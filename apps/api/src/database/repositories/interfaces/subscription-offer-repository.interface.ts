@@ -1,3 +1,4 @@
+import { OfferStatus } from '../../../modules/subscription/enums/status.enum';
 import { SubscriptionOfferEntity } from '../../entities/subscription-offer.entity';
 
 export interface ISubscriptionOfferRepository {
@@ -8,6 +9,9 @@ export interface ISubscriptionOfferRepository {
   save(
     offers: Partial<SubscriptionOfferEntity>[],
   ): Promise<SubscriptionOfferEntity[]>;
-  activateOffersByIds(offerIds: string[]): Promise<number>;
-  deactivateOffer(offerId: string, planId: string): Promise<number>;
+  updateStatus(
+    offerId: string,
+    planId: string,
+    status: OfferStatus,
+  ): Promise<number>;
 }

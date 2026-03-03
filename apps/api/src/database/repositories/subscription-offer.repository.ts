@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SubscriptionOfferEntity } from '../entities/subscription-offer.entity';
 import { In, Repository } from 'typeorm';
 import { ISubscriptionOfferRepository } from './interfaces/subscription-offer-repository.interface';
+import { OfferStatus } from '../../modules/subscription/enums/status.enum';
 
 @Injectable()
 export class SubscriptionOfferRepository implements ISubscriptionOfferRepository {
@@ -30,21 +31,14 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
     return this.repository.save(offers);
   }
 
-  async activateOffersByIds(offerIds: string[]): Promise<number> {
-    if (offerIds.length === 0) return 0;
-
-    const result = await this.repository.update(
-      { id: In(offerIds) },
-      { isActive: true },
-    );
-
-    return result.affected ?? 0;
-  }
-
-  async deactivateOffer(offerId: string, planId: string): Promise<number> {
+  async updateStatus(
+    offerId: string,
+    planId: string,
+    status: OfferStatus,
+  ): Promise<number> {
     const result = await this.repository.update(
       { id: offerId, subscriptionPlan: { id: planId } },
-      { isActive: false },
+      { status },
     );
 
     return result.affected ?? 0;
