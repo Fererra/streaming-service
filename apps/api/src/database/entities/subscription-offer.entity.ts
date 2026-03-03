@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { SubscriptionPlanEntity } from './subscription-plan.entity';
 import { SubscriptionOfferGatewayPriceEntity } from './gateway-price.entity';
+import { OfferStatus } from '../../modules/subscription/enums/status.enum';
 
 @Entity('subscription_offers')
 @Unique(['subscriptionPlan', 'durationMonths'])
@@ -27,8 +28,12 @@ export class SubscriptionOfferEntity {
   @Check('price >= 0')
   price: number;
 
-  @Column({ name: 'isActive', type: 'boolean', default: false })
-  isActive: boolean;
+  @Column({
+    type: 'enum',
+    enum: OfferStatus,
+    default: OfferStatus.INACTIVE,
+  })
+  status: OfferStatus;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

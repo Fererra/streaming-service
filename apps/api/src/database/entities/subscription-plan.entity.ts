@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { SubscriptionOfferEntity } from './subscription-offer.entity';
 import { SubscriptionPlanGatewayProductEntity } from './gateway-product.entity';
+import { PlanStatus } from '../../modules/subscription/enums/status.enum';
 
 @Entity('subscription_plans')
 export class SubscriptionPlanEntity {
@@ -20,8 +21,8 @@ export class SubscriptionPlanEntity {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ name: 'isActive', type: 'boolean', default: false })
-  isActive: boolean;
+  @Column({ type: 'enum', enum: PlanStatus, default: PlanStatus.INACTIVE })
+  status: PlanStatus;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
