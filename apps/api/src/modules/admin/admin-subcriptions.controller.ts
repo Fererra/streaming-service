@@ -66,7 +66,10 @@ export class AdminSubscriptionsController {
     @Body(new ParseArrayPipe({ items: CreateOfferDto }))
     createOffersDto: CreateOfferDto[],
   ) {
-    await this.subscriptionOfferService.createOffers(id, createOffersDto);
+    await this.subscriptionOfferService.createOffersAndSync(
+      id,
+      createOffersDto,
+    );
 
     return {
       message: `Process of creating offers for subscription plan is in progress`,
