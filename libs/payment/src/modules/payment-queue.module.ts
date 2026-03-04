@@ -10,8 +10,22 @@ import { PaymentQueueService } from '../services/payment-queue.service';
 @Module({
   imports: [
     BullModule.registerQueue(
-      { name: PAYMENT_EVENT_QUEUE },
-      { name: PAYMENT_COMMAND_QUEUE },
+      {
+        name: PAYMENT_EVENT_QUEUE,
+        defaultJobOptions: {
+          attempts: 7,
+          backoff: { type: 'exponential', delay: 2000 },
+          removeOnComplete: true,
+        },
+      },
+      {
+        name: PAYMENT_COMMAND_QUEUE,
+        defaultJobOptions: {
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 10000 },
+          removeOnComplete: true,
+        },
+      },
     ),
   ],
   providers: [

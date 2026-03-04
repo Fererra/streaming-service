@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { PaymentGatewayProvider } from '@app/payment';
-import { IGatewayProductRepository } from './interfaces/gateway-product-repository.interface';
+import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
+import { IGatewayProductRepository } from '../interfaces/repositories/gateway-product-repository.interface';
 import { SubscriptionPlanGatewayProductEntity } from '../entities/gateway-product.entity';
 
 @Injectable()
@@ -13,15 +13,9 @@ export class GatewayProductRepository implements IGatewayProductRepository {
   ) {}
 
   async createGatewayProduct(
-    gateway: PaymentGatewayProvider,
-    externalProductId: string,
-    planId: string,
+    data: Partial<SubscriptionPlanGatewayProductEntity>,
   ): Promise<void> {
-    await this.repository.save({
-      gateway,
-      externalProductId,
-      plan: { id: planId },
-    });
+    await this.repository.save(data);
   }
 
   async findByPlanIdAndGateway(
@@ -30,7 +24,7 @@ export class GatewayProductRepository implements IGatewayProductRepository {
   ): Promise<string | null> {
     const plan = await this.repository.findOne({
       where: {
-        plan: { id: planId },
+        subscriptionPlanId: planId,
         gateway,
       },
     });

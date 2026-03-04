@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubscriptionOfferGatewayPriceEntity } from '../entities/gateway-price.entity';
 import { Repository } from 'typeorm';
-import { PaymentGatewayProvider } from '@app/payment';
-import { IGatewayPriceRepository } from './interfaces/gateway-price-repository.interface';
+import { IGatewayPriceRepository } from '../interfaces/repositories/gateway-price-repository.interface';
+import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
 
 @Injectable()
 export class GatewayPriceRepository implements IGatewayPriceRepository {
@@ -13,27 +13,21 @@ export class GatewayPriceRepository implements IGatewayPriceRepository {
   ) {}
 
   async createGatewayPrice(
-    gateway: PaymentGatewayProvider,
-    externalPriceId: string,
-    offerId: string,
+    data: Partial<SubscriptionOfferGatewayPriceEntity>,
   ): Promise<void> {
-    await this.repository.save({
-      gateway,
-      externalPriceId,
-      offer: { id: offerId },
-    });
+    await this.repository.save(data);
   }
 
   findByOfferIdAndGateway(
     offerId: string,
     gateway: PaymentGatewayProvider,
   ): Promise<SubscriptionOfferGatewayPriceEntity | null> {
-    return this.repository
-      .createQueryBuilder('gp')
-      .innerJoinAndSelect('gp.offer', 'offer')
-      .where('gp.gateway = :gateway', { gateway })
-      .andWhere('gp.subscription_offer_id = :offerId', { offerId })
-      .select(['gp.externalPriceId', 'offer.id', 'offer.price'])
-      .getOne();
+    return this.repository.findOne({
+      select: ['externalPriceId'],
+      where: {
+        subscriptionOfferId: offerId,
+        gateway,
+      },
+    });
   }
 }

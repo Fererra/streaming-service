@@ -1,5 +1,5 @@
+import { PaymentGatewayProvider } from '../../enums/payment-gateway-provider.enum';
 import { UserGatewayCustomerEntity } from '../../entities/gateway-customer.entity';
-import { PaymentGatewayProvider } from '@app/payment';
 
 export interface IGatewayCustomerRepository {
   findByUserIdAndGateway(

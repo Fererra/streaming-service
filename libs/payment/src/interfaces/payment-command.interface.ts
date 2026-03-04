@@ -1,17 +1,23 @@
 type BasePlanCommand = { planId: string };
 type BaseOfferCommand = { offerId: string };
+type BaseSubscriptionCommand = { subscriptionId: string };
 
-type SyncPlanCommand = BasePlanCommand;
+type SyncPlanCommand = { id: string; name: string; description: string };
 type UpdatePlanCommand = BasePlanCommand & {
   updates: { name?: string; description?: string };
 };
 type ActivatePlanCommand = BasePlanCommand;
 type DeactivatePlanCommand = BasePlanCommand;
 
-type SyncOfferCommand = BaseOfferCommand;
-type DeactivateOfferCommand = BaseOfferCommand & {
-  planId: string;
+type SyncOfferCommand = {
+  id: string;
+  price: number;
+  durationMonths: number;
+  subscriptionPlanId: string;
 };
+type DeactivateOfferCommand = BaseOfferCommand;
+
+type DeactivateSubscriptionCommand = BaseSubscriptionCommand;
 
 export type PaymentCommandMap = {
   'command.syncPlan': SyncPlanCommand;
@@ -20,6 +26,7 @@ export type PaymentCommandMap = {
   'command.deactivatePlan': DeactivatePlanCommand;
   'command.syncOffer': SyncOfferCommand;
   'command.deactivateOffer': DeactivateOfferCommand;
+  'command.deactivateSubscription': DeactivateSubscriptionCommand;
 };
 
 export type CommandType = keyof PaymentCommandMap;

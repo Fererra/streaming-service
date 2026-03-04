@@ -1,8 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserGatewayCustomerEntity } from '../entities/gateway-customer.entity';
 import { Repository } from 'typeorm';
-import { PaymentGatewayProvider } from '@app/payment';
-import { IGatewayCustomerRepository } from './interfaces/gateway-customer.repository';
+import { IGatewayCustomerRepository } from '../interfaces/repositories/gateway-customer.repository';
+import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
 
 export class GatewayCustomerRepository implements IGatewayCustomerRepository {
   constructor(
@@ -15,10 +15,7 @@ export class GatewayCustomerRepository implements IGatewayCustomerRepository {
     gateway: PaymentGatewayProvider,
   ): Promise<UserGatewayCustomerEntity | null> {
     return this.repository.findOne({
-      where: {
-        user: { id: userId },
-        gateway,
-      },
+      where: { userId, gateway },
     });
   }
 

@@ -6,10 +6,16 @@ export interface ProductCreatedPayload extends GatewayEntityCreatedBase {
   planId: string;
 }
 
-export type ProductUpdatedPayload = ProductCreatedPayload;
+export interface ProductUpdatedPayload extends ProductCreatedPayload {
+  isActive: boolean;
+}
 
 export interface PriceCreatedPayload extends GatewayEntityCreatedBase {
   offerId: string;
+}
+
+export interface PriceUpdatedPayload extends PriceCreatedPayload {
+  isActive: boolean;
 }
 
 export interface PaymentMetadata {
@@ -45,6 +51,7 @@ export type WebhookEventMap = {
   'event.product.created': ProductCreatedPayload;
   'event.product.updated': ProductUpdatedPayload;
   'event.price.created': PriceCreatedPayload;
+  'event.price.updated': PriceUpdatedPayload;
   'event.checkout.completed': CheckoutCompletedPayload;
   'event.checkout.expired': CheckoutExpiredPayload;
   'event.invoice.paid': InvoicePaidPayload;

@@ -1,13 +1,10 @@
-import { PaymentGatewayProvider } from '@app/payment';
+import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { SubscriptionOfferEntity } from './subscription-offer.entity';
 
 @Entity('subscription_offer_gateway_prices')
 export class SubscriptionOfferGatewayPriceEntity {
@@ -17,15 +14,12 @@ export class SubscriptionOfferGatewayPriceEntity {
   @Column({ type: 'enum', enum: PaymentGatewayProvider })
   gateway: PaymentGatewayProvider;
 
+  @Column({ name: 'subscription_offer_id', type: 'uuid' })
+  subscriptionOfferId: string;
+
   @Column({ name: 'external_price_id', type: 'varchar', length: 255 })
   externalPriceId: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
-
-  @ManyToOne(() => SubscriptionOfferEntity, (offer) => offer.gatewayPrices, {
-    nullable: false,
-  })
-  @JoinColumn({ name: 'subscription_offer_id' })
-  offer: SubscriptionOfferEntity;
 }

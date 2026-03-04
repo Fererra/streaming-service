@@ -10,4 +10,7 @@ export interface IPaymentQueueService {
     eventType: T,
     payload: CommandPayload<T>,
   ): Promise<void>;
+  dispatchCommandsBulk<T extends CommandType>(
+    commands: { name: T; data: CommandPayload<T> }[],
+  ): Promise<void>;
 }

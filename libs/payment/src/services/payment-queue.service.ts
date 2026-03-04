@@ -1,5 +1,8 @@
 import { InjectQueue } from '@nestjs/bullmq';
-import { PAYMENT_EVENT_QUEUE } from '../constants/constants';
+import {
+  PAYMENT_COMMAND_QUEUE,
+  PAYMENT_EVENT_QUEUE,
+} from '../constants/constants';
 import { Queue } from 'bullmq';
 import {
   EventPayload,
@@ -13,28 +16,32 @@ import {
 
 export class PaymentQueueService implements IPaymentQueueService {
   constructor(
-    @InjectQueue(PAYMENT_EVENT_QUEUE) private readonly queue: Queue,
+    @InjectQueue(PAYMENT_EVENT_QUEUE) private readonly eventQueue: Queue,
+    @InjectQueue(PAYMENT_COMMAND_QUEUE) private readonly commandQueue: Queue,
   ) {}
 
   async dispatchEvent<T extends EventType>(
     eventType: T,
     payload: EventPayload<T>,
   ): Promise<void> {
-    await this.queue.add(eventType, payload, {
-      attempts: 7,
-      backoff: { type: 'exponential', delay: 2000 },
-      removeOnComplete: true,
-    });
+    await this.eventQueue.add(eventType, payload);
   }
 
   async dispatchCommand<T extends CommandType>(
     eventType: T,
     payload: CommandPayload<T>,
   ): Promise<void> {
-    await this.queue.add(eventType, payload, {
-      attempts: 5,
-      backoff: { type: 'exponential', delay: 10000 },
-      removeOnComplete: true,
-    });
+    await this.commandQueue.add(eventType, payload);
+  }
+
+  async dispatchCommandsBulk<T extends CommandType>(
+    commands: { name: T; data: CommandPayload<T> }[],
+  ): Promise<void> {
+    await this.commandQueue.addBulk(
+      commands.map((cmd) => ({
+        name: cmd.name,
+        data: cmd.data,
+      })),
+    );
   }
 }

@@ -1,13 +1,10 @@
-import { PaymentGatewayProvider } from '@app/payment';
 import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
   CreateDateColumn,
 } from 'typeorm';
-import { UserEntity } from './user.entity';
+import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
 
 @Entity('user_gateway_customers')
 export class UserGatewayCustomerEntity {
@@ -17,15 +14,12 @@ export class UserGatewayCustomerEntity {
   @Column({ type: 'enum', enum: PaymentGatewayProvider })
   gateway: PaymentGatewayProvider;
 
+  @Column({ name: 'user_id', type: 'uuid' })
+  userId: string;
+
   @Column({ name: 'external_customer_id', type: 'varchar', length: 255 })
   externalCustomerId: string;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
-
-  @ManyToOne(() => UserEntity, (user) => user.gatewayCustomers, {
-    nullable: false,
-  })
-  @JoinColumn({ name: 'user_id' })
-  user: UserEntity;
 }
