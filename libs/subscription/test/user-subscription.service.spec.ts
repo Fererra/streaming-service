@@ -1,7 +1,7 @@
 import { UserSubscriptionService } from '../src/services/user-subscription.service';
 import { DataSource, EntityManager } from 'typeorm';
 import { UserSubscriptionEntity } from '../src/entities/user-subscription.entity';
-import { SubscriptionStatus } from '../src/enums/subscription-status.enum';
+import { UserSubscriptionStatus } from '../src/enums/user-subscription-status.enum';
 import { PaymentEntity } from '@app/payment/entities/payment.entity';
 import { PaymentGatewayProvider } from '@app/payment/enums/payment-gateway-provider.enum';
 import { PaymentStatus } from '@app/payment/enums/payment-status.enum';
@@ -66,7 +66,7 @@ describe('UserSubscriptionService', () => {
             userId: createPayload.metadata.userId,
             subscriptionOfferId: createPayload.metadata.offerId,
             externalSubscriptionId: createPayload.externalSubscriptionId,
-            status: SubscriptionStatus.ACTIVE,
+            status: UserSubscriptionStatus.ACTIVE,
             currentPeriodStart: createPayload.paidAt,
             currentPeriodEnd: createPayload.currentPeriodEnd,
           },
@@ -145,7 +145,7 @@ describe('UserSubscriptionService', () => {
           UserSubscriptionEntity,
           { id: existingSubscription.id },
           {
-            status: SubscriptionStatus.ACTIVE,
+            status: UserSubscriptionStatus.ACTIVE,
             currentPeriodEnd: renewalPayload.currentPeriodEnd,
           },
         );

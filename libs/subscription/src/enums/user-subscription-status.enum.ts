@@ -1,4 +1,4 @@
-export enum SubscriptionStatus {
+export enum UserSubscriptionStatus {
   INCOMPLETE = 'incomplete',
   INCOMPLETE_EXPIRED = 'incomplete_expired',
   ACTIVE = 'active',

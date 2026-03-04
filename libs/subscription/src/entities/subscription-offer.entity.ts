@@ -1,0 +1,48 @@
+import {
+  Check,
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+  UpdateDateColumn,
+} from 'typeorm';
+import { SubscriptionPlanEntity } from './subscription-plan.entity';
+import { OfferStatus } from '../enums/status.enum';
+
+@Entity('subscription_offers')
+@Unique(['subscriptionPlan', 'durationMonths'])
+export class SubscriptionOfferEntity {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ name: 'duration_months', type: 'int' })
+  @Check('duration_months > 0')
+  durationMonths: number;
+
+  @Column({ type: 'int' })
+  @Check('price >= 0')
+  price: number;
+
+  @Column({
+    type: 'enum',
+    enum: OfferStatus,
+    default: OfferStatus.DRAFT,
+  })
+  status: OfferStatus;
+
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
+
+  @ManyToOne(() => SubscriptionPlanEntity, (plan) => plan.offers, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
+  @JoinColumn({ name: 'subscription_plan_id' })
+  subscriptionPlan: SubscriptionPlanEntity;
+}

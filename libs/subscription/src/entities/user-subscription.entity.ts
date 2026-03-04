@@ -1,5 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { SubscriptionStatus } from '../enums/subscription-status.enum';
+import { UserSubscriptionStatus } from '../enums/user-subscription-status.enum';
 
 @Entity('user_subscriptions')
 export class UserSubscriptionEntity {
@@ -29,10 +29,10 @@ export class UserSubscriptionEntity {
   @Column({
     name: 'status',
     type: 'enum',
-    enum: SubscriptionStatus,
+    enum: UserSubscriptionStatus,
     enumName: 'subscription_status',
   })
-  status: SubscriptionStatus;
+  status: UserSubscriptionStatus;
 
   @Column({
     name: 'current_period_start',

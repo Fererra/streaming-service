@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UserSubscriptionEntity } from '../entities/user-subscription.entity';
-import { SubscriptionStatus } from '../enums/subscription-status.enum';
+import { UserSubscriptionStatus } from '../enums/user-subscription-status.enum';
 import { PaymentEntity } from '@app/payment/entities/payment.entity';
 import {
   InvoicePaidPayload,
@@ -31,7 +31,7 @@ export class UserSubscriptionService {
       userId: payload.metadata.userId,
       subscriptionOfferId: payload.metadata.offerId,
       externalSubscriptionId: payload.externalSubscriptionId,
-      status: SubscriptionStatus.ACTIVE,
+      status: UserSubscriptionStatus.ACTIVE,
       currentPeriodStart: payload.paidAt as Date,
       currentPeriodEnd: payload.currentPeriodEnd as Date,
     });
@@ -75,7 +75,7 @@ export class UserSubscriptionService {
       UserSubscriptionEntity,
       { id: existingSubscription.id },
       {
-        status: SubscriptionStatus.ACTIVE,
+        status: UserSubscriptionStatus.ACTIVE,
         currentPeriodEnd: payload.currentPeriodEnd as Date,
       },
     );
