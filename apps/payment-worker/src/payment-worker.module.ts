@@ -1,20 +1,32 @@
 import { Module } from '@nestjs/common';
-import { CheckoutCompletedHandler } from './handlers/checkout-completed.handler';
-import { CheckoutExpiredHandler } from './handlers/checkout-expired.handler';
-import { InvoicePaidHandler } from './handlers/invoice-paid.handler';
-import { InvoicePaymentFailedHandler } from './handlers/invoice-payment-failed.handler';
+import { CheckoutCompletedHandler } from './handlers/events/checkout-completed.handler';
+import { CheckoutExpiredHandler } from './handlers/events/checkout-expired.handler';
+import { InvoicePaidHandler } from './handlers/events/invoice-paid.handler';
+import { InvoicePaymentFailedHandler } from './handlers/events/invoice-payment-failed.handler';
 import { PAYMENT_EVENT_HANDLERS } from './constants/constant';
 import { IPaymentEventHandler } from './interfaces/payment-event-handler.interface';
 import { BullModule } from '@nestjs/bullmq';
 import { databaseConfig, queueConfig } from '@app/config';
-import { EventType, PaymentModule } from '@app/payment';
+import { EventType, PaymentLibModule } from '@app/payment';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PaymentProcessor } from './payment.processor';
 import { PaymentEventService } from './services/payment-event.service';
-import { UserSubscriptionModule } from '@app/user-subscription';
+import { SubscriptionLibModule } from 'libs/subscription/src';
+import { PaymentEventProcessor } from './processors/event.processor';
+import { PaymentCommandProcessor } from './processors/command.processor';
+import { PaymentWorkerService } from './services/payment-worker.service';
+import { ConfigModule } from '@nestjs/config';
+import { PaymentCommandHandlersRegistry } from './handlers/commands/command-handle.registry';
+import { ProductCreatedHandler } from './handlers/events/product-created.handler';
+import { PriceCreatedHandler } from './handlers/events/price-created.handler';
+import { ProductUpdatedHandler } from './handlers/events/product-updated.handler';
+import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      envFilePath: `.env.${process.env.NODE_ENV}.local`,
+      isGlobal: true,
+    }),
     TypeOrmModule.forRootAsync({
       useFactory: async () => ({
         ...databaseConfig(),
@@ -27,11 +39,18 @@ import { UserSubscriptionModule } from '@app/user-subscription';
         },
       }),
     }),
-    PaymentModule,
-    UserSubscriptionModule,
+    PaymentLibModule,
+    SubscriptionLibModule,
   ],
   providers: [
-    PaymentProcessor,
+    PaymentWorkerService,
+    PaymentCommandHandlersRegistry,
+    PaymentEventProcessor,
+    PaymentCommandProcessor,
+    ProductCreatedHandler,
+    ProductUpdatedHandler,
+    PriceCreatedHandler,
+    PriceUpdatedHandler,
     PaymentEventService,
     CheckoutCompletedHandler,
     CheckoutExpiredHandler,
@@ -41,6 +60,10 @@ import { UserSubscriptionModule } from '@app/user-subscription';
       provide: PAYMENT_EVENT_HANDLERS,
       useFactory: (...handlers: IPaymentEventHandler<EventType>[]) => handlers,
       inject: [
+        ProductCreatedHandler,
+        ProductUpdatedHandler,
+        PriceCreatedHandler,
+        PriceUpdatedHandler,
         CheckoutCompletedHandler,
         CheckoutExpiredHandler,
         InvoicePaidHandler,

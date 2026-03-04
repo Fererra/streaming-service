@@ -1,12 +1,12 @@
-import { EventType, PAYMENT_QUEUE } from '@app/payment';
+import { EventType, PAYMENT_EVENT_QUEUE } from '@app/payment';
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
-import { IPaymentEventHandler } from './interfaces/payment-event-handler.interface';
+import { IPaymentEventHandler } from '../interfaces/payment-event-handler.interface';
 import { Inject } from '@nestjs/common';
-import { PAYMENT_EVENT_HANDLERS } from './constants/constant';
+import { PAYMENT_EVENT_HANDLERS } from '../constants/constant';
 import { Job } from 'bullmq';
 
-@Processor(PAYMENT_QUEUE)
-export class PaymentProcessor extends WorkerHost {
+@Processor(PAYMENT_EVENT_QUEUE)
+export class PaymentEventProcessor extends WorkerHost {
   private readonly handlerMap: Map<EventType, IPaymentEventHandler<EventType>>;
 
   constructor(
