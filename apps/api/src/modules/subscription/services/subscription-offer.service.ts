@@ -6,16 +6,16 @@ import {
 } from '@nestjs/common';
 import { CreateOfferDto } from '../dto/create-subscription.dto';
 import { OfferEntityFactory } from '../factories/offer-entity.factory';
-import { SubscriptionOfferEntity } from '../../../database/entities/subscription-offer.entity';
-import {
-  SUBSCRIPTION_OFFER_REPOSITORY,
-  SUBSCRIPTION_PLAN_REPOSITORY,
-} from '../../../database/repositories/tokens/repository.tokens';
-import type { ISubscriptionPlanRepository } from '../../../database/repositories/interfaces/subscription-plan-repository.interface';
-import type { ISubscriptionOfferRepository } from '../../../database/repositories/interfaces/subscription-offer-repository.interface';
 import { Money } from '../helper/money';
 import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
-import { OfferStatus } from '../enums/status.enum';
+import {
+  SUBSCRIPTION_PLAN_REPOSITORY,
+  type ISubscriptionPlanRepository,
+  SUBSCRIPTION_OFFER_REPOSITORY,
+  type ISubscriptionOfferRepository,
+  SubscriptionOfferEntity,
+  OfferStatus,
+} from '@app/subscription';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -29,10 +29,35 @@ export class SubscriptionOfferService {
     private readonly paymentQueueService: IPaymentQueueService,
   ) {}
 
-  async createOffers(
+  findPriceById(offerId: string): Promise<number | null> {
+    return this.subscriptionOfferRepository.findPriceById(offerId);
+  }
+
+  async createOffersAndSync(
     planId: string,
     createOffersDto: CreateOfferDto[],
   ): Promise<void> {
+    const savedOffers = await this.createDraftOffers(planId, createOffersDto);
+
+    const jobsToCreate = savedOffers.map((offer) => ({
+      name: 'command.syncOffer' as const,
+      data: {
+        id: offer.id,
+        price: offer.price,
+        durationMonths: offer.durationMonths,
+        subscriptionPlanId: planId,
+      },
+    }));
+
+    if (jobsToCreate.length > 0) {
+      await this.paymentQueueService.dispatchCommandsBulk(jobsToCreate);
+    }
+  }
+
+  async createDraftOffers(
+    planId: string,
+    createOffersDto: CreateOfferDto[],
+  ): Promise<SubscriptionOfferEntity[]> {
     const plan = await this.subscriptionPlanRepository.findById(planId);
 
     if (!plan) {
@@ -48,14 +73,10 @@ export class SubscriptionOfferService {
       normalizedOffers,
       plan.id,
     );
-    await this.validateOffersUniqueness(plan.id, offers);
-    const savedOffers = await this.subscriptionOfferRepository.save(offers);
 
-    savedOffers.forEach((offer) => {
-      this.paymentQueueService.dispatchCommand('command.syncOffer', {
-        offerId: offer.id,
-      });
-    });
+    await this.validateOffersUniqueness(plan.id, offers);
+
+    return this.subscriptionOfferRepository.save(offers);
   }
 
   private async validateOffersUniqueness(
@@ -82,18 +103,30 @@ export class SubscriptionOfferService {
   }
 
   async deactivateOffer(planId: string, offerId: string) {
-    const affected = await this.subscriptionOfferRepository.updateStatus(
+    const offer = await this.subscriptionOfferRepository.findOfferByIdAndPlanId(
       offerId,
       planId,
+    );
+
+    if (!offer) {
+      throw new NotFoundException(`Offer not found for the given plan`);
+    }
+
+    if (
+      offer.status === OfferStatus.DEACTIVATED ||
+      offer.status === OfferStatus.DEACTIVATING
+    ) {
+      throw new ConflictException(
+        `Offer is already deactivated or being deactivated`,
+      );
+    }
+
+    await this.subscriptionOfferRepository.updateStatus(
+      offerId,
       OfferStatus.DEACTIVATING,
     );
 
-    if (affected === 0) {
-      throw new NotFoundException('Offer not found');
-    }
-
     await this.paymentQueueService.dispatchCommand('command.deactivateOffer', {
-      planId,
       offerId,
     });
   }

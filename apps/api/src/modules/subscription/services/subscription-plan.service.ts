@@ -5,13 +5,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
-import type { ISubscriptionPlanRepository } from '../../../database/repositories/interfaces/subscription-plan-repository.interface';
-import { SUBSCRIPTION_PLAN_REPOSITORY } from '../../../database/repositories/tokens/repository.tokens';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import { Money } from '../helper/money';
-import { SubscriptionPlanEntity } from '../../../database/entities/subscription-plan.entity';
 import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
-import { PlanStatus } from '../enums/status.enum';
+import {
+  type ISubscriptionPlanRepository,
+  PlanStatus,
+  SUBSCRIPTION_PLAN_REPOSITORY,
+  SubscriptionPlanEntity,
+} from '@app/subscription';
+import { SubscriptionOfferService } from './subscription-offer.service';
 
 @Injectable()
 export class SubscriptionPlanService {
@@ -20,6 +23,7 @@ export class SubscriptionPlanService {
     private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
     @Inject(PAYMENT_QUEUE_SERVICE)
     private readonly paymentQueueService: IPaymentQueueService,
+    private readonly subscriptionOfferService: SubscriptionOfferService,
   ) {}
 
   async findAllWithOffersForAdmin() {
@@ -45,7 +49,7 @@ export class SubscriptionPlanService {
   }
 
   async create(createSubscriptionDto: CreateSubscriptionDto) {
-    const { name, description } = createSubscriptionDto;
+    const { name, description, offers } = createSubscriptionDto;
 
     const isSubscriptionExist = await this.subscriptionPlanRepository.existsBy({
       name,
@@ -62,8 +66,16 @@ export class SubscriptionPlanService {
       description,
     });
 
+    if (!offers || offers.length === 0) {
+      return;
+    }
+
+    await this.subscriptionOfferService.createDraftOffers(plan.id, offers);
+
     await this.paymentQueueService.dispatchCommand('command.syncPlan', {
-      planId: plan.id,
+      id: plan.id,
+      name: plan.name,
+      description: plan.description,
     });
   }
 
@@ -71,7 +83,6 @@ export class SubscriptionPlanService {
     if (updateSubscriptionDto.name) {
       const isSubscriptionExist =
         await this.subscriptionPlanRepository.existsBy({
-          id,
           name: updateSubscriptionDto.name,
         });
 
@@ -80,6 +91,15 @@ export class SubscriptionPlanService {
           `Subscription with name ${updateSubscriptionDto.name} already exists`,
         );
       }
+    }
+
+    const affected = await this.subscriptionPlanRepository.update(id, {
+      name: updateSubscriptionDto.name,
+      description: updateSubscriptionDto.description,
+    });
+
+    if (affected === 0) {
+      throw new NotFoundException(`Subscription plan with id ${id} not found`);
     }
 
     await this.paymentQueueService.dispatchCommand('command.updatePlan', {
@@ -92,14 +112,23 @@ export class SubscriptionPlanService {
   }
 
   async activatePlan(id: string) {
-    const affected = await this.subscriptionPlanRepository.updateStatus(
+    const plan = await this.subscriptionPlanRepository.findById(id);
+
+    if (!plan) {
+      throw new NotFoundException(`Subscription plan not found`);
+    }
+
+    if (
+      plan.status === PlanStatus.ACTIVE ||
+      plan.status === PlanStatus.ACTIVATING
+    ) {
+      throw new ConflictException(`Plan is already active or being activated`);
+    }
+
+    await this.subscriptionPlanRepository.updateStatus(
       id,
       PlanStatus.ACTIVATING,
     );
-
-    if (affected === 0) {
-      throw new NotFoundException(`Subscription plan not found`);
-    }
 
     await this.paymentQueueService.dispatchCommand('command.activatePlan', {
       planId: id,
@@ -107,14 +136,25 @@ export class SubscriptionPlanService {
   }
 
   async deactivatePlan(id: string) {
-    const affected = await this.subscriptionPlanRepository.updateStatus(
+    const plan = await this.subscriptionPlanRepository.findById(id);
+
+    if (!plan) {
+      throw new NotFoundException(`Subscription plan not found`);
+    }
+
+    if (
+      plan.status === PlanStatus.DEACTIVATED ||
+      plan.status === PlanStatus.DEACTIVATING
+    ) {
+      throw new ConflictException(
+        `Plan is already deactivated or being deactivated`,
+      );
+    }
+
+    await this.subscriptionPlanRepository.updateStatus(
       id,
       PlanStatus.DEACTIVATING,
     );
-
-    if (affected === 0) {
-      throw new NotFoundException(`Subscription plan not found`);
-    }
 
     await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
       planId: id,

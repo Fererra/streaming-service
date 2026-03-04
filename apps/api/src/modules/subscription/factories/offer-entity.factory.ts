@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateOfferDto } from '../dto/create-subscription.dto';
-import { SubscriptionOfferEntity } from '../../../database/entities/subscription-offer.entity';
+import { SubscriptionOfferEntity } from '@app/subscription';
 
 @Injectable()
 export class OfferEntityFactory {

@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { SubscriptionPlanService } from './services/subscription-plan.service';
 import { SubscriptionOfferService } from './services/subscription-offer.service';
 import { OfferEntityFactory } from './factories/offer-entity.factory';
-import { DatabaseModule } from '../../database/database.module';
 import { SubscriptionController } from './subscription.controller';
 import { PaymentQueueModule } from '@app/payment';
+import { SubscriptionLibPersistenceModule } from '@app/subscription';
 
 @Module({
-  imports: [DatabaseModule, PaymentQueueModule],
+  imports: [SubscriptionLibPersistenceModule, PaymentQueueModule],
   controllers: [SubscriptionController],
   providers: [
     SubscriptionPlanService,
