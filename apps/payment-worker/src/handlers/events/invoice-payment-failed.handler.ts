@@ -3,12 +3,12 @@ import {
   PaymentGatewayProvider,
   InvoicePaymentFailedPayload,
 } from '@app/payment';
-import { IPaymentEventHandler } from '../interfaces/payment-event-handler.interface';
-import { PaymentEventService } from '../services/payment-event.service';
+import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
+import { PaymentEventService } from '../../services/payment-event.service';
 
 @Injectable()
-export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'invoice.payment_failed'> {
-  readonly eventType = 'invoice.payment_failed' as const;
+export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.invoice.payment_failed'> {
+  readonly eventType = 'event.invoice.payment_failed' as const;
   private readonly noSessionReasons = [
     'subscription_cycle',
     'subscription_update',

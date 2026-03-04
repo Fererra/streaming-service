@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { CheckoutExpiredPayload } from '@app/payment';
-import { IPaymentEventHandler } from '../interfaces/payment-event-handler.interface';
-import { PaymentEventService } from '../services/payment-event.service';
+import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
+import { PaymentEventService } from '../../services/payment-event.service';
 
 @Injectable()
-export class CheckoutExpiredHandler implements IPaymentEventHandler<'checkout.expired'> {
-  readonly eventType = 'checkout.expired' as const;
+export class CheckoutExpiredHandler implements IPaymentEventHandler<'event.checkout.expired'> {
+  readonly eventType = 'event.checkout.expired' as const;
 
   constructor(private readonly paymentEventService: PaymentEventService) {}
 

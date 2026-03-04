@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InvoicePaidPayload } from '@app/payment';
-import { IPaymentEventHandler } from '../interfaces/payment-event-handler.interface';
+import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
 
-import { UserSubscriptionService } from '@app/user-subscription';
+import { UserSubscriptionService } from 'libs/subscription/src';
 
 @Injectable()
-export class InvoicePaidHandler implements IPaymentEventHandler<'invoice.paid'> {
-  readonly eventType = 'invoice.paid' as const;
+export class InvoicePaidHandler implements IPaymentEventHandler<'event.invoice.paid'> {
+  readonly eventType = 'event.invoice.paid' as const;
 
   constructor(
     private readonly userSubscriptionService: UserSubscriptionService,
