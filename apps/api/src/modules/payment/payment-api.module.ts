@@ -1,32 +1,41 @@
 import { Module } from '@nestjs/common';
-import { PaymentService } from './payment.service';
 import { PaymentController } from './payment.controller';
 import { WebhookController } from './webhook.controller';
-import { StripePaymentGateway } from './gateways/stripe-payment.gateway';
-import { PAYMENT_GATEWAY, STRIPE_CLIENT } from './payment.tokens';
 import { DatabaseModule } from '../../database/database.module';
-import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
-import { PaymentModule } from '@app/payment';
+import {
+  PaymentLibModule,
+  SUBSCRIPTION_OFFER_RESOLVER,
+  USER_RESOLVER,
+} from '@app/payment';
+import { IUsersRepository } from '../../database/repositories/interfaces/users-repository.interface';
+import { USERS_REPOSITORY } from '../../database/repositories/tokens/repository.tokens';
+import { PaymentService } from './payment.service';
+import {
+  ISubscriptionOfferRepository,
+  SUBSCRIPTION_OFFER_REPOSITORY,
+  SubscriptionLibPersistenceModule,
+} from '@app/subscription';
 
 @Module({
-  imports: [DatabaseModule, PaymentModule],
+  imports: [DatabaseModule, SubscriptionLibPersistenceModule, PaymentLibModule],
   controllers: [PaymentController, WebhookController],
   providers: [
     PaymentService,
     {
-      provide: STRIPE_CLIENT,
-      useFactory: (configService: ConfigService) => {
-        const secretKey = configService.getOrThrow<string>('STRIPE_SECRET_KEY');
-
-        return new Stripe(secretKey, {
-          maxNetworkRetries: 3,
-        });
-      },
-      inject: [ConfigService],
+      provide: USER_RESOLVER,
+      useFactory: (repository: IUsersRepository) => ({
+        findEmailById: (userId: string) => repository.findUserEmailById(userId),
+      }),
+      inject: [USERS_REPOSITORY],
     },
-    { provide: PAYMENT_GATEWAY, useClass: StripePaymentGateway },
+    {
+      provide: SUBSCRIPTION_OFFER_RESOLVER,
+      useFactory: (repository: ISubscriptionOfferRepository) => ({
+        findPriceById: async (offerId: string) =>
+          repository.findPriceById(offerId),
+      }),
+      inject: [SUBSCRIPTION_OFFER_REPOSITORY],
+    },
   ],
-  exports: [PaymentService],
 })
 export class PaymentApiModule {}

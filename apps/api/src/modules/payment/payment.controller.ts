@@ -1,8 +1,8 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { PaymentService } from './payment.service';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { CurrentUserId } from '../../common/decorators/current-user-id.decorator';
+import { PaymentService } from './payment.service';
 
 @Controller()
 @UseGuards(JwtGuard)

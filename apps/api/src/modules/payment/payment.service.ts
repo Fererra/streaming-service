@@ -1,30 +1,22 @@
 import {
-  Inject,
-  Injectable,
-  InternalServerErrorException,
-  NotFoundException,
-} from '@nestjs/common';
-import { PAYMENT_GATEWAY } from './payment.tokens';
-import type { PaymentGateway } from './interfaces/payment-gateway.interface';
-import {
-  GATEWAY_CUSTOMER_REPOSITORY,
-  GATEWAY_PRICE_REPOSITORY,
-  GATEWAY_PRODUCT_REPOSITORY,
-} from '../../database/repositories/tokens/repository.tokens';
-import {
-  type IPaymentRepository,
+  PAYMENT_GATEWAY,
   PAYMENT_REPOSITORY,
-  PaymentStatus,
+  type IPaymentRepository,
+  GATEWAY_PRICE_REPOSITORY,
+  GATEWAY_CUSTOMER_REPOSITORY,
   PAYMENT_QUEUE_SERVICE,
   type IPaymentQueueService,
+  USER_RESOLVER,
+  SUBSCRIPTION_OFFER_RESOLVER,
+  PaymentStatus,
+  type PaymentGateway,
+  CreateCheckoutRequest,
+  type IGatewayCustomerRepository,
+  type IGatewayPriceRepository,
+  type ISubscriptionOfferResolver,
+  type IUserResolver,
 } from '@app/payment';
-import { CreateCheckoutDto } from './dto/create-checkout.dto';
-import { UsersService } from '../users/services/users.service';
-import { SubscriptionOfferEntity } from '../../database/entities/subscription-offer.entity';
-import type { IGatewayPriceRepository } from '../../database/repositories/interfaces/gateway-price-repository.interface';
-import type { IGatewayCustomerRepository } from '../../database/repositories/interfaces/gateway-customer.repository';
-import { SubscriptionPlanEntity } from '../../database/entities/subscription-plan.entity';
-import type { IGatewayProductRepository } from '../../database/repositories/interfaces/gateway-product-repository.interface';
+import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 
 @Injectable()
 export class PaymentService {
@@ -39,91 +31,29 @@ export class PaymentService {
     private readonly gatewayCustomerRepository: IGatewayCustomerRepository,
     @Inject(PAYMENT_QUEUE_SERVICE)
     private readonly paymentQueueService: IPaymentQueueService,
-    @Inject(GATEWAY_PRODUCT_REPOSITORY)
-    private readonly gatewayProductRepository: IGatewayProductRepository,
-    private readonly usersService: UsersService,
+    @Inject(USER_RESOLVER)
+    private readonly usersService: IUserResolver,
+    @Inject(SUBSCRIPTION_OFFER_RESOLVER)
+    private readonly subscriptionOfferResolver: ISubscriptionOfferResolver,
   ) {}
 
-  async createProductInGateway(plan: SubscriptionPlanEntity) {
-    const product = await this.paymentGateway.createProduct({
-      id: plan.id,
-      name: plan.name,
-      description: plan.description,
-    });
-
-    await this.gatewayProductRepository.createGatewayProduct(
-      this.paymentGateway.gateway,
-      product.id,
-      plan.id,
-    );
-
-    return product;
-  }
-
-  async updateProductInGateway(
-    planId: string,
-    updateSubscriptionDto: Partial<SubscriptionPlanEntity>,
-  ) {
-    const productId =
-      await this.gatewayProductRepository.findByPlanIdAndGateway(
-        planId,
-        this.paymentGateway.gateway,
-      );
-
-    if (!productId) {
-      throw new NotFoundException('Product not found in gateway');
-    }
-
-    await this.paymentGateway.updateProduct(productId, {
-      name: updateSubscriptionDto.name,
-      description: updateSubscriptionDto.description,
-    });
-  }
-
-  async syncOfferToGateway(offer: SubscriptionOfferEntity) {
-    const productId =
-      await this.gatewayProductRepository.findByPlanIdAndGateway(
-        offer.subscriptionPlan.id,
-        this.paymentGateway.gateway,
-      );
-
-    if (!productId) {
-      throw new InternalServerErrorException('Plan is not synced to gateway');
-    }
-
-    const { id: externalPriceId } = await this.paymentGateway.createPrice(
-      {
-        id: offer.id,
-        amount: offer.price,
-        durationMonths: offer.durationMonths,
-        currency: 'USD',
-      },
-      productId,
-    );
-
-    await this.gatewayPriceRepository.createGatewayPrice(
-      this.paymentGateway.gateway,
-      externalPriceId,
-      offer.id,
-    );
-  }
-
-  async createCheckoutSession(userId: string, dto: CreateCheckoutDto) {
-    const userEmail = await this.usersService.findUserEmailById(userId);
+  async createCheckoutSession(userId: string, options: CreateCheckoutRequest) {
+    const userEmail = await this.usersService.findEmailById(userId);
 
     if (!userEmail) {
       throw new NotFoundException('User email not found');
     }
 
-    const gatewayOffer =
-      await this.gatewayPriceRepository.findByOfferIdAndGateway(
-        dto.offerId,
+    const [gatewayPrice, offerPrice] = await Promise.all([
+      this.gatewayPriceRepository.findByOfferIdAndGateway(
+        options.offerId,
         this.paymentGateway.gateway,
-      );
+      ),
+      this.subscriptionOfferResolver.findPriceById(options.offerId),
+    ]);
 
-    if (!gatewayOffer) {
+    if (!gatewayPrice || !offerPrice)
       throw new NotFoundException('Subscription offer not found');
-    }
 
     const customerId = await this.resolveCustomerId(userId, userEmail);
 
@@ -131,17 +61,17 @@ export class PaymentService {
       userId,
       email: userEmail,
       externalCustomerId: customerId,
-      offerId: dto.offerId,
-      externalPriceId: gatewayOffer.externalPriceId,
+      offerId: options.offerId,
+      externalPriceId: gatewayPrice.externalPriceId,
     });
 
     await this.paymentRepository.create({
       userId,
-      subscriptionOfferId: dto.offerId,
+      subscriptionOfferId: options.offerId,
       externalSessionId: checkoutResponse.sessionId,
       status: PaymentStatus.PENDING,
-      amount: Number(gatewayOffer.offer.price) * 100,
-      currency: dto.currency ?? 'USD',
+      amount: Number(offerPrice) * 100,
+      currency: options.currency ?? 'USD',
       gateway: this.paymentGateway.gateway,
     });
 
@@ -160,13 +90,18 @@ export class PaymentService {
 
     if (gatewayCustomer) return gatewayCustomer.externalCustomerId;
 
-    const { id: newCustomerId } = await this.paymentGateway.createCustomer({
-      email,
-      userId,
-    });
+    const idempotencyKey = `create-customer-${userId}-${Date.now()}`;
+
+    const { id: newCustomerId } = await this.paymentGateway.createCustomer(
+      {
+        email,
+        userId,
+      },
+      idempotencyKey,
+    );
 
     await this.gatewayCustomerRepository.save({
-      user: { id: userId } as any,
+      userId,
       gateway: this.paymentGateway.gateway,
       externalCustomerId: newCustomerId,
     });
@@ -174,66 +109,13 @@ export class PaymentService {
     return newCustomerId;
   }
 
-  async deactivateOfferInGateway(offerId: string) {
-    const gatewayPrice =
-      await this.gatewayPriceRepository.findByOfferIdAndGateway(
-        offerId,
-        this.paymentGateway.gateway,
-      );
-
-    if (!gatewayPrice) {
-      throw new NotFoundException('Gateway price not found for offer');
-    }
-
-    await this.paymentGateway.deactivatePrice(gatewayPrice.externalPriceId);
-    await this.paymentGateway.deactivateSubscriptions(
-      gatewayPrice.externalPriceId,
-    );
-  }
-
-  async activateProductInGateway(planId: string) {
-    const productId =
-      await this.gatewayProductRepository.findByPlanIdAndGateway(
-        planId,
-        this.paymentGateway.gateway,
-      );
-
-    if (!productId) {
-      throw new NotFoundException('Product not found in gateway');
-    }
-
-    await this.paymentGateway.activateProduct(productId);
-  }
-
-  async deactivateProductInGateway(planId: string) {
-    const productId =
-      await this.gatewayProductRepository.findByPlanIdAndGateway(
-        planId,
-        this.paymentGateway.gateway,
-      );
-
-    if (!productId) {
-      throw new NotFoundException('Product not found in gateway');
-    }
-
-    await this.paymentGateway.deactivateProduct(productId);
-    const productPrices = await this.paymentGateway.getProductPrices(productId);
-
-    await Promise.all(
-      productPrices.map((priceId) => {
-        return Promise.all([
-          this.paymentGateway.deactivatePrice(priceId),
-          this.paymentGateway.deactivateSubscriptions(priceId),
-        ]);
-      }),
-    );
-  }
-
   async handleWebhookEvent(payload: Buffer, signature: string): Promise<void> {
     const event = await this.paymentGateway.constructWebhookEvent(
       payload,
       signature,
     );
+
+    if (!event) return;
 
     await this.paymentQueueService.dispatchEvent(event.type, event);
   }
