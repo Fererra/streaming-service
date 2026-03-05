@@ -19,6 +19,7 @@ export interface PriceUpdatedPayload extends PriceCreatedPayload {
 }
 
 export interface PaymentMetadata {
+  internalPaymentId: string;
   userId: string;
   offerId: string;
 }

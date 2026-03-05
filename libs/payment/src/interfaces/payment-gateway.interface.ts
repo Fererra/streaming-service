@@ -30,6 +30,7 @@ export interface CheckoutSessionRequest {
   externalCustomerId: string;
   offerId: string;
   externalPriceId: string;
+  internalPaymentId: string;
 }
 
 export interface CheckoutSessionResponse {
