@@ -90,7 +90,7 @@ export class PaymentService {
 
     if (gatewayCustomer) return gatewayCustomer.externalCustomerId;
 
-    const idempotencyKey = `create-customer-${userId}-${Date.now()}`;
+    const idempotencyKey = `create-customer-${userId}`;
 
     const { id: newCustomerId } = await this.paymentGateway.createCustomer(
       {
