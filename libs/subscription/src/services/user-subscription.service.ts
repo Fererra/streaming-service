@@ -8,6 +8,7 @@ import {
   PaymentEntity,
   PaymentStatus,
   SubscriptionUpdatedPayload,
+  SubscriptionDeletedPayload,
 } from '@app/payment';
 import { USER_SUBSCRIPTION_REPOSITORY } from '../constants/constant';
 import type { IUserSubscriptionRepository } from '../interfaces/user-subscription-repository.interface';
@@ -141,6 +142,26 @@ export class UserSubscriptionService {
           `Subscription ${externalSubscriptionId} not found for update`,
         );
       }
+    }
+  }
+
+  async markSubscriptionAsDeleted(
+    payload: SubscriptionDeletedPayload,
+  ): Promise<void> {
+    const affected =
+      await this.userSubscriptionRepository.updateByExternalSubscriptionId(
+        payload.externalSubscriptionId,
+        {
+          status: payload.status,
+          cancellationReason: payload.cancellationReason,
+          canceledAt: payload.canceledAt,
+        },
+      );
+
+    if (affected === 0) {
+      console.warn(
+        `Subscription ${payload.externalSubscriptionId} not found for deletion`,
+      );
     }
   }
 }

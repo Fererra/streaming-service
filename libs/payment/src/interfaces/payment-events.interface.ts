@@ -55,6 +55,14 @@ export interface SubscriptionUpdatedPayload {
   };
 }
 
+export interface SubscriptionDeletedPayload {
+  type: 'event.subscription.deleted';
+  externalSubscriptionId: string;
+  status: UserSubscriptionStatus;
+  cancellationReason: CancellationReason;
+  canceledAt: Date | null;
+}
+
 export type CheckoutCompletedPayload = CheckoutEventPayload;
 export type CheckoutExpiredPayload = CheckoutEventPayload;
 
@@ -71,6 +79,7 @@ export type WebhookEventMap = {
   'event.invoice.paid': InvoicePaidPayload;
   'event.invoice.payment_failed': InvoicePaymentFailedPayload;
   'event.subscription.updated': SubscriptionUpdatedPayload;
+  'event.subscription.deleted': SubscriptionDeletedPayload;
 };
 
 export type EventType = keyof WebhookEventMap;

@@ -372,6 +372,28 @@ export class StripePaymentGateway implements PaymentGateway {
         };
       },
     ],
+    [
+      'customer.subscription.deleted',
+      (event: Stripe.Event) => {
+        const subscription = event.data.object as Stripe.Subscription;
+
+        const canceledByMeta = subscription.metadata
+          ?.canceled_by as CancellationInitiator;
+
+        const reason = this.resolveCancellationReason(
+          canceledByMeta,
+          subscription.cancellation_details?.reason,
+        );
+
+        return {
+          type: 'event.subscription.deleted',
+          externalSubscriptionId: subscription.id,
+          status: subscription.status as unknown as UserSubscriptionStatus,
+          cancellationReason: reason,
+          canceledAt: this.fromStripeTs(subscription.canceled_at),
+        };
+      },
+    ],
   ]);
 
   private fromStripeTs = (ts?: number | null): Date | null =>
@@ -421,14 +443,14 @@ export class StripePaymentGateway implements PaymentGateway {
     initiator?: CancellationInitiator,
     stripeReason?: string | null,
   ): CancellationReason {
+    if (stripeReason) {
+      return this.stripeReasonMap.get(stripeReason) ?? CancellationReason.OTHER;
+    }
+
     if (initiator) {
       return (
         this.initiatorToReasonMap.get(initiator) ?? CancellationReason.OTHER
       );
-    }
-
-    if (stripeReason) {
-      return this.stripeReasonMap.get(stripeReason) ?? CancellationReason.OTHER;
     }
 
     return CancellationReason.OTHER;
