@@ -1,5 +1,6 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 import { UserSubscriptionStatus } from '../enums/user-subscription-status.enum';
+import { CancellationReason } from '@app/shared';
 
 @Entity('user_subscriptions')
 export class UserSubscriptionEntity {
@@ -36,13 +37,13 @@ export class UserSubscriptionEntity {
 
   @Column({
     name: 'current_period_start',
-    type: 'date',
+    type: 'timestamp',
   })
   currentPeriodStart: Date;
 
   @Column({
     name: 'current_period_end',
-    type: 'date',
+    type: 'timestamp',
   })
   currentPeriodEnd: Date;
 
@@ -52,4 +53,13 @@ export class UserSubscriptionEntity {
     nullable: true,
   })
   canceledAt: Date | null;
+
+  @Column({
+    name: 'cancellation_reason',
+    type: 'enum',
+    enum: CancellationReason,
+    enumName: 'cancellation_reason',
+    nullable: true,
+  })
+  cancellationReason: CancellationReason | null;
 }
