@@ -70,7 +70,7 @@ export class StripePaymentGateway implements PaymentGateway {
     await this.stripe.prices.create(
       {
         product: externalProductId,
-        currency: request?.currency ?? 'USD',
+        currency: 'USD',
         unit_amount: request.amount,
         recurring: {
           interval: 'month',

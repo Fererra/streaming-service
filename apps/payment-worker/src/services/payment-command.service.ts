@@ -89,7 +89,6 @@ export class PaymentCommandService {
         id: offer.id,
         amount: offer.price,
         durationMonths: offer.durationMonths,
-        currency: 'USD',
       },
       productId,
       idempotencyKey,

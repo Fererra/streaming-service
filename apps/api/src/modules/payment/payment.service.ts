@@ -68,7 +68,7 @@ export class PaymentService {
       externalSessionId: null,
       status: PaymentStatus.PENDING,
       amount: offerPrice,
-      currency: options.currency ?? 'USD',
+      currency: 'USD',
       gateway: this.paymentGateway.gateway,
     });
 
@@ -89,7 +89,7 @@ export class PaymentService {
       return { checkoutUrl: checkoutResponse.checkoutUrl };
     } catch (error) {
       console.error(
-        `Failed to update payment ${paymentIntent.id} with Stripe session, but session was created.`,
+        `Failed to create checkout session for payment ${paymentIntent.id}`,
       );
 
       await this.paymentRepository.update(paymentIntent.id, {

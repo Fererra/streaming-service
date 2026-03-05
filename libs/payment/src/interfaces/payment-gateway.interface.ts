@@ -16,7 +16,6 @@ export interface CreatePriceRequest {
   id: string;
   amount: number;
   durationMonths: number;
-  currency: string;
 }
 
 export interface CreateCustomerRequest {

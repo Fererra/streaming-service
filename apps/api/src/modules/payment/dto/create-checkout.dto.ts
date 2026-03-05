@@ -4,8 +4,4 @@ export class CreateCheckoutDto {
   @IsNotEmpty()
   @IsString()
   offerId: string;
-
-  @IsOptional()
-  @IsString()
-  currency?: string;
 }

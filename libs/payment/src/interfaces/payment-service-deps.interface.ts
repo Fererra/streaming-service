@@ -1,6 +1,5 @@
 export class CreateCheckoutRequest {
   offerId: string;
-  currency?: string;
 }
 
 export interface SubscriptionPlan {
