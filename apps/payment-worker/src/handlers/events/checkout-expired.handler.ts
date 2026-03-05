@@ -10,11 +10,11 @@ export class CheckoutExpiredHandler implements IPaymentEventHandler<'event.check
   constructor(private readonly paymentEventService: PaymentEventService) {}
 
   async handle(payload: CheckoutExpiredPayload): Promise<void> {
-    const internalPaymentId = payload.metadata?.internalPaymentId;
+    const initialPaymentId = payload.metadata?.initialPaymentId;
 
-    if (!internalPaymentId) return;
+    if (!initialPaymentId) return;
 
-    await this.paymentEventService.markCheckoutExpired(internalPaymentId, {
+    await this.paymentEventService.markCheckoutExpired(initialPaymentId, {
       externalInvoiceId: payload.externalInvoiceId,
       metadata: payload.metadata,
     });

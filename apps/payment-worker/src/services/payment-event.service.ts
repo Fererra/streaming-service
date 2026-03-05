@@ -15,10 +15,10 @@ export class PaymentEventService {
   ) {}
 
   async markCheckoutCompleted(
-    internalPaymentId: string,
+    initialPaymentId: string,
     data: { externalInvoiceId?: string | null; metadata?: PaymentMetadata },
   ): Promise<void> {
-    const affected = await this.paymentRepository.update(internalPaymentId, {
+    const affected = await this.paymentRepository.update(initialPaymentId, {
       externalInvoiceId: data.externalInvoiceId,
       status: PaymentStatus.PROCESSING,
       metadata: data.metadata,
@@ -26,16 +26,16 @@ export class PaymentEventService {
 
     if (affected === 0) {
       console.warn(
-        `Payment Intent ${internalPaymentId} not found for Checkout Completed webhook.`,
+        `Payment Intent ${initialPaymentId} not found for Checkout Completed webhook.`,
       );
     }
   }
 
   async markCheckoutExpired(
-    internalPaymentId: string,
+    initialPaymentId: string,
     data: { externalInvoiceId?: string | null; metadata?: PaymentMetadata },
   ): Promise<void> {
-    const affected = await this.paymentRepository.update(internalPaymentId, {
+    const affected = await this.paymentRepository.update(initialPaymentId, {
       externalInvoiceId: data.externalInvoiceId,
       status: PaymentStatus.EXPIRED,
       metadata: data.metadata,
@@ -43,19 +43,19 @@ export class PaymentEventService {
 
     if (affected === 0) {
       console.warn(
-        `Payment Intent ${internalPaymentId} not found for Checkout Expired webhook.`,
+        `Payment Intent ${initialPaymentId} not found for Checkout Expired webhook.`,
       );
     }
   }
 
-  async markPaymentFailed(internalPaymentId: string): Promise<void> {
-    const affected = await this.paymentRepository.update(internalPaymentId, {
+  async markPaymentFailed(initialPaymentId: string): Promise<void> {
+    const affected = await this.paymentRepository.update(initialPaymentId, {
       status: PaymentStatus.FAILED,
     });
 
     if (affected === 0) {
       console.warn(
-        `Payment Intent ${internalPaymentId} not found for Payment Failed webhook.`,
+        `Payment Intent ${initialPaymentId} not found for Payment Failed webhook.`,
       );
     }
   }

@@ -113,13 +113,13 @@ export class StripePaymentGateway implements PaymentGateway {
       ],
       subscription_data: {
         metadata: {
-          internalPaymentId: request.internalPaymentId,
+          initialPaymentId: request.internalPaymentId,
           userId: request.userId,
           offerId: request.offerId,
         },
       },
       metadata: {
-        internalPaymentId: request.internalPaymentId,
+        initialPaymentId: request.internalPaymentId,
         userId: request.userId,
         offerId: request.offerId,
       },
