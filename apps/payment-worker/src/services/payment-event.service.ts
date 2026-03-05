@@ -15,46 +15,49 @@ export class PaymentEventService {
   ) {}
 
   async markCheckoutCompleted(
-    externalSessionId: string,
+    internalPaymentId: string,
     data: { externalInvoiceId?: string | null; metadata?: PaymentMetadata },
   ): Promise<void> {
-    const payment =
-      await this.paymentRepository.findByExternalSessionId(externalSessionId);
-
-    if (!payment) return;
-
-    await this.paymentRepository.update(payment.id, {
+    const affected = await this.paymentRepository.update(internalPaymentId, {
       externalInvoiceId: data.externalInvoiceId,
       status: PaymentStatus.PROCESSING,
       metadata: data.metadata,
     });
+
+    if (affected === 0) {
+      console.warn(
+        `Payment Intent ${internalPaymentId} not found for Checkout Completed webhook.`,
+      );
+    }
   }
 
   async markCheckoutExpired(
-    externalSessionId: string,
+    internalPaymentId: string,
     data: { externalInvoiceId?: string | null; metadata?: PaymentMetadata },
   ): Promise<void> {
-    const payment =
-      await this.paymentRepository.findByExternalSessionId(externalSessionId);
-
-    if (!payment) return;
-
-    await this.paymentRepository.update(payment.id, {
+    const affected = await this.paymentRepository.update(internalPaymentId, {
       externalInvoiceId: data.externalInvoiceId,
       status: PaymentStatus.EXPIRED,
       metadata: data.metadata,
     });
+
+    if (affected === 0) {
+      console.warn(
+        `Payment Intent ${internalPaymentId} not found for Checkout Expired webhook.`,
+      );
+    }
   }
 
-  async markPaymentFailed(externalInvoiceId: string): Promise<void> {
-    const payment =
-      await this.paymentRepository.findByExternalInvoiceId(externalInvoiceId);
-
-    if (!payment) return;
-
-    await this.paymentRepository.update(payment.id, {
+  async markPaymentFailed(internalPaymentId: string): Promise<void> {
+    const affected = await this.paymentRepository.update(internalPaymentId, {
       status: PaymentStatus.FAILED,
     });
+
+    if (affected === 0) {
+      console.warn(
+        `Payment Intent ${internalPaymentId} not found for Payment Failed webhook.`,
+      );
+    }
   }
 
   async createFailedPayment(data: Partial<PaymentEntity>): Promise<void> {

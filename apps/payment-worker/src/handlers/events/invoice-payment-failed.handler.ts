@@ -36,8 +36,10 @@ export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.
       return;
     }
 
-    await this.paymentEventService.markPaymentFailed(
-      payload.externalInvoiceId as string,
-    );
+    const internalPaymentId = payload.metadata.internalPaymentId;
+
+    if (!internalPaymentId) return;
+
+    await this.paymentEventService.markPaymentFailed(internalPaymentId);
   }
 }
