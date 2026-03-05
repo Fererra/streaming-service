@@ -16,7 +16,12 @@ import {
   type ISubscriptionOfferResolver,
   type IUserResolver,
 } from '@app/payment';
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Inject,
+  Injectable,
+  NotFoundException,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 
 @Injectable()
 export class PaymentService {
@@ -57,25 +62,44 @@ export class PaymentService {
 
     const customerId = await this.resolveCustomerId(userId, userEmail);
 
-    const checkoutResponse = await this.paymentGateway.createCheckoutSession({
-      userId,
-      email: userEmail,
-      externalCustomerId: customerId,
-      offerId: options.offerId,
-      externalPriceId: gatewayPrice.externalPriceId,
-    });
-
-    await this.paymentRepository.create({
+    const paymentIntent = await this.paymentRepository.create({
       userId,
       subscriptionOfferId: options.offerId,
-      externalSessionId: checkoutResponse.sessionId,
+      externalSessionId: null,
       status: PaymentStatus.PENDING,
-      amount: Number(offerPrice) * 100,
+      amount: offerPrice,
       currency: options.currency ?? 'USD',
       gateway: this.paymentGateway.gateway,
     });
 
-    return { checkoutUrl: checkoutResponse.checkoutUrl };
+    try {
+      const checkoutResponse = await this.paymentGateway.createCheckoutSession({
+        userId,
+        email: userEmail,
+        externalCustomerId: customerId,
+        offerId: options.offerId,
+        externalPriceId: gatewayPrice.externalPriceId,
+        internalPaymentId: paymentIntent.id,
+      });
+
+      await this.paymentRepository.update(paymentIntent.id, {
+        externalSessionId: checkoutResponse.sessionId,
+      });
+
+      return { checkoutUrl: checkoutResponse.checkoutUrl };
+    } catch (error) {
+      console.error(
+        `Failed to update payment ${paymentIntent.id} with Stripe session, but session was created.`,
+      );
+
+      await this.paymentRepository.update(paymentIntent.id, {
+        status: PaymentStatus.FAILED,
+      });
+
+      throw new ServiceUnavailableException(
+        'Failed to create checkout session. Please try again later.',
+      );
+    }
   }
 
   private async resolveCustomerId(

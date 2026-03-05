@@ -16,21 +16,13 @@ export class PaymentRepository implements IPaymentRepository {
     return this.repository.save(entity);
   }
 
-  findByExternalSessionId(sessionId: string): Promise<PaymentEntity | null> {
-    return this.repository.findOne({
-      select: ['id', 'status'],
-      where: { externalSessionId: sessionId },
-    });
+  existsById(id: string): Promise<PaymentEntity | null> {
+    return this.repository.findOne({ where: { id } });
   }
 
-  findByExternalInvoiceId(invoiceId: string): Promise<PaymentEntity | null> {
-    return this.repository.findOne({
-      select: ['id', 'status'],
-      where: { externalInvoiceId: invoiceId },
-    });
-  }
+  async update(id: string, data: Partial<PaymentEntity>): Promise<number> {
+    const result = await this.repository.update(id, data);
 
-  async update(id: string, data: Partial<PaymentEntity>): Promise<void> {
-    await this.repository.update(id, data);
+    return result.affected ?? 0;
   }
 }
