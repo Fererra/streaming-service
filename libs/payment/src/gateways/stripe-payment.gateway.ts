@@ -13,8 +13,15 @@ import {
 } from '../interfaces/payment-gateway.interface';
 import { STRIPE_CLIENT } from '../constants/constants';
 import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
-import { PaymentMetadata } from '../interfaces/payment-events.interface';
-import { CancellationReason, CancellationInitiator } from '@app/shared';
+import {
+  PaymentMetadata,
+  SubscriptionUpdatedPayload,
+} from '../interfaces/payment-events.interface';
+import {
+  CancellationReason,
+  CancellationInitiator,
+  UserSubscriptionStatus,
+} from '@app/shared';
 
 @Injectable()
 export class StripePaymentGateway implements PaymentGateway {
@@ -332,32 +339,39 @@ export class StripePaymentGateway implements PaymentGateway {
         const subscription = event.data.object as Stripe.Subscription;
         const previousAttributes = event.data
           .previous_attributes as Partial<Stripe.Subscription>;
+        if (!previousAttributes) return null;
+
+        const updates: SubscriptionUpdatedPayload['updates'] = {};
+
+        if (previousAttributes.status !== undefined) {
+          updates.status =
+            subscription.status as unknown as UserSubscriptionStatus;
+        }
 
         if (
-          previousAttributes &&
-          previousAttributes.cancel_at_period_end !== undefined
+          previousAttributes.cancel_at_period_end !== undefined &&
+          subscription.cancel_at_period_end === true
         ) {
-          const canceledByMeta = subscription.metadata?.canceled_by as
-            | CancellationInitiator
-            | undefined;
-
-          const reason = this.resolveCancellationReason(
-            canceledByMeta,
-            subscription.cancellation_details?.reason,
-          );
-
-          return {
-            type: 'event.subscription.updated',
-            externalSubscriptionId: subscription.id,
-            cancellationReason: reason,
+          const canceledByMeta = subscription.metadata
+            ?.canceled_by as CancellationInitiator;
+          updates.cancellation = {
+            reason: this.resolveCancellationReason(
+              canceledByMeta,
+              subscription.cancellation_details?.reason,
+            ),
             canceledAt: this.fromStripeTs(subscription.canceled_at),
           };
         }
 
-        return null;
+        if (Object.keys(updates).length === 0) return null;
+
+        return {
+          type: 'event.subscription.updated',
+          externalSubscriptionId: subscription.id,
+          updates,
+        };
       },
     ],
-    // ['customer.subscription.deleted', (obj) => {}],
   ]);
 
   private fromStripeTs = (ts?: number | null): Date | null =>

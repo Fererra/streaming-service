@@ -1,4 +1,4 @@
-import { CancellationReason } from '@app/shared';
+import { CancellationReason, UserSubscriptionStatus } from '@app/shared';
 
 export interface GatewayEntityCreatedBase {
   externalId: string;
@@ -46,8 +46,13 @@ export interface InvoiceEventPayload extends BasePaymentPayload {
 
 export interface SubscriptionUpdatedPayload {
   externalSubscriptionId: string;
-  cancellationReason: CancellationReason;
-  canceledAt: Date | null;
+  updates: {
+    status?: UserSubscriptionStatus;
+    cancellation?: {
+      reason: CancellationReason | null;
+      canceledAt: Date | null;
+    };
+  };
 }
 
 export type CheckoutCompletedPayload = CheckoutEventPayload;

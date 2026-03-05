@@ -12,8 +12,9 @@ export class SubscriptionUpdatedHandler implements IPaymentEventHandler<'event.s
   ) {}
 
   async handle(payload: SubscriptionUpdatedPayload): Promise<void> {
-    if (payload.cancellationReason && payload.canceledAt) {
-      await this.userSubscriptionService.markSubscriptionAsCanceled(payload);
-    }
+    await this.userSubscriptionService.applySubscriptionUpdate(
+      payload.externalSubscriptionId,
+      payload.updates,
+    );
   }
 }

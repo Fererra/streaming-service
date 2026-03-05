@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UserSubscriptionEntity } from '../entities/user-subscription.entity';
-import { UserSubscriptionStatus } from '../enums/user-subscription-status.enum';
+import { UserSubscriptionStatus } from '../../../shared/src/enums/user-subscription-status.enum';
 import {
   InvoicePaidPayload,
   PaymentGatewayProvider,
@@ -114,20 +114,33 @@ export class UserSubscriptionService {
     await manager.save(newPayment);
   }
 
-  async markSubscriptionAsCanceled(payload: SubscriptionUpdatedPayload) {
-    const affected =
-      await this.userSubscriptionRepository.updateByExternalSubscriptionId(
-        payload.externalSubscriptionId,
-        {
-          cancellationReason: payload.cancellationReason,
-          canceledAt: payload.canceledAt,
-        },
-      );
+  async applySubscriptionUpdate(
+    externalSubscriptionId: string,
+    updates: SubscriptionUpdatedPayload['updates'],
+  ): Promise<void> {
+    const updateData: Partial<UserSubscriptionEntity> = {};
 
-    if (affected === 0) {
-      console.warn(
-        `No subscription found with externalSubscriptionId ${payload.externalSubscriptionId} to mark as canceled.`,
-      );
+    if (updates.status) {
+      updateData.status = updates.status;
+    }
+
+    if (updates.cancellation) {
+      updateData.cancellationReason = updates.cancellation.reason;
+      updateData.canceledAt = updates.cancellation.canceledAt;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      const affected =
+        await this.userSubscriptionRepository.updateByExternalSubscriptionId(
+          externalSubscriptionId,
+          updateData,
+        );
+
+      if (affected === 0) {
+        console.warn(
+          `Subscription ${externalSubscriptionId} not found for update`,
+        );
+      }
     }
   }
 }
