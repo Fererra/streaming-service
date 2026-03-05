@@ -1,6 +1,5 @@
 import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
-import { UserSubscriptionStatus } from '../enums/user-subscription-status.enum';
-import { CancellationReason } from '@app/shared';
+import { CancellationReason, UserSubscriptionStatus } from '@app/shared';
 
 @Entity('user_subscriptions')
 export class UserSubscriptionEntity {
