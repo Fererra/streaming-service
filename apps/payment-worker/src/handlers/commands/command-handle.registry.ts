@@ -1,6 +1,6 @@
 import { CommandPayload, CommandType } from '@app/payment';
 import { Injectable } from '@nestjs/common';
-import { PaymentWorkerService } from '../../services/payment-worker.service';
+import { PaymentCommandService } from '../../services/payment-command.service';
 
 export interface JobContext {
   jobId: string;
@@ -17,7 +17,7 @@ type HandlerMap = {
 export class PaymentCommandHandlersRegistry {
   private readonly map: Map<CommandType, HandlerMap[CommandType]>;
 
-  constructor(private readonly paymentGatewayService: PaymentWorkerService) {
+  constructor(private readonly paymentGatewayService: PaymentCommandService) {
     const handlers: HandlerMap = {
       'command.syncPlan': async (p, ctx) => {
         await this.paymentGatewayService.createProductInGateway(p, ctx.jobId);

@@ -13,7 +13,7 @@ import { PaymentEventService } from './services/payment-event.service';
 import { SubscriptionLibModule } from 'libs/subscription/src';
 import { PaymentEventProcessor } from './processors/event.processor';
 import { PaymentCommandProcessor } from './processors/command.processor';
-import { PaymentWorkerService } from './services/payment-worker.service';
+import { PaymentCommandService } from './services/payment-command.service';
 import { ConfigModule } from '@nestjs/config';
 import { PaymentCommandHandlersRegistry } from './handlers/commands/command-handle.registry';
 import { ProductCreatedHandler } from './handlers/events/product-created.handler';
@@ -43,7 +43,7 @@ import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
     SubscriptionLibModule,
   ],
   providers: [
-    PaymentWorkerService,
+    PaymentCommandService,
     PaymentCommandHandlersRegistry,
     PaymentEventProcessor,
     PaymentCommandProcessor,

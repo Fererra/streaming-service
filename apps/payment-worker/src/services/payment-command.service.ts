@@ -17,7 +17,7 @@ import {
 import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
-export class PaymentWorkerService {
+export class PaymentCommandService {
   constructor(
     @Inject(PAYMENT_GATEWAY)
     private readonly paymentGateway: PaymentGateway,
