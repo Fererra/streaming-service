@@ -1,17 +1,24 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { UserSubscriptionEntity } from '../entities/user-subscription.entity';
 import { UserSubscriptionStatus } from '../enums/user-subscription-status.enum';
-import { PaymentEntity } from '@app/payment/entities/payment.entity';
 import {
   InvoicePaidPayload,
   PaymentGatewayProvider,
+  PaymentEntity,
   PaymentStatus,
+  SubscriptionUpdatedPayload,
 } from '@app/payment';
+import { USER_SUBSCRIPTION_REPOSITORY } from '../constants/constant';
+import type { IUserSubscriptionRepository } from '../interfaces/user-subscription-repository.interface';
 
 @Injectable()
 export class UserSubscriptionService {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    @Inject(USER_SUBSCRIPTION_REPOSITORY)
+    private readonly userSubscriptionRepository: IUserSubscriptionRepository,
+  ) {}
 
   async processInvoicePaid(payload: InvoicePaidPayload) {
     return this.dataSource.transaction(async (manager) => {
@@ -105,5 +112,22 @@ export class UserSubscriptionService {
     });
 
     await manager.save(newPayment);
+  }
+
+  async markSubscriptionAsCanceled(payload: SubscriptionUpdatedPayload) {
+    const affected =
+      await this.userSubscriptionRepository.updateByExternalSubscriptionId(
+        payload.externalSubscriptionId,
+        {
+          cancellationReason: payload.cancellationReason,
+          canceledAt: payload.canceledAt,
+        },
+      );
+
+    if (affected === 0) {
+      console.warn(
+        `No subscription found with externalSubscriptionId ${payload.externalSubscriptionId} to mark as canceled.`,
+      );
+    }
   }
 }
