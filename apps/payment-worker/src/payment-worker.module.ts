@@ -23,6 +23,19 @@ import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
 import { SubscriptionUpdatedHandler } from './handlers/events/subscription-updated.handler';
 import { SubscriptionDeletedHandler } from './handlers/events/subscription-deleted.handler';
 
+const EVENT_HANDLERS = [
+  ProductCreatedHandler,
+  ProductUpdatedHandler,
+  PriceCreatedHandler,
+  PriceUpdatedHandler,
+  CheckoutCompletedHandler,
+  CheckoutExpiredHandler,
+  InvoicePaidHandler,
+  InvoicePaymentFailedHandler,
+  SubscriptionUpdatedHandler,
+  SubscriptionDeletedHandler,
+];
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -49,32 +62,12 @@ import { SubscriptionDeletedHandler } from './handlers/events/subscription-delet
     PaymentCommandHandlersRegistry,
     PaymentEventProcessor,
     PaymentCommandProcessor,
-    ProductCreatedHandler,
-    ProductUpdatedHandler,
-    PriceCreatedHandler,
-    PriceUpdatedHandler,
     PaymentEventService,
-    CheckoutCompletedHandler,
-    CheckoutExpiredHandler,
-    InvoicePaidHandler,
-    InvoicePaymentFailedHandler,
-    SubscriptionUpdatedHandler,
-    SubscriptionDeletedHandler,
+    ...EVENT_HANDLERS,
     {
       provide: PAYMENT_EVENT_HANDLERS,
       useFactory: (...handlers: IPaymentEventHandler<EventType>[]) => handlers,
-      inject: [
-        ProductCreatedHandler,
-        ProductUpdatedHandler,
-        PriceCreatedHandler,
-        PriceUpdatedHandler,
-        CheckoutCompletedHandler,
-        CheckoutExpiredHandler,
-        InvoicePaidHandler,
-        InvoicePaymentFailedHandler,
-        SubscriptionUpdatedHandler,
-        SubscriptionDeletedHandler,
-      ],
+      inject: EVENT_HANDLERS,
     },
   ],
 })
