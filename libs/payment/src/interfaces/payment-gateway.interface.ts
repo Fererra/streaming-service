@@ -1,5 +1,6 @@
 import { EventPayload, EventType } from '@app/payment';
 import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
+import { CancellationInitiator } from '@app/shared';
 
 export interface CreateProductRequest {
   id: string;
@@ -81,6 +82,7 @@ export interface PaymentGateway {
   deactivateSubscription(
     externalSubscriptionId: string,
     idempotencyKey: string,
+    initiator: CancellationInitiator,
   ): Promise<void>;
   constructWebhookEvent(
     payload: Buffer,

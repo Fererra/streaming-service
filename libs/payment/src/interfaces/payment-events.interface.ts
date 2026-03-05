@@ -1,3 +1,5 @@
+import { CancellationReason } from '@app/shared';
+
 export interface GatewayEntityCreatedBase {
   externalId: string;
 }
@@ -42,6 +44,12 @@ export interface InvoiceEventPayload extends BasePaymentPayload {
   currency: string;
 }
 
+export interface SubscriptionUpdatedPayload {
+  externalSubscriptionId: string;
+  cancellationReason: CancellationReason;
+  canceledAt: Date | null;
+}
+
 export type CheckoutCompletedPayload = CheckoutEventPayload;
 export type CheckoutExpiredPayload = CheckoutEventPayload;
 
@@ -57,6 +65,7 @@ export type WebhookEventMap = {
   'event.checkout.expired': CheckoutExpiredPayload;
   'event.invoice.paid': InvoicePaidPayload;
   'event.invoice.payment_failed': InvoicePaymentFailedPayload;
+  'event.subscription.updated': SubscriptionUpdatedPayload;
 };
 
 export type EventType = keyof WebhookEventMap;

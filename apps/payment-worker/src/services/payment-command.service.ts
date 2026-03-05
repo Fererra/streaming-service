@@ -10,6 +10,7 @@ import {
   type IGatewayPriceRepository,
   type IGatewayProductRepository,
 } from '@app/payment';
+import { CancellationInitiator } from '@app/shared';
 import {
   type ISubscriptionOfferRepository,
   SUBSCRIPTION_OFFER_REPOSITORY,
@@ -120,7 +121,7 @@ export class PaymentCommandService {
 
     const jobsToCreate = activeSubscriptions.map((subId) => ({
       name: 'command.deactivateSubscription' as const,
-      data: { subscriptionId: subId },
+      data: { subscriptionId: subId, initiator: CancellationInitiator.ADMIN },
     }));
 
     if (jobsToCreate.length > 0) {
@@ -175,12 +176,17 @@ export class PaymentCommandService {
     }
   }
 
-  async deactivateSubscriptionInGateway(subscriptionId: string, jobId: string) {
+  async deactivateSubscriptionInGateway(
+    subscriptionId: string,
+    initiator: import('@app/shared').CancellationInitiator,
+    jobId: string,
+  ) {
     const idempotencyKey = `deactivate-subscription-${subscriptionId}-${jobId}`;
 
     await this.paymentGateway.deactivateSubscription(
       subscriptionId,
       idempotencyKey,
+      initiator,
     );
   }
 }

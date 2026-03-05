@@ -59,6 +59,7 @@ export class PaymentCommandHandlersRegistry {
       'command.deactivateSubscription': async (p, ctx) => {
         await this.paymentGatewayService.deactivateSubscriptionInGateway(
           p.subscriptionId,
+          p.initiator,
           ctx.jobId,
         );
       },

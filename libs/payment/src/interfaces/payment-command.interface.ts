@@ -1,6 +1,11 @@
+import { CancellationInitiator } from '@app/shared';
+
 type BasePlanCommand = { planId: string };
 type BaseOfferCommand = { offerId: string };
-type BaseSubscriptionCommand = { subscriptionId: string };
+type BaseSubscriptionCommand = {
+  subscriptionId: string;
+  initiator: CancellationInitiator;
+};
 
 type SyncPlanCommand = { id: string; name: string; description: string };
 type UpdatePlanCommand = BasePlanCommand & {

@@ -14,6 +14,7 @@ import {
 import { STRIPE_CLIENT } from '../constants/constants';
 import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
 import { PaymentMetadata } from '../interfaces/payment-events.interface';
+import { CancellationReason, CancellationInitiator } from '@app/shared';
 
 @Injectable()
 export class StripePaymentGateway implements PaymentGateway {
@@ -177,11 +178,15 @@ export class StripePaymentGateway implements PaymentGateway {
   async deactivateSubscription(
     externalSubscriptionId: string,
     idempotencyKey: string,
+    initiator: CancellationInitiator,
   ): Promise<void> {
     await this.stripe.subscriptions.update(
       externalSubscriptionId,
       {
         cancel_at_period_end: true,
+        metadata: {
+          canceled_by: initiator,
+        },
       },
       { idempotencyKey },
     );
@@ -210,7 +215,7 @@ export class StripePaymentGateway implements PaymentGateway {
         const previousAttributes = event.data
           .previous_attributes as Partial<Stripe.Product>;
 
-        if (previousAttributes && 'active' in previousAttributes) {
+        if (previousAttributes && previousAttributes.active !== undefined) {
           return {
             type: 'event.product.updated',
             externalId: product.id,
@@ -241,7 +246,7 @@ export class StripePaymentGateway implements PaymentGateway {
         const previousAttributes = event.data
           .previous_attributes as Partial<Stripe.Price>;
 
-        if (previousAttributes && 'active' in previousAttributes) {
+        if (previousAttributes && previousAttributes.active !== undefined) {
           return {
             type: 'event.price.updated',
             externalId: price.id,
@@ -321,6 +326,37 @@ export class StripePaymentGateway implements PaymentGateway {
         };
       },
     ],
+    [
+      'customer.subscription.updated',
+      (event: Stripe.Event) => {
+        const subscription = event.data.object as Stripe.Subscription;
+        const previousAttributes = event.data
+          .previous_attributes as Partial<Stripe.Subscription>;
+
+        if (
+          previousAttributes &&
+          previousAttributes.cancel_at_period_end !== undefined
+        ) {
+          const canceledByMeta = subscription.metadata?.canceled_by as
+            | CancellationInitiator
+            | undefined;
+
+          const reason = this.resolveCancellationReason(
+            canceledByMeta,
+            subscription.cancellation_details?.reason,
+          );
+
+          return {
+            type: 'event.subscription.updated',
+            externalSubscriptionId: subscription.id,
+            cancellationReason: reason,
+            canceledAt: this.fromStripeTs(subscription.canceled_at),
+          };
+        }
+
+        return null;
+      },
+    ],
     // ['customer.subscription.deleted', (obj) => {}],
   ]);
 
@@ -352,5 +388,35 @@ export class StripePaymentGateway implements PaymentGateway {
     }
 
     return handler(event);
+  }
+
+  private readonly initiatorToReasonMap = new Map<
+    CancellationInitiator,
+    CancellationReason
+  >([
+    [CancellationInitiator.ADMIN, CancellationReason.ADMIN_CANCELED],
+    [CancellationInitiator.USER, CancellationReason.USER_CANCELED],
+  ]);
+
+  private readonly stripeReasonMap = new Map<string, CancellationReason>([
+    ['cancellation_requested', CancellationReason.ADMIN_CANCELED],
+    ['payment_failed', CancellationReason.PAYMENT_FAILED],
+  ]);
+
+  private resolveCancellationReason(
+    initiator?: CancellationInitiator,
+    stripeReason?: string | null,
+  ): CancellationReason {
+    if (initiator) {
+      return (
+        this.initiatorToReasonMap.get(initiator) ?? CancellationReason.OTHER
+      );
+    }
+
+    if (stripeReason) {
+      return this.stripeReasonMap.get(stripeReason) ?? CancellationReason.OTHER;
+    }
+
+    return CancellationReason.OTHER;
   }
 }

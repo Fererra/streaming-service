@@ -20,6 +20,7 @@ import { ProductCreatedHandler } from './handlers/events/product-created.handler
 import { PriceCreatedHandler } from './handlers/events/price-created.handler';
 import { ProductUpdatedHandler } from './handlers/events/product-updated.handler';
 import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
+import { SubscriptionUpdatedHandler } from './handlers/events/subscription-updated.handler';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
     CheckoutExpiredHandler,
     InvoicePaidHandler,
     InvoicePaymentFailedHandler,
+    SubscriptionUpdatedHandler,
     {
       provide: PAYMENT_EVENT_HANDLERS,
       useFactory: (...handlers: IPaymentEventHandler<EventType>[]) => handlers,
@@ -68,6 +70,7 @@ import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
         CheckoutExpiredHandler,
         InvoicePaidHandler,
         InvoicePaymentFailedHandler,
+        SubscriptionUpdatedHandler,
       ],
     },
   ],
