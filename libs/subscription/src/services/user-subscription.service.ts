@@ -38,11 +38,21 @@ export class UserSubscriptionService {
 
     await manager.save(newSubscription);
 
+    const internalPaymentId = payload.metadata.internalPaymentId;
+
+    if (!internalPaymentId) {
+      console.warn(
+        `Subscription created from external source (no internalPaymentId). Invoice: ${payload.externalInvoiceId}`,
+      );
+      return;
+    }
+
     const updatePaymentResult = await manager.update(
       PaymentEntity,
-      { externalInvoiceId: payload.externalInvoiceId },
+      { id: internalPaymentId },
       {
         userSubscriptionId: newSubscription.id,
+        externalInvoiceId: payload.externalInvoiceId,
         billingReason: payload.billingReason,
         status: PaymentStatus.COMPLETED,
         paidAt: payload.paidAt,

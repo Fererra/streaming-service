@@ -38,8 +38,8 @@ export class SubscriptionOfferRepository implements ISubscriptionOfferRepository
 
   async findPriceById(offerId: string): Promise<number | null> {
     const offer = await this.repository.findOne({
-      where: { id: offerId },
       select: ['price'],
+      where: { id: offerId, status: OfferStatus.ACTIVE },
     });
 
     return offer?.price ?? null;
