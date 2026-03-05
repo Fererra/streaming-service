@@ -6,16 +6,18 @@ export interface JobContext {
   jobId: string;
 }
 
+type Handler<K extends CommandType> = (
+  payload: CommandPayload<K>,
+  context: JobContext,
+) => Promise<void>;
+
 type HandlerMap = {
-  [K in CommandType]: (
-    payload: CommandPayload<K>,
-    context: JobContext,
-  ) => Promise<void>;
+  [K in CommandType]: Handler<K>;
 };
 
 @Injectable()
 export class PaymentCommandHandlersRegistry {
-  private readonly map: Map<CommandType, HandlerMap[CommandType]>;
+  private readonly map: Map<CommandType, Handler<CommandType>>;
 
   constructor(private readonly paymentGatewayService: PaymentCommandService) {
     const handlers: HandlerMap = {
@@ -66,18 +68,15 @@ export class PaymentCommandHandlersRegistry {
     };
 
     this.map = new Map(
-      Object.entries(handlers) as [CommandType, HandlerMap[CommandType]][],
+      Object.entries(handlers) as [CommandType, Handler<CommandType>][],
     );
   }
 
-  get<T extends CommandType>(type: T) {
+  get<T extends CommandType>(type: T): Handler<T> {
     const handler = this.map.get(type);
 
     if (!handler) throw new Error(`No handler for ${type}`);
 
-    return handler as (
-      payload: CommandPayload<T>,
-      context: JobContext,
-    ) => Promise<void>;
+    return handler as Handler<T>;
   }
 }
