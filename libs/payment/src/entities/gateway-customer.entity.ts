@@ -11,7 +11,11 @@ export class UserGatewayCustomerEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: PaymentGatewayProvider })
+  @Column({
+    type: 'enum',
+    enum: PaymentGatewayProvider,
+    enumName: 'payment_gateway_provider',
+  })
   gateway: PaymentGatewayProvider;
 
   @Column({ name: 'user_id', type: 'uuid' })

@@ -11,7 +11,11 @@ export class SubscriptionPlanGatewayProductEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'enum', enum: PaymentGatewayProvider })
+  @Column({
+    type: 'enum',
+    enum: PaymentGatewayProvider,
+    enumName: 'payment_gateway_provider',
+  })
   gateway: PaymentGatewayProvider;
 
   @Column({ name: 'subscription_plan_id', type: 'uuid' })
