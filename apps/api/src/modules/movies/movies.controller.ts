@@ -11,6 +11,7 @@ import { MovieSearchQueryDto } from './dto/movie-search-query.dto';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { MoviesCreditsService } from './services/movies-credits.service';
 import { JwtGuard } from '../auth/guards/jwt.guard';
+import { ActiveSubscriptionGuard } from '../auth/guards/active-subscription.guard';
 
 @Controller('movies')
 export class MoviesController {
@@ -35,7 +36,7 @@ export class MoviesController {
     return this.moviesService.getMovieById(id);
   }
 
-  @UseGuards(JwtGuard)
+  @UseGuards(JwtGuard, ActiveSubscriptionGuard)
   @Get(':id/video')
   getMovieVideo(@Param('id', ParseUUIDPipe) id: string) {
     return this.moviesService.getMovieVideo(id);

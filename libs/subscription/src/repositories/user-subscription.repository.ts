@@ -2,6 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IUserSubscriptionRepository } from '../interfaces/user-subscription-repository.interface';
 import { UserSubscriptionEntity } from '../entities/user-subscription.entity';
 import { Repository } from 'typeorm';
+import { UserSubscriptionStatus } from '@app/shared';
 
 export class UserSubscriptionRepository implements IUserSubscriptionRepository {
   constructor(
@@ -48,5 +49,11 @@ export class UserSubscriptionRepository implements IUserSubscriptionRepository {
       .where('us.userId = :userId', { userId })
       .orderBy('us.currentPeriodEnd', 'DESC')
       .getManyAndCount();
+  }
+
+  hasActiveSubscription(userId: string): Promise<boolean> {
+    return this.repository.exists({
+      where: { userId, status: UserSubscriptionStatus.ACTIVE },
+    });
   }
 }

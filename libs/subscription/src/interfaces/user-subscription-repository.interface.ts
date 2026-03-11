@@ -10,4 +10,5 @@ export interface IUserSubscriptionRepository {
     externalSubscriptionId: string,
     data: Partial<UserSubscriptionEntity>,
   ): Promise<number>;
+  hasActiveSubscription(userId: string): Promise<boolean>;
 }

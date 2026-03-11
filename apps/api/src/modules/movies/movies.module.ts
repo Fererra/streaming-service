@@ -9,9 +9,17 @@ import { StorageModule } from '../storage/storage.module';
 import { MoviesCreditsService } from './services/movies-credits.service';
 import { MovieMapper } from './mappers/movie.mapper';
 import { CreditEntityFactory } from './factories/credit-entity.factory';
+import { SubscriptionModule } from '../subscription/subscription.module';
+import { ActiveSubscriptionGuard } from '../auth/guards/active-subscription.guard';
 
 @Module({
-  imports: [DatabaseModule, StorageModule, PersonsModule, ReferenceModule],
+  imports: [
+    DatabaseModule,
+    StorageModule,
+    PersonsModule,
+    ReferenceModule,
+    SubscriptionModule,
+  ],
   controllers: [MoviesController],
   providers: [
     MoviesService,
@@ -19,6 +27,7 @@ import { CreditEntityFactory } from './factories/credit-entity.factory';
     MoviesCreditsService,
     MovieMapper,
     CreditEntityFactory,
+    ActiveSubscriptionGuard,
   ],
   exports: [MoviesService, MoviesMediaService, MoviesCreditsService],
 })

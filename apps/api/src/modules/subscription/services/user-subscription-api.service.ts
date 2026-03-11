@@ -63,4 +63,8 @@ export class UserSubscriptionApiService {
       },
     );
   }
+
+  hasActiveSubscription(userId: string): Promise<boolean> {
+    return this.userSubscriptionRepository.hasActiveSubscription(userId);
+  }
 }
