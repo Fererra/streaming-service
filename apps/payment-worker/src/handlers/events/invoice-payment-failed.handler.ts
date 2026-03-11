@@ -1,10 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   PaymentGatewayProvider,
   InvoicePaymentFailedPayload,
+  PAYMENT_REPOSITORY,
+  type IPaymentRepository,
+  PaymentStatus,
+  PaymentEntity,
 } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
-import { PaymentEventService } from '../../services/payment-event.service';
 
 @Injectable()
 export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.invoice.payment_failed'> {
@@ -15,14 +18,17 @@ export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.
     'subscription_threshold',
   ];
 
-  constructor(private readonly paymentEventService: PaymentEventService) {}
+  constructor(
+    @Inject(PAYMENT_REPOSITORY)
+    private readonly paymentRepository: IPaymentRepository,
+  ) {}
 
   async handle(payload: InvoicePaymentFailedPayload): Promise<void> {
     if (
       payload.billingReason &&
       this.noSessionReasons.includes(payload.billingReason)
     ) {
-      await this.paymentEventService.createFailedPayment({
+      await this.createFailedPayment({
         userId: payload.metadata?.userId,
         subscriptionOfferId: payload.metadata?.offerId,
         externalInvoiceId: payload.externalInvoiceId,
@@ -40,6 +46,27 @@ export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.
 
     if (!initialPaymentId) return;
 
-    await this.paymentEventService.markPaymentFailed(initialPaymentId);
+    await this.markPaymentFailed(initialPaymentId);
+  }
+
+  private async createFailedPayment(
+    data: Partial<PaymentEntity>,
+  ): Promise<void> {
+    await this.paymentRepository.create({
+      ...data,
+      status: PaymentStatus.FAILED,
+    });
+  }
+
+  private async markPaymentFailed(initialPaymentId: string): Promise<void> {
+    const affected = await this.paymentRepository.update(initialPaymentId, {
+      status: PaymentStatus.FAILED,
+    });
+
+    if (affected === 0) {
+      console.warn(
+        `Payment Intent ${initialPaymentId} not found for Payment Failed webhook.`,
+      );
+    }
   }
 }
