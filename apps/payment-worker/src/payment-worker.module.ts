@@ -9,8 +9,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { databaseConfig, queueConfig } from '@app/config';
 import { EventType, PaymentLibModule } from '@app/payment';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { PaymentEventService } from './services/payment-event.service';
-import { SubscriptionLibModule } from 'libs/subscription/src';
 import { PaymentEventProcessor } from './processors/event.processor';
 import { PaymentCommandProcessor } from './processors/command.processor';
 import { PaymentCommandService } from './services/payment-command.service';
@@ -22,6 +20,7 @@ import { ProductUpdatedHandler } from './handlers/events/product-updated.handler
 import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
 import { SubscriptionUpdatedHandler } from './handlers/events/subscription-updated.handler';
 import { SubscriptionDeletedHandler } from './handlers/events/subscription-deleted.handler';
+import { SubscriptionLibPersistenceModule } from '@app/subscription';
 
 const EVENT_HANDLERS = [
   ProductCreatedHandler,
@@ -55,14 +54,13 @@ const EVENT_HANDLERS = [
       }),
     }),
     PaymentLibModule,
-    SubscriptionLibModule,
+    SubscriptionLibPersistenceModule,
   ],
   providers: [
     PaymentCommandService,
     PaymentCommandHandlersRegistry,
     PaymentEventProcessor,
     PaymentCommandProcessor,
-    PaymentEventService,
     ...EVENT_HANDLERS,
     {
       provide: PAYMENT_EVENT_HANDLERS,
