@@ -1,20 +1,47 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { SubscriptionUpdatedPayload } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
-import { UserSubscriptionService } from '@app/subscription';
+import {
+  USER_SUBSCRIPTION_REPOSITORY,
+  type IUserSubscriptionRepository,
+  UserSubscriptionEntity,
+} from '@app/subscription';
 
 @Injectable()
 export class SubscriptionUpdatedHandler implements IPaymentEventHandler<'event.subscription.updated'> {
   readonly eventType = 'event.subscription.updated' as const;
 
   constructor(
-    private readonly userSubscriptionService: UserSubscriptionService,
+    @Inject(USER_SUBSCRIPTION_REPOSITORY)
+    private readonly userSubscriptionRepository: IUserSubscriptionRepository,
   ) {}
 
   async handle(payload: SubscriptionUpdatedPayload): Promise<void> {
-    await this.userSubscriptionService.applySubscriptionUpdate(
-      payload.externalSubscriptionId,
-      payload.updates,
-    );
+    const { externalSubscriptionId, updates } = payload;
+
+    const updateData: Partial<UserSubscriptionEntity> = {};
+
+    if (updates.status) {
+      updateData.status = updates.status;
+    }
+
+    if (updates.cancellation) {
+      updateData.cancellationReason = updates.cancellation.reason;
+      updateData.canceledAt = updates.cancellation.canceledAt;
+    }
+
+    if (Object.keys(updateData).length > 0) {
+      const affected =
+        await this.userSubscriptionRepository.updateByExternalSubscriptionId(
+          externalSubscriptionId,
+          updateData,
+        );
+
+      if (affected === 0) {
+        console.warn(
+          `Subscription ${externalSubscriptionId} not found for update`,
+        );
+      }
+    }
   }
 }
