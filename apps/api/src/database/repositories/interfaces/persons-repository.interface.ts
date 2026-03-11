@@ -1,11 +1,13 @@
-import { RepositoryPaginatedResult } from '../../../common/@types/pagination.types';
-import { PaginationQueryDto } from '../../../common/dto/pagination-query.dto';
+import {
+  PaginationOptions,
+  RepositoryPaginatedResult,
+} from '../../../common/@types/pagination.types';
 import { PersonEntity } from '../../entities/person.entity';
 
 export interface IPersonsRepository {
   findPhotoPathById(id: string): Promise<string | null>;
   findAll(
-    paginationOptions: PaginationQueryDto,
+    paginationOptions: PaginationOptions,
     search?: string,
   ): Promise<RepositoryPaginatedResult<PersonEntity>>;
   findByIds(ids: string[]): Promise<PersonEntity[]>;
