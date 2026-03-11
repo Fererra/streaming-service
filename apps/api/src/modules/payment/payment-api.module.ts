@@ -37,5 +37,6 @@ import {
       inject: [SUBSCRIPTION_OFFER_REPOSITORY],
     },
   ],
+  exports: [PaymentService],
 })
 export class PaymentApiModule {}

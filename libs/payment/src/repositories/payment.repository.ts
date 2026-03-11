@@ -16,8 +16,11 @@ export class PaymentRepository implements IPaymentRepository {
     return this.repository.save(entity);
   }
 
-  existsById(id: string): Promise<PaymentEntity | null> {
-    return this.repository.findOne({ where: { id } });
+  findByUserId(userId: string): Promise<[PaymentEntity[], number]> {
+    return this.repository.findAndCount({
+      select: ['billingReason', 'status', 'amount', 'currency', 'paidAt'],
+      where: { userId },
+    });
   }
 
   async update(id: string, data: Partial<PaymentEntity>): Promise<number> {

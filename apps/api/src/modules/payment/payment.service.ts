@@ -22,6 +22,8 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { buildPaginationResponse } from '../../common/utils/pagination.util';
+import { PaginationOptions } from '../../common/@types/pagination.types';
 
 @Injectable()
 export class PaymentService {
@@ -142,5 +144,11 @@ export class PaymentService {
     if (!event) return;
 
     await this.paymentQueueService.dispatchEvent(event.type, event);
+  }
+
+  async getUserPayments(userId: string, pagination: PaginationOptions) {
+    const [payments, total] = await this.paymentRepository.findByUserId(userId);
+
+    return buildPaginationResponse(payments, total, pagination);
   }
 }
