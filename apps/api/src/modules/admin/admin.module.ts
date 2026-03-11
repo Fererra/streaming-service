@@ -6,9 +6,10 @@ import { AdminMoviesController } from './admin-movies.controller';
 import { MoviesModule } from '../movies/movies.module';
 import { SubscriptionModule } from '../subscription/subscription.module';
 import { AdminSubscriptionsController } from './admin-subcriptions.controller';
+import { PaymentApiModule } from '../payment/payment-api.module';
 
 @Module({
-  imports: [PersonsModule, MoviesModule, SubscriptionModule],
+  imports: [PersonsModule, MoviesModule, SubscriptionModule, PaymentApiModule],
   controllers: [
     AdminUsersController,
     AdminPersonsController,
