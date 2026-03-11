@@ -15,13 +15,13 @@ export class MovieCreditEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'movie_id' })
+  @Column({ name: 'movie_id', type: 'uuid' })
   movieId: string;
 
-  @Column({ name: 'person_id' })
+  @Column({ name: 'person_id', type: 'uuid' })
   personId: string;
 
-  @Column({ name: 'role_id' })
+  @Column({ name: 'role_id', type: 'uuid' })
   roleId: string;
 
   @Column({
