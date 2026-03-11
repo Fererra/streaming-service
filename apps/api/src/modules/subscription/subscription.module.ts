@@ -5,6 +5,7 @@ import { OfferEntityFactory } from './factories/offer-entity.factory';
 import { SubscriptionController } from './subscription.controller';
 import { PaymentQueueModule } from '@app/payment';
 import { SubscriptionLibPersistenceModule } from '@app/subscription';
+import { UserSubscriptionApiService } from './services/user-subscription-api.service';
 
 @Module({
   imports: [SubscriptionLibPersistenceModule, PaymentQueueModule],
@@ -12,8 +13,13 @@ import { SubscriptionLibPersistenceModule } from '@app/subscription';
   providers: [
     SubscriptionPlanService,
     SubscriptionOfferService,
+    UserSubscriptionApiService,
     OfferEntityFactory,
   ],
-  exports: [SubscriptionPlanService, SubscriptionOfferService],
+  exports: [
+    SubscriptionPlanService,
+    SubscriptionOfferService,
+    UserSubscriptionApiService,
+  ],
 })
 export class SubscriptionModule {}

@@ -20,4 +20,33 @@ export class UserSubscriptionRepository implements IUserSubscriptionRepository {
 
     return result.affected ?? 0;
   }
+
+  findByIdAndUserId(
+    subscriptionId: string,
+    userId: string,
+  ): Promise<UserSubscriptionEntity | null> {
+    return this.repository.findOne({
+      where: { id: subscriptionId, userId },
+      select: ['id', 'externalSubscriptionId', 'status'],
+    });
+  }
+
+  findByUserId(userId: string): Promise<[UserSubscriptionEntity[], number]> {
+    return this.repository
+      .createQueryBuilder('us')
+      .leftJoinAndSelect('us.subscriptionOffer', 'offer')
+      .select([
+        'us.id',
+        'us.subscriptionOfferId',
+        'offer.durationMonths',
+        'offer.price',
+        'us.status',
+        'us.currentPeriodStart',
+        'us.currentPeriodEnd',
+        'us.canceledAt',
+      ])
+      .where('us.userId = :userId', { userId })
+      .orderBy('us.currentPeriodEnd', 'DESC')
+      .getManyAndCount();
+  }
 }
