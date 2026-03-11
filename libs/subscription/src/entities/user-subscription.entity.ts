@@ -1,5 +1,13 @@
-import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { CancellationReason, UserSubscriptionStatus } from '@app/shared';
+import { SubscriptionOfferEntity } from './subscription-offer.entity';
 
 @Entity('user_subscriptions')
 export class UserSubscriptionEntity {
@@ -61,4 +69,8 @@ export class UserSubscriptionEntity {
     nullable: true,
   })
   cancellationReason: CancellationReason | null;
+
+  @ManyToOne(() => SubscriptionOfferEntity, { nullable: false })
+  @JoinColumn({ name: 'subscription_offer_id' })
+  subscriptionOffer: SubscriptionOfferEntity;
 }
