@@ -26,8 +26,10 @@
       "@app/config/*": ["libs/config/src/*"],
       "@app/payment": ["libs/payment/src"],
       "@app/payment/*": ["libs/payment/src/*"],
-      "@app/user-subscription": ["libs/user-subscription/src"],
-      "@app/user-subscription/*": ["libs/user-subscription/src/*"]
+      "@app/shared": ["libs/shared/src"],
+      "@app/shared/*": ["libs/shared/src/*"],
+      "@app/subscription": ["libs/subscription/src"],
+      "@app/subscription/*": ["libs/subscription/src/*"]
     }
   }
 }
