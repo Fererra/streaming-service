@@ -434,23 +434,22 @@ export class StripePaymentGateway implements PaymentGateway {
     [CancellationInitiator.USER, CancellationReason.USER_CANCELED],
   ]);
 
-  private readonly stripeReasonMap = new Map<string, CancellationReason>([
-    ['cancellation_requested', CancellationReason.ADMIN_CANCELED],
-    ['payment_failed', CancellationReason.PAYMENT_FAILED],
-  ]);
-
   private resolveCancellationReason(
     initiator?: CancellationInitiator,
     stripeReason?: string | null,
   ): CancellationReason {
-    if (stripeReason) {
-      return this.stripeReasonMap.get(stripeReason) ?? CancellationReason.OTHER;
+    if (stripeReason === 'payment_failed') {
+      return CancellationReason.PAYMENT_FAILED;
     }
 
     if (initiator) {
       return (
         this.initiatorToReasonMap.get(initiator) ?? CancellationReason.OTHER
       );
+    }
+
+    if (stripeReason === 'cancellation_requested') {
+      return CancellationReason.ADMIN_CANCELED;
     }
 
     return CancellationReason.OTHER;
