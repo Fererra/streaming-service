@@ -10,7 +10,6 @@ import {
   SUBSCRIPTION_OFFER_RESOLVER,
   PaymentStatus,
   type PaymentGateway,
-  CreateCheckoutRequest,
   type IGatewayCustomerRepository,
   type IGatewayPriceRepository,
   type ISubscriptionOfferResolver,
@@ -24,6 +23,7 @@ import {
 } from '@nestjs/common';
 import { buildPaginationResponse } from '../../common/utils/pagination.util';
 import { PaginationOptions } from '../../common/@types/pagination.types';
+import { CreateCheckoutRequest } from './interfaces/create-checkout-request.interface';
 
 @Injectable()
 export class PaymentService {
