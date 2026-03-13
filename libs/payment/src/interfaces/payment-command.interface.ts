@@ -1,28 +1,28 @@
 import { CancellationInitiator } from '@app/shared';
 
-type BasePlanCommand = { planId: string };
-type BaseOfferCommand = { offerId: string };
-type BaseSubscriptionCommand = {
+export type BasePlanCommand = { planId: string };
+export type BaseOfferCommand = { offerId: string };
+export type BaseSubscriptionCommand = {
   subscriptionId: string;
   initiator: CancellationInitiator;
 };
 
-type SyncPlanCommand = { id: string; name: string; description: string };
-type UpdatePlanCommand = BasePlanCommand & {
+export type SyncPlanCommand = { id: string; name: string; description: string };
+export type UpdatePlanCommand = BasePlanCommand & {
   updates: { name?: string; description?: string };
 };
-type ActivatePlanCommand = BasePlanCommand;
-type DeactivatePlanCommand = BasePlanCommand;
+export type ActivatePlanCommand = BasePlanCommand;
+export type DeactivatePlanCommand = BasePlanCommand;
 
-type SyncOfferCommand = {
+export type SyncOfferCommand = {
   id: string;
   price: number;
   durationMonths: number;
   subscriptionPlanId: string;
 };
-type DeactivateOfferCommand = BaseOfferCommand;
+export type DeactivateOfferCommand = BaseOfferCommand;
 
-type DeactivateSubscriptionCommand = BaseSubscriptionCommand;
+export type DeactivateSubscriptionCommand = BaseSubscriptionCommand;
 
 export type PaymentCommandMap = {
   'command.syncPlan': SyncPlanCommand;
