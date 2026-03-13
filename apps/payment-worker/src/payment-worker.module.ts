@@ -3,17 +3,18 @@ import { CheckoutCompletedHandler } from './handlers/events/checkout-completed.h
 import { CheckoutExpiredHandler } from './handlers/events/checkout-expired.handler';
 import { InvoicePaidHandler } from './handlers/events/invoice-paid.handler';
 import { InvoicePaymentFailedHandler } from './handlers/events/invoice-payment-failed.handler';
-import { PAYMENT_EVENT_HANDLERS } from './constants/constant';
+import {
+  PAYMENT_COMMAND_HANDLERS,
+  PAYMENT_EVENT_HANDLERS,
+} from './constants/constant';
 import { IPaymentEventHandler } from './interfaces/payment-event-handler.interface';
 import { BullModule } from '@nestjs/bullmq';
 import { databaseConfig, queueConfig } from '@app/config';
-import { EventType, PaymentLibModule } from '@app/payment';
+import { CommandType, EventType, PaymentLibModule } from '@app/payment';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PaymentEventProcessor } from './processors/event.processor';
 import { PaymentCommandProcessor } from './processors/command.processor';
-import { PaymentCommandService } from './services/payment-command.service';
 import { ConfigModule } from '@nestjs/config';
-import { PaymentCommandHandlersRegistry } from './handlers/commands/command-handle.registry';
 import { ProductCreatedHandler } from './handlers/events/product-created.handler';
 import { PriceCreatedHandler } from './handlers/events/price-created.handler';
 import { ProductUpdatedHandler } from './handlers/events/product-updated.handler';
@@ -21,6 +22,24 @@ import { PriceUpdatedHandler } from './handlers/events/price-updated.handler';
 import { SubscriptionUpdatedHandler } from './handlers/events/subscription-updated.handler';
 import { SubscriptionDeletedHandler } from './handlers/events/subscription-deleted.handler';
 import { SubscriptionLibPersistenceModule } from '@app/subscription';
+import { ActivatePlanHandler } from './handlers/commands/activate-plan.handler';
+import { DeactivatePlanHandler } from './handlers/commands/deactivate-plan.handler';
+import { DeactivateOfferHandler } from './handlers/commands/deactivate-offer.handler';
+import { DeactivateSubscriptionHandler } from './handlers/commands/deactivate-subscription.handler';
+import { SyncOfferHandler } from './handlers/commands/sync-offer.handler';
+import { SyncPlanHandler } from './handlers/commands/sync-plan.handler';
+import { UpdatePlanHandler } from './handlers/commands/update-plan.handler';
+import { IPaymentCommandHandler } from './interfaces/payment-command-handler.interface';
+
+const COMMAND_HANDLERS = [
+  ActivatePlanHandler,
+  DeactivateOfferHandler,
+  DeactivatePlanHandler,
+  DeactivateSubscriptionHandler,
+  SyncOfferHandler,
+  SyncPlanHandler,
+  UpdatePlanHandler,
+];
 
 const EVENT_HANDLERS = [
   ProductCreatedHandler,
@@ -57,10 +76,15 @@ const EVENT_HANDLERS = [
     SubscriptionLibPersistenceModule,
   ],
   providers: [
-    PaymentCommandService,
-    PaymentCommandHandlersRegistry,
-    PaymentEventProcessor,
     PaymentCommandProcessor,
+    ...COMMAND_HANDLERS,
+    {
+      provide: PAYMENT_COMMAND_HANDLERS,
+      useFactory: (...handlers: IPaymentCommandHandler<CommandType>[]) =>
+        handlers,
+      inject: COMMAND_HANDLERS,
+    },
+    PaymentEventProcessor,
     ...EVENT_HANDLERS,
     {
       provide: PAYMENT_EVENT_HANDLERS,

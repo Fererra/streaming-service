@@ -2,7 +2,9 @@ import { CommandPayload, PAYMENT_COMMAND_QUEUE } from '@app/payment';
 import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { CommandType } from '@app/payment';
-import { PaymentCommandHandlersRegistry } from '../handlers/commands/command-handle.registry';
+import { IPaymentCommandHandler } from '../interfaces/payment-command-handler.interface';
+import { Inject } from '@nestjs/common';
+import { PAYMENT_COMMAND_HANDLERS } from '../constants/constant';
 
 @Processor(PAYMENT_COMMAND_QUEUE, {
   limiter: {
@@ -12,10 +14,22 @@ import { PaymentCommandHandlersRegistry } from '../handlers/commands/command-han
   concurrency: 5,
 })
 export class PaymentCommandProcessor extends WorkerHost {
+  private readonly handlerMap: Map<
+    CommandType,
+    IPaymentCommandHandler<CommandType>
+  >;
+
   constructor(
-    private readonly commandHandlersRegistry: PaymentCommandHandlersRegistry,
+    @Inject(PAYMENT_COMMAND_HANDLERS)
+    private readonly commandHandlers: IPaymentCommandHandler<CommandType>[],
   ) {
     super();
+
+    this.handlerMap = new Map(
+      this.commandHandlers.map(
+        (handler) => [handler.commandType, handler] as const,
+      ),
+    );
   }
 
   async process(
@@ -27,8 +41,22 @@ export class PaymentCommandProcessor extends WorkerHost {
       );
     }
 
-    const handler = this.commandHandlersRegistry.get(job.name);
-    await handler(job.data, { jobId: job.id });
+    const handler = this.handlerMap.get(job.name);
+
+    if (!handler) {
+      console.warn(`No handler found for command type: ${job.name}`);
+      return;
+    }
+
+    try {
+      await handler.handle(job.data, { jobId: job.id });
+    } catch (error) {
+      console.error(
+        `Error occurred while processing job ${job.id} of type ${job.name}`,
+        error,
+      );
+      throw error;
+    }
   }
 
   @OnWorkerEvent('active')

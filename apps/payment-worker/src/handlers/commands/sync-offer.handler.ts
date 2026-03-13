@@ -1,0 +1,46 @@
+import {
+  GATEWAY_PRODUCT_REPOSITORY,
+  type IGatewayProductRepository,
+  PAYMENT_GATEWAY,
+  SyncOfferCommand,
+  type PaymentGateway,
+} from '@app/payment';
+import {
+  IPaymentCommandHandler,
+  JobContext,
+} from '../../interfaces/payment-command-handler.interface';
+import { Inject } from '@nestjs/common';
+
+export class SyncOfferHandler implements IPaymentCommandHandler<'command.syncOffer'> {
+  readonly commandType = 'command.syncOffer';
+
+  constructor(
+    @Inject(GATEWAY_PRODUCT_REPOSITORY)
+    private readonly gatewayProductRepository: IGatewayProductRepository,
+    @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
+  ) {}
+
+  async handle(payload: SyncOfferCommand, context: JobContext): Promise<void> {
+    const productId =
+      await this.gatewayProductRepository.findByPlanIdAndGateway(
+        payload.subscriptionPlanId,
+        this.paymentGateway.gateway,
+      );
+
+    if (!productId) {
+      throw new Error('Plan is not synced to gateway');
+    }
+
+    const idempotencyKey = `sync-offer-${payload.id}-${context.jobId}`;
+
+    await this.paymentGateway.createPrice(
+      {
+        id: payload.id,
+        amount: payload.price,
+        durationMonths: payload.durationMonths,
+      },
+      productId,
+      idempotencyKey,
+    );
+  }
+}
