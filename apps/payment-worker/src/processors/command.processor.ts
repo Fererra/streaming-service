@@ -49,7 +49,7 @@ export class PaymentCommandProcessor extends WorkerHost {
     }
 
     try {
-      await handler.handle(job.data, { jobId: job.id });
+      await handler.handle(job.data);
     } catch (error) {
       console.error(
         `Error occurred while processing job ${job.id} of type ${job.name}`,
