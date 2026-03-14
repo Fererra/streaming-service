@@ -3,10 +3,7 @@ import {
   type PaymentGateway,
   BaseSubscriptionCommand,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 
 export class DeactivateSubscriptionHandler implements IPaymentCommandHandler<'command.deactivateSubscription'> {
@@ -16,15 +13,10 @@ export class DeactivateSubscriptionHandler implements IPaymentCommandHandler<'co
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(
-    payload: BaseSubscriptionCommand,
-    context: JobContext,
-  ): Promise<void> {
-    const idempotencyKey = `deactivate-subscription-${payload.subscriptionId}-${context.jobId}`;
-
+  async handle(payload: BaseSubscriptionCommand): Promise<void> {
     await this.paymentGateway.deactivateSubscription(
       payload.subscriptionId,
-      idempotencyKey,
+      payload.idempotencyKey,
       payload.initiator,
     );
   }

@@ -5,10 +5,7 @@ import {
   UpdatePlanCommand,
   type PaymentGateway,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 
 export class UpdatePlanHandler implements IPaymentCommandHandler<'command.updatePlan'> {
@@ -20,7 +17,7 @@ export class UpdatePlanHandler implements IPaymentCommandHandler<'command.update
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(payload: UpdatePlanCommand, context: JobContext): Promise<void> {
+  async handle(payload: UpdatePlanCommand): Promise<void> {
     const { planId, updates } = payload;
 
     const productId =
@@ -33,15 +30,13 @@ export class UpdatePlanHandler implements IPaymentCommandHandler<'command.update
       throw new Error('Product not found in gateway');
     }
 
-    const idempotencyKey = `update-plan-${planId}-${context.jobId}`;
-
     await this.paymentGateway.updateProduct(
       productId,
       {
         name: updates.name,
         description: updates.description,
       },
-      idempotencyKey,
+      payload.idempotencyKey,
     );
   }
 }

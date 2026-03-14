@@ -31,25 +31,17 @@ export class ProductCreatedHandler implements IPaymentEventHandler<'event.produc
 
     if (!planId) return;
 
-    await this.dataSource.transaction(async (manager) => {
-      await manager
-        .createQueryBuilder()
-        .insert()
-        .into(SubscriptionPlanGatewayProductEntity)
-        .values({
-          gateway: PaymentGatewayProvider.STRIPE,
-          externalProductId: externalId,
-          subscriptionPlanId: planId,
-        })
-        .orIgnore()
-        .execute();
-
-      await manager.update(
-        SubscriptionPlanEntity,
-        { id: planId },
-        { status: PlanStatus.ACTIVE },
-      );
-    });
+    await this.dataSource
+      .createQueryBuilder()
+      .insert()
+      .into(SubscriptionPlanGatewayProductEntity)
+      .values({
+        gateway: PaymentGatewayProvider.STRIPE,
+        externalProductId: externalId,
+        subscriptionPlanId: planId,
+      })
+      .orIgnore()
+      .execute();
 
     const draftOffers =
       await this.subscriptionOfferRepository.findDraftOffersByPlanId(planId);
@@ -62,10 +54,15 @@ export class ProductCreatedHandler implements IPaymentEventHandler<'event.produc
           price: offer.price,
           durationMonths: offer.durationMonths,
           subscriptionPlanId: planId,
+          idempotencyKey: `sync-offer-${offer.id}-${planId}`,
         },
       }));
 
       await this.paymentQueueService.dispatchCommandsBulk(jobsToCreate);
     }
+
+    await this.dataSource
+      .getRepository(SubscriptionPlanEntity)
+      .update({ id: planId }, { status: PlanStatus.ACTIVE });
   }
 }

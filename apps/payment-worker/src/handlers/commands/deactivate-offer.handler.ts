@@ -7,10 +7,7 @@ import {
   PAYMENT_QUEUE_SERVICE,
   type PaymentGateway,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 import { CancellationInitiator } from '@app/shared';
 
@@ -25,7 +22,7 @@ export class DeactivateOfferHandler implements IPaymentCommandHandler<'command.d
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(payload: BaseOfferCommand, context: JobContext): Promise<void> {
+  async handle(payload: BaseOfferCommand): Promise<void> {
     const gatewayPrice =
       await this.gatewayPriceRepository.findByOfferIdAndGateway(
         payload.offerId,
@@ -36,11 +33,9 @@ export class DeactivateOfferHandler implements IPaymentCommandHandler<'command.d
       throw new Error('Gateway price not found for offer');
     }
 
-    const priceIdempotencyKey = `deactivate-price-${gatewayPrice.externalPriceId}-${context.jobId}`;
-
     await this.paymentGateway.deactivatePrice(
       gatewayPrice.externalPriceId,
-      priceIdempotencyKey,
+      payload.idempotencyKey,
     );
 
     const activeSubscriptions =
@@ -50,7 +45,11 @@ export class DeactivateOfferHandler implements IPaymentCommandHandler<'command.d
 
     const jobsToCreate = activeSubscriptions.map((subId) => ({
       name: 'command.deactivateSubscription' as const,
-      data: { subscriptionId: subId, initiator: CancellationInitiator.ADMIN },
+      data: {
+        subscriptionId: subId,
+        initiator: CancellationInitiator.ADMIN,
+        idempotencyKey: `deactivate-subscription-${subId}-${payload.offerId}`,
+      },
     }));
 
     if (jobsToCreate.length > 0) {

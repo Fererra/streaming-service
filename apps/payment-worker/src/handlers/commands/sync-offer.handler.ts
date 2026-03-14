@@ -5,10 +5,7 @@ import {
   SyncOfferCommand,
   type PaymentGateway,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 
 export class SyncOfferHandler implements IPaymentCommandHandler<'command.syncOffer'> {
@@ -20,7 +17,7 @@ export class SyncOfferHandler implements IPaymentCommandHandler<'command.syncOff
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(payload: SyncOfferCommand, context: JobContext): Promise<void> {
+  async handle(payload: SyncOfferCommand): Promise<void> {
     const productId =
       await this.gatewayProductRepository.findByPlanIdAndGateway(
         payload.subscriptionPlanId,
@@ -31,8 +28,6 @@ export class SyncOfferHandler implements IPaymentCommandHandler<'command.syncOff
       throw new Error('Plan is not synced to gateway');
     }
 
-    const idempotencyKey = `sync-offer-${payload.id}-${context.jobId}`;
-
     await this.paymentGateway.createPrice(
       {
         id: payload.id,
@@ -40,7 +35,7 @@ export class SyncOfferHandler implements IPaymentCommandHandler<'command.syncOff
         durationMonths: payload.durationMonths,
       },
       productId,
-      idempotencyKey,
+      payload.idempotencyKey,
     );
   }
 }

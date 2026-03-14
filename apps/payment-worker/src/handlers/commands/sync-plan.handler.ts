@@ -3,10 +3,7 @@ import {
   type PaymentGateway,
   type SyncPlanCommand,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 
 export class SyncPlanHandler implements IPaymentCommandHandler<'command.syncPlan'> {
@@ -16,16 +13,14 @@ export class SyncPlanHandler implements IPaymentCommandHandler<'command.syncPlan
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(payload: SyncPlanCommand, context: JobContext): Promise<void> {
-    const idempotencyKey = `sync-plan-${payload.id}-${context.jobId}`;
-
+  async handle(payload: SyncPlanCommand): Promise<void> {
     await this.paymentGateway.createProduct(
       {
         id: payload.id,
         name: payload.name,
         description: payload.description,
       },
-      idempotencyKey,
+      payload.idempotencyKey,
     );
   }
 }

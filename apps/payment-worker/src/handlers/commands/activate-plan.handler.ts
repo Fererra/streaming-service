@@ -5,10 +5,7 @@ import {
   PAYMENT_GATEWAY,
   type PaymentGateway,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 
 export class ActivatePlanHandler implements IPaymentCommandHandler<'command.activatePlan'> {
@@ -20,7 +17,7 @@ export class ActivatePlanHandler implements IPaymentCommandHandler<'command.acti
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(payload: BasePlanCommand, context: JobContext): Promise<void> {
+  async handle(payload: BasePlanCommand): Promise<void> {
     const productId =
       await this.gatewayProductRepository.findByPlanIdAndGateway(
         payload.planId,
@@ -31,8 +28,9 @@ export class ActivatePlanHandler implements IPaymentCommandHandler<'command.acti
       throw new Error('Product not found in gateway');
     }
 
-    const idempotencyKey = `activate-plan-${payload.planId}-${context.jobId}`;
-
-    await this.paymentGateway.activateProduct(productId, idempotencyKey);
+    await this.paymentGateway.activateProduct(
+      productId,
+      payload.idempotencyKey,
+    );
   }
 }

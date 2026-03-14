@@ -7,15 +7,13 @@ import {
   PAYMENT_QUEUE_SERVICE,
   type PaymentGateway,
 } from '@app/payment';
-import {
-  IPaymentCommandHandler,
-  JobContext,
-} from '../../interfaces/payment-command-handler.interface';
+import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
 import {
   type ISubscriptionOfferRepository,
   SUBSCRIPTION_OFFER_REPOSITORY,
 } from '@app/subscription';
+import { randomUUID } from 'crypto';
 
 export class DeactivatePlanHandler implements IPaymentCommandHandler<'command.deactivatePlan'> {
   readonly commandType = 'command.deactivatePlan';
@@ -30,7 +28,7 @@ export class DeactivatePlanHandler implements IPaymentCommandHandler<'command.de
     @Inject(PAYMENT_GATEWAY) private readonly paymentGateway: PaymentGateway,
   ) {}
 
-  async handle(payload: BasePlanCommand, context: JobContext): Promise<void> {
+  async handle(payload: BasePlanCommand): Promise<void> {
     const productId =
       await this.gatewayProductRepository.findByPlanIdAndGateway(
         payload.planId,
@@ -41,11 +39,9 @@ export class DeactivatePlanHandler implements IPaymentCommandHandler<'command.de
       throw new Error('Product not found in gateway');
     }
 
-    const productIdempotencyKey = `deactivate-plan-${payload.planId}-${context.jobId}`;
-
     await this.paymentGateway.deactivateProduct(
       productId,
-      productIdempotencyKey,
+      payload.idempotencyKey,
     );
 
     const internalOffers =
@@ -55,7 +51,10 @@ export class DeactivatePlanHandler implements IPaymentCommandHandler<'command.de
 
     const jobsToCreate = internalOffers.map((offer) => ({
       name: 'command.deactivateOffer' as const,
-      data: { offerId: offer.id },
+      data: {
+        offerId: offer.id,
+        idempotencyKey: `deactivate-offer-${offer.id}-${payload.planId}`,
+      },
     }));
 
     if (jobsToCreate.length > 0) {
