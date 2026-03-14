@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import { SubscriptionPlanService } from '../subscription/services/subscription-plan.service';
@@ -21,6 +22,7 @@ import {
 } from '../subscription/dto/create-subscription.dto';
 import { CheckEmptyBodyPipe } from '../../common/pipes/check-empty-body.pipe';
 import { UpdateSubscriptionDto } from '../subscription/dto/update-subscription.dto';
+import { LockTimeoutFilter } from '../../common/filters/lock-timeout.filter';
 
 @UseGuards(JwtGuard, RolesGuard)
 @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
@@ -48,6 +50,7 @@ export class AdminSubscriptionsController {
   }
 
   @Patch(':id')
+  @UseFilters(LockTimeoutFilter)
   async updateSubscription(
     @Param('id', ParseUUIDPipe) id: string,
     @Body(CheckEmptyBodyPipe)
@@ -77,6 +80,7 @@ export class AdminSubscriptionsController {
   }
 
   @Patch(':id/activate')
+  @UseFilters(LockTimeoutFilter)
   async activatePlan(@Param('id', ParseUUIDPipe) id: string) {
     await this.subscriptionPlanService.activatePlan(id);
 
@@ -86,6 +90,7 @@ export class AdminSubscriptionsController {
   }
 
   @Patch(':id/deactivate')
+  @UseFilters(LockTimeoutFilter)
   async deactivatePlan(@Param('id', ParseUUIDPipe) id: string) {
     await this.subscriptionPlanService.deactivatePlan(id);
 
@@ -95,6 +100,7 @@ export class AdminSubscriptionsController {
   }
 
   @Patch(':planId/offers/:offerId/deactivate')
+  @UseFilters(LockTimeoutFilter)
   async deactivateOffer(
     @Param('planId', ParseUUIDPipe) planId: string,
     @Param('offerId', ParseUUIDPipe) offerId: string,
