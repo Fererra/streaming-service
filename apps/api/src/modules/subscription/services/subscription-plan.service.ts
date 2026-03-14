@@ -15,6 +15,7 @@ import {
   SubscriptionPlanEntity,
 } from '@app/subscription';
 import { SubscriptionOfferService } from './subscription-offer.service';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class SubscriptionPlanService {
@@ -24,6 +25,7 @@ export class SubscriptionPlanService {
     @Inject(PAYMENT_QUEUE_SERVICE)
     private readonly paymentQueueService: IPaymentQueueService,
     private readonly subscriptionOfferService: SubscriptionOfferService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async findAllWithOffersForAdmin() {
@@ -79,56 +81,80 @@ export class SubscriptionPlanService {
     });
   }
 
-  async update(id: string, updateSubscriptionDto: UpdateSubscriptionDto) {
-    if (updateSubscriptionDto.name) {
-      const isSubscriptionExist =
-        await this.subscriptionPlanRepository.existsBy({
-          name: updateSubscriptionDto.name,
+  async update(id: string, dto: UpdateSubscriptionDto) {
+    await this.dataSource.transaction(async (manager) => {
+      const plan = await manager
+        .createQueryBuilder(SubscriptionPlanEntity, 'plan')
+        .setLock('pessimistic_write')
+        .setOnLocked('nowait')
+        .where('plan.id = :id', { id })
+        .getOne();
+
+      if (!plan) {
+        throw new NotFoundException(`Subscription plan ${id} not found`);
+      }
+
+      if (plan.status !== PlanStatus.ACTIVE) {
+        throw new ConflictException('Plan is not active');
+      }
+
+      if (dto.name) {
+        const exists = await manager.exists(SubscriptionPlanEntity, {
+          where: { name: dto.name },
         });
 
-      if (isSubscriptionExist) {
-        throw new ConflictException(
-          `Subscription with name ${updateSubscriptionDto.name} already exists`,
-        );
+        if (exists) {
+          throw new ConflictException(
+            `Subscription with name ${dto.name} already exists`,
+          );
+        }
       }
-    }
 
-    const affected = await this.subscriptionPlanRepository.update(id, {
-      name: updateSubscriptionDto.name,
-      description: updateSubscriptionDto.description,
+      const updates = {
+        name: dto.name ?? plan.name,
+        description: dto.description ?? plan.description,
+      };
+
+      await manager.update(SubscriptionPlanEntity, { id: plan.id }, updates);
     });
-
-    if (affected === 0) {
-      throw new NotFoundException(`Subscription plan with id ${id} not found`);
-    }
 
     await this.paymentQueueService.dispatchCommand('command.updatePlan', {
       planId: id,
       updates: {
-        name: updateSubscriptionDto.name,
-        description: updateSubscriptionDto.description,
+        name: dto.name,
+        description: dto.description,
       },
     });
   }
 
   async activatePlan(id: string) {
-    const plan = await this.subscriptionPlanRepository.findById(id);
+    await this.dataSource.transaction(async (manager) => {
+      const plan = await manager
+        .createQueryBuilder(SubscriptionPlanEntity, 'plan')
+        .setLock('pessimistic_write')
+        .setOnLocked('nowait')
+        .where('plan.id = :id', { id })
+        .getOne();
 
-    if (!plan) {
-      throw new NotFoundException(`Subscription plan not found`);
-    }
+      if (!plan) {
+        throw new NotFoundException(`Subscription plan not found`);
+      }
 
-    if (
-      plan.status === PlanStatus.ACTIVE ||
-      plan.status === PlanStatus.ACTIVATING
-    ) {
-      throw new ConflictException(`Plan is already active or being activated`);
-    }
+      if (
+        plan.status === PlanStatus.ACTIVE ||
+        plan.status === PlanStatus.ACTIVATING
+      ) {
+        throw new ConflictException(`Plan already active or activating`);
+      }
 
-    await this.subscriptionPlanRepository.updateStatus(
-      id,
-      PlanStatus.ACTIVATING,
-    );
+      await manager.update(
+        SubscriptionPlanEntity,
+        { id: plan.id },
+        {
+          status: PlanStatus.ACTIVATING,
+        },
+      );
+    });
 
     await this.paymentQueueService.dispatchCommand('command.activatePlan', {
       planId: id,
@@ -136,25 +162,35 @@ export class SubscriptionPlanService {
   }
 
   async deactivatePlan(id: string) {
-    const plan = await this.subscriptionPlanRepository.findById(id);
+    await this.dataSource.transaction(async (manager) => {
+      const plan = await manager
+        .createQueryBuilder(SubscriptionPlanEntity, 'plan')
+        .setLock('pessimistic_write')
+        .setOnLocked('nowait')
+        .where('plan.id = :id', { id })
+        .getOne();
 
-    if (!plan) {
-      throw new NotFoundException(`Subscription plan not found`);
-    }
+      if (!plan) {
+        throw new NotFoundException(`Subscription plan not found`);
+      }
 
-    if (
-      plan.status === PlanStatus.DEACTIVATED ||
-      plan.status === PlanStatus.DEACTIVATING
-    ) {
-      throw new ConflictException(
-        `Plan is already deactivated or being deactivated`,
+      if (
+        plan.status === PlanStatus.DEACTIVATED ||
+        plan.status === PlanStatus.DEACTIVATING
+      ) {
+        throw new ConflictException(
+          `Plan is already deactivated or being deactivated`,
+        );
+      }
+
+      await manager.update(
+        SubscriptionPlanEntity,
+        { id: plan.id },
+        {
+          status: PlanStatus.DEACTIVATING,
+        },
       );
-    }
-
-    await this.subscriptionPlanRepository.updateStatus(
-      id,
-      PlanStatus.DEACTIVATING,
-    );
+    });
 
     await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
       planId: id,

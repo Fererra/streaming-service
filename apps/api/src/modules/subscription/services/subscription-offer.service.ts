@@ -16,6 +16,7 @@ import {
   SubscriptionOfferEntity,
   OfferStatus,
 } from '@app/subscription';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -27,6 +28,7 @@ export class SubscriptionOfferService {
     private readonly offerEntityFactory: OfferEntityFactory,
     @Inject(PAYMENT_QUEUE_SERVICE)
     private readonly paymentQueueService: IPaymentQueueService,
+    private readonly dataSource: DataSource,
   ) {}
 
   findPriceById(offerId: string): Promise<number | null> {
@@ -103,28 +105,36 @@ export class SubscriptionOfferService {
   }
 
   async deactivateOffer(planId: string, offerId: string) {
-    const offer = await this.subscriptionOfferRepository.findOfferByIdAndPlanId(
-      offerId,
-      planId,
-    );
+    await this.dataSource.transaction(async (manager) => {
+      const offer = await manager
+        .createQueryBuilder(SubscriptionOfferEntity, 'offer')
+        .setLock('pessimistic_write')
+        .setOnLocked('nowait')
+        .where('offer.id = :id', { id: offerId })
+        .andWhere('offer.subscriptionPlan = :planId', { planId })
+        .getOne();
 
-    if (!offer) {
-      throw new NotFoundException(`Offer not found for the given plan`);
-    }
+      if (!offer) {
+        throw new NotFoundException(`Subscription offer not found`);
+      }
 
-    if (
-      offer.status === OfferStatus.DEACTIVATED ||
-      offer.status === OfferStatus.DEACTIVATING
-    ) {
-      throw new ConflictException(
-        `Offer is already deactivated or being deactivated`,
+      if (
+        offer.status === OfferStatus.DEACTIVATED ||
+        offer.status === OfferStatus.DEACTIVATING
+      ) {
+        throw new ConflictException(
+          `Offer is already deactivated or being deactivated`,
+        );
+      }
+
+      await manager.update(
+        SubscriptionOfferEntity,
+        { id: offerId },
+        {
+          status: OfferStatus.DEACTIVATING,
+        },
       );
-    }
-
-    await this.subscriptionOfferRepository.updateStatus(
-      offerId,
-      OfferStatus.DEACTIVATING,
-    );
+    });
 
     await this.paymentQueueService.dispatchCommand('command.deactivateOffer', {
       offerId,
