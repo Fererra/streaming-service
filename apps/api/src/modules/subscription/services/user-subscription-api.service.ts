@@ -12,6 +12,7 @@ import { PaginationOptions } from '../../../common/@types/pagination.types';
 import { buildPaginationResponse } from '../../../common/utils/pagination.util';
 import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
 import { CancellationInitiator, UserSubscriptionStatus } from '@app/shared';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class UserSubscriptionApiService {
@@ -60,6 +61,7 @@ export class UserSubscriptionApiService {
       {
         subscriptionId: subscription.externalSubscriptionId,
         initiator,
+        idempotencyKey: `deactivate-subscription-${subscription.id}-${randomUUID()}`,
       },
     );
   }

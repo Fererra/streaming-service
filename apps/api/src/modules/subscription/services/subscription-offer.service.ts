@@ -17,6 +17,7 @@ import {
   OfferStatus,
 } from '@app/subscription';
 import { DataSource } from 'typeorm';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -48,6 +49,7 @@ export class SubscriptionOfferService {
         price: offer.price,
         durationMonths: offer.durationMonths,
         subscriptionPlanId: planId,
+        idempotencyKey: `sync-offer-${offer.id}-${randomUUID()}`,
       },
     }));
 
@@ -138,6 +140,7 @@ export class SubscriptionOfferService {
 
     await this.paymentQueueService.dispatchCommand('command.deactivateOffer', {
       offerId,
+      idempotencyKey: `deactivate-offer-${offerId}-${randomUUID()}`,
     });
   }
 }

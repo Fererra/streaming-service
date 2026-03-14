@@ -16,6 +16,7 @@ import {
 } from '@app/subscription';
 import { SubscriptionOfferService } from './subscription-offer.service';
 import { DataSource } from 'typeorm';
+import { randomUUID } from 'crypto';
 
 @Injectable()
 export class SubscriptionPlanService {
@@ -78,6 +79,7 @@ export class SubscriptionPlanService {
       id: plan.id,
       name: plan.name,
       description: plan.description,
+      idempotencyKey: `sync-plan-${plan.id}-${randomUUID()}`,
     });
   }
 
@@ -124,6 +126,7 @@ export class SubscriptionPlanService {
         name: dto.name,
         description: dto.description,
       },
+      idempotencyKey: `update-plan-${id}-${randomUUID()}`,
     });
   }
 
@@ -158,6 +161,7 @@ export class SubscriptionPlanService {
 
     await this.paymentQueueService.dispatchCommand('command.activatePlan', {
       planId: id,
+      idempotencyKey: `activate-plan-${id}-${randomUUID()}`,
     });
   }
 
@@ -194,6 +198,7 @@ export class SubscriptionPlanService {
 
     await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
       planId: id,
+      idempotencyKey: `deactivate-plan-${id}-${randomUUID()}`,
     });
   }
 }
