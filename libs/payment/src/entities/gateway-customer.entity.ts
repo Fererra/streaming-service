@@ -3,10 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Unique,
 } from 'typeorm';
 import { PaymentGatewayProvider } from '../enums/payment-gateway-provider.enum';
 
 @Entity('user_gateway_customers')
+@Unique('uq_user_id_gateway', ['userId', 'gateway'])
 export class UserGatewayCustomerEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

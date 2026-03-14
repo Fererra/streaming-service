@@ -4,9 +4,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
+  Unique,
 } from 'typeorm';
 
 @Entity('subscription_offer_gateway_prices')
+@Unique('uq_offer_id_gateway', ['subscriptionOfferId', 'gateway'])
 export class SubscriptionOfferGatewayPriceEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -1,15 +1,16 @@
 import {
   Column,
   Entity,
-  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { CancellationReason, UserSubscriptionStatus } from '@app/shared';
 import { SubscriptionOfferEntity } from './subscription-offer.entity';
 
 @Entity('user_subscriptions')
+@Unique('uq_external_subscription_id', ['externalSubscriptionId'])
 export class UserSubscriptionEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -31,7 +32,6 @@ export class UserSubscriptionEntity {
     type: 'varchar',
     length: 255,
   })
-  @Index('idx_external_subscription_id')
   externalSubscriptionId: string;
 
   @Column({

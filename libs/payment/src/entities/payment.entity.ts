@@ -43,6 +43,7 @@ export class PaymentEntity {
   })
   @Index('idx_payments_external_invoice_id', {
     where: '"external_invoice_id" IS NOT NULL',
+    unique: true,
   })
   externalInvoiceId: string | null;
 
