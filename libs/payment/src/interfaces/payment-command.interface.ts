@@ -1,20 +1,26 @@
 import { CancellationInitiator } from '@app/shared';
 
-export type BasePlanCommand = { planId: string };
-export type BaseOfferCommand = { offerId: string };
-export type BaseSubscriptionCommand = {
+export type BaseCommand = { idempotencyKey: string };
+
+export type BasePlanCommand = BaseCommand & { planId: string };
+export type BaseOfferCommand = BaseCommand & { offerId: string };
+export type BaseSubscriptionCommand = BaseCommand & {
   subscriptionId: string;
   initiator: CancellationInitiator;
 };
 
-export type SyncPlanCommand = { id: string; name: string; description: string };
+export type SyncPlanCommand = BaseCommand & {
+  id: string;
+  name: string;
+  description: string;
+};
 export type UpdatePlanCommand = BasePlanCommand & {
   updates: { name?: string; description?: string };
 };
 export type ActivatePlanCommand = BasePlanCommand;
 export type DeactivatePlanCommand = BasePlanCommand;
 
-export type SyncOfferCommand = {
+export type SyncOfferCommand = BaseCommand & {
   id: string;
   price: number;
   durationMonths: number;
