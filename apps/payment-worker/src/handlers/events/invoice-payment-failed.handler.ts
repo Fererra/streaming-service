@@ -1,13 +1,12 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
   PaymentGatewayProvider,
   InvoicePaymentFailedPayload,
-  PAYMENT_REPOSITORY,
-  type IPaymentRepository,
   PaymentStatus,
   PaymentEntity,
 } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
+import { DataSource } from 'typeorm';
 
 @Injectable()
 export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.invoice.payment_failed'> {
@@ -18,10 +17,7 @@ export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.
     'subscription_threshold',
   ];
 
-  constructor(
-    @Inject(PAYMENT_REPOSITORY)
-    private readonly paymentRepository: IPaymentRepository,
-  ) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async handle(payload: InvoicePaymentFailedPayload): Promise<void> {
     if (
@@ -29,16 +25,9 @@ export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.
       this.noSessionReasons.includes(payload.billingReason)
     ) {
       await this.createFailedPayment({
-        userId: payload.metadata?.userId,
-        subscriptionOfferId: payload.metadata?.offerId,
-        externalInvoiceId: payload.externalInvoiceId,
-        billingReason: payload.billingReason,
-        amount: payload.amount,
-        currency: payload.currency,
+        ...payload,
         gateway: PaymentGatewayProvider.STRIPE,
-        metadata: payload.metadata,
       });
-
       return;
     }
 
@@ -52,18 +41,31 @@ export class InvoicePaymentFailedHandler implements IPaymentEventHandler<'event.
   private async createFailedPayment(
     data: Partial<PaymentEntity>,
   ): Promise<void> {
-    await this.paymentRepository.create({
-      ...data,
-      status: PaymentStatus.FAILED,
-    });
+    await this.dataSource
+      .createQueryBuilder()
+      .insert()
+      .into(PaymentEntity)
+      .values({
+        userId: data.metadata?.userId,
+        subscriptionOfferId: data.metadata?.offerId,
+        externalInvoiceId: data.externalInvoiceId,
+        billingReason: data.billingReason,
+        amount: data.amount,
+        currency: data.currency,
+        gateway: data.gateway,
+        metadata: data.metadata,
+        status: PaymentStatus.FAILED,
+      })
+      .orIgnore()
+      .execute();
   }
 
   private async markPaymentFailed(initialPaymentId: string): Promise<void> {
-    const affected = await this.paymentRepository.update(initialPaymentId, {
-      status: PaymentStatus.FAILED,
-    });
+    const result = await this.dataSource
+      .getRepository(PaymentEntity)
+      .update(initialPaymentId, { status: PaymentStatus.FAILED });
 
-    if (affected === 0) {
+    if (result.affected === 0) {
       console.warn(
         `Payment Intent ${initialPaymentId} not found for Payment Failed webhook.`,
       );

@@ -11,6 +11,8 @@ export * from './interfaces/repositories/payment-repository.interface';
 export * from './interfaces/payment-events.interface';
 export * from './interfaces/payment-command.interface';
 export * from './entities/payment.entity';
+export * from './entities/gateway-price.entity';
+export * from './entities/gateway-product.entity';
 export * from './enums/payment-gateway-provider.enum';
 export * from './enums/payment-status.enum';
 export * from './constants/constants';

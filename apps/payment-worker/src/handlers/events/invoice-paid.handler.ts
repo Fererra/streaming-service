@@ -6,7 +6,7 @@ import {
   PaymentStatus,
 } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { UserSubscriptionStatus } from '@app/shared';
 import { UserSubscriptionEntity } from '@app/subscription';
 
@@ -27,19 +27,34 @@ export class InvoicePaidHandler implements IPaymentEventHandler<'event.invoice.p
   }
 
   private async handleSubscriptionCreate(
-    manager: DataSource['manager'],
+    manager: EntityManager,
     payload: InvoicePaidPayload,
   ) {
-    const newSubscription = manager.create(UserSubscriptionEntity, {
-      userId: payload.metadata.userId,
-      subscriptionOfferId: payload.metadata.offerId,
-      externalSubscriptionId: payload.externalSubscriptionId,
-      status: UserSubscriptionStatus.ACTIVE,
-      currentPeriodStart: payload.paidAt as Date,
-      currentPeriodEnd: payload.currentPeriodEnd as Date,
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(UserSubscriptionEntity)
+      .values({
+        userId: payload.metadata.userId,
+        subscriptionOfferId: payload.metadata.offerId,
+        externalSubscriptionId: payload.externalSubscriptionId,
+        status: UserSubscriptionStatus.ACTIVE,
+        currentPeriodStart: payload.paidAt as Date,
+        currentPeriodEnd: payload.currentPeriodEnd as Date,
+      })
+      .orIgnore()
+      .execute();
+
+    const subscription = await manager.findOne(UserSubscriptionEntity, {
+      select: ['id'],
+      where: { externalSubscriptionId: payload.externalSubscriptionId },
     });
 
-    await manager.save(newSubscription);
+    if (!subscription) {
+      throw new Error(
+        `Subscription for ${payload.externalSubscriptionId} not found after upsert`,
+      );
+    }
 
     const initialPaymentId = payload.metadata.initialPaymentId;
 
@@ -54,7 +69,7 @@ export class InvoicePaidHandler implements IPaymentEventHandler<'event.invoice.p
       PaymentEntity,
       { id: initialPaymentId },
       {
-        userSubscriptionId: newSubscription.id,
+        userSubscriptionId: subscription.id,
         externalInvoiceId: payload.externalInvoiceId,
         billingReason: payload.billingReason,
         status: PaymentStatus.COMPLETED,
@@ -70,7 +85,7 @@ export class InvoicePaidHandler implements IPaymentEventHandler<'event.invoice.p
   }
 
   private async handleSubscriptionRenewal(
-    manager: DataSource['manager'],
+    manager: EntityManager,
     payload: InvoicePaidPayload,
   ) {
     const existingSubscription = await manager.findOne(UserSubscriptionEntity, {
@@ -93,20 +108,24 @@ export class InvoicePaidHandler implements IPaymentEventHandler<'event.invoice.p
       },
     );
 
-    const newPayment = manager.create(PaymentEntity, {
-      userId: payload.metadata?.userId,
-      userSubscriptionId: existingSubscription.id,
-      subscriptionOfferId: payload.metadata?.offerId,
-      externalInvoiceId: payload.externalInvoiceId,
-      billingReason: payload.billingReason,
-      status: PaymentStatus.COMPLETED,
-      amount: payload.amount,
-      currency: payload.currency,
-      gateway: PaymentGatewayProvider.STRIPE,
-      metadata: payload.metadata,
-      paidAt: payload.paidAt,
-    });
-
-    await manager.save(newPayment);
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(PaymentEntity)
+      .values({
+        userId: payload.metadata?.userId,
+        userSubscriptionId: existingSubscription.id,
+        subscriptionOfferId: payload.metadata?.offerId,
+        externalInvoiceId: payload.externalInvoiceId,
+        billingReason: payload.billingReason,
+        status: PaymentStatus.COMPLETED,
+        amount: payload.amount,
+        currency: payload.currency,
+        gateway: PaymentGatewayProvider.STRIPE,
+        metadata: payload.metadata,
+        paidAt: payload.paidAt,
+      })
+      .orIgnore()
+      .execute();
   }
 }

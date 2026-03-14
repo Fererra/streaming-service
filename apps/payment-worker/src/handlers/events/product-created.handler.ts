@@ -1,29 +1,25 @@
 import {
   ProductCreatedPayload,
-  GATEWAY_PRODUCT_REPOSITORY,
-  type IGatewayProductRepository,
   PaymentGatewayProvider,
   PAYMENT_QUEUE_SERVICE,
   type IPaymentQueueService,
+  SubscriptionPlanGatewayProductEntity,
 } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
 import { Inject } from '@nestjs/common';
 import {
   type ISubscriptionOfferRepository,
-  type ISubscriptionPlanRepository,
   PlanStatus,
   SUBSCRIPTION_OFFER_REPOSITORY,
-  SUBSCRIPTION_PLAN_REPOSITORY,
+  SubscriptionPlanEntity,
 } from '@app/subscription';
+import { DataSource } from 'typeorm';
 
 export class ProductCreatedHandler implements IPaymentEventHandler<'event.product.created'> {
   readonly eventType = 'event.product.created' as const;
 
   constructor(
-    @Inject(GATEWAY_PRODUCT_REPOSITORY)
-    private readonly gatewayProductRepository: IGatewayProductRepository,
-    @Inject(SUBSCRIPTION_PLAN_REPOSITORY)
-    private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
+    private readonly dataSource: DataSource,
     @Inject(SUBSCRIPTION_OFFER_REPOSITORY)
     private readonly subscriptionOfferRepository: ISubscriptionOfferRepository,
     @Inject(PAYMENT_QUEUE_SERVICE)
@@ -35,16 +31,25 @@ export class ProductCreatedHandler implements IPaymentEventHandler<'event.produc
 
     if (!planId) return;
 
-    await this.gatewayProductRepository.createGatewayProduct({
-      gateway: PaymentGatewayProvider.STRIPE,
-      externalProductId: externalId,
-      subscriptionPlanId: planId,
-    });
+    await this.dataSource.transaction(async (manager) => {
+      await manager
+        .createQueryBuilder()
+        .insert()
+        .into(SubscriptionPlanGatewayProductEntity)
+        .values({
+          gateway: PaymentGatewayProvider.STRIPE,
+          externalProductId: externalId,
+          subscriptionPlanId: planId,
+        })
+        .orIgnore()
+        .execute();
 
-    await this.subscriptionPlanRepository.updateStatus(
-      planId,
-      PlanStatus.ACTIVE,
-    );
+      await manager.update(
+        SubscriptionPlanEntity,
+        { id: planId },
+        { status: PlanStatus.ACTIVE },
+      );
+    });
 
     const draftOffers =
       await this.subscriptionOfferRepository.findDraftOffersByPlanId(planId);
