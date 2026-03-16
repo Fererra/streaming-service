@@ -7,10 +7,7 @@ export interface ISubscriptionPlanRepository {
   existsBy(
     criteria: Partial<Omit<SubscriptionPlanEntity, 'offers'>>,
   ): Promise<boolean>;
-  findById(
-    id: string,
-    options?: { withDeleted?: boolean },
-  ): Promise<SubscriptionPlanEntity | null>;
+  findById(id: string): Promise<SubscriptionPlanEntity | null>;
   save(
     subscriptionPlan: Partial<SubscriptionPlanEntity>,
   ): Promise<SubscriptionPlanEntity>;
