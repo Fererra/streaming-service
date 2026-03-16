@@ -6,15 +6,14 @@ import {
   SubscriptionPlanGatewayProductEntity,
 } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   type ISubscriptionOfferRepository,
-  PlanStatus,
   SUBSCRIPTION_OFFER_REPOSITORY,
-  SubscriptionPlanEntity,
 } from '@app/subscription';
 import { DataSource } from 'typeorm';
 
+@Injectable()
 export class ProductCreatedHandler implements IPaymentEventHandler<'event.product.created'> {
   readonly eventType = 'event.product.created' as const;
 
@@ -60,9 +59,5 @@ export class ProductCreatedHandler implements IPaymentEventHandler<'event.produc
 
       await this.paymentQueueService.dispatchCommandsBulk(jobsToCreate);
     }
-
-    await this.dataSource
-      .getRepository(SubscriptionPlanEntity)
-      .update({ id: planId }, { status: PlanStatus.ACTIVE });
   }
 }
