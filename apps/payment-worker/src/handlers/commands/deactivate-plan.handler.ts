@@ -8,13 +8,13 @@ import {
   type PaymentGateway,
 } from '@app/payment';
 import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   type ISubscriptionOfferRepository,
   SUBSCRIPTION_OFFER_REPOSITORY,
 } from '@app/subscription';
-import { randomUUID } from 'crypto';
 
+@Injectable()
 export class DeactivatePlanHandler implements IPaymentCommandHandler<'command.deactivatePlan'> {
   readonly commandType = 'command.deactivatePlan';
 

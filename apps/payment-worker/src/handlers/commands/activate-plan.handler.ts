@@ -6,8 +6,9 @@ import {
   type PaymentGateway,
 } from '@app/payment';
 import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
+@Injectable()
 export class ActivatePlanHandler implements IPaymentCommandHandler<'command.activatePlan'> {
   readonly commandType = 'command.activatePlan';
 

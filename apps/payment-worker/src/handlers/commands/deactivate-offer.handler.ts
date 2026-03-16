@@ -8,9 +8,10 @@ import {
   type PaymentGateway,
 } from '@app/payment';
 import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { CancellationInitiator } from '@app/shared';
 
+@Injectable()
 export class DeactivateOfferHandler implements IPaymentCommandHandler<'command.deactivateOffer'> {
   readonly commandType = 'command.deactivateOffer';
 

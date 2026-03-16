@@ -4,8 +4,9 @@ import {
   type SyncPlanCommand,
 } from '@app/payment';
 import { IPaymentCommandHandler } from '../../interfaces/payment-command-handler.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 
+@Injectable()
 export class SyncPlanHandler implements IPaymentCommandHandler<'command.syncPlan'> {
   readonly commandType = 'command.syncPlan';
 

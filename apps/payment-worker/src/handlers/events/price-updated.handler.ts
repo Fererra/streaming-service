@@ -1,12 +1,13 @@
 import { PriceUpdatedPayload } from '@app/payment';
 import { IPaymentEventHandler } from '../../interfaces/payment-event-handler.interface';
-import { Inject } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import {
   type ISubscriptionOfferRepository,
   OfferStatus,
   SUBSCRIPTION_OFFER_REPOSITORY,
 } from '@app/subscription';
 
+@Injectable()
 export class PriceUpdatedHandler implements IPaymentEventHandler<'event.price.updated'> {
   readonly eventType = 'event.price.updated' as const;
 
