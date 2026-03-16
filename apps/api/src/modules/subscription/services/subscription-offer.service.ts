@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -15,6 +16,7 @@ import {
   type ISubscriptionOfferRepository,
   SubscriptionOfferEntity,
   OfferStatus,
+  PlanStatus,
 } from '@app/subscription';
 import { DataSource } from 'typeorm';
 import { randomUUID } from 'crypto';
@@ -40,6 +42,16 @@ export class SubscriptionOfferService {
     planId: string,
     createOffersDto: CreateOfferDto[],
   ): Promise<void> {
+    const plan = await this.subscriptionPlanRepository.findById(planId);
+
+    if (!plan) throw new NotFoundException('Subscription plan not found');
+
+    if (plan.status !== PlanStatus.ACTIVE) {
+      throw new BadRequestException(
+        'Cannot attach offers to a non-active plan',
+      );
+    }
+
     const savedOffers = await this.createDraftOffers(planId, createOffersDto);
 
     const jobsToCreate = savedOffers.map((offer) => ({
@@ -62,12 +74,6 @@ export class SubscriptionOfferService {
     planId: string,
     createOffersDto: CreateOfferDto[],
   ): Promise<SubscriptionOfferEntity[]> {
-    const plan = await this.subscriptionPlanRepository.findById(planId);
-
-    if (!plan) {
-      throw new NotFoundException('Subscription plan not found');
-    }
-
     const normalizedOffers = createOffersDto.map((o) => ({
       ...o,
       price: Money.fromMajor(o.price).value,
@@ -75,10 +81,10 @@ export class SubscriptionOfferService {
 
     const offers = this.offerEntityFactory.createFromDto(
       normalizedOffers,
-      plan.id,
+      planId,
     );
 
-    await this.validateOffersUniqueness(plan.id, offers);
+    await this.validateOffersUniqueness(planId, offers);
 
     return this.subscriptionOfferRepository.save(offers);
   }
