@@ -31,7 +31,9 @@ export class PaymentQueueService implements IPaymentQueueService {
     eventType: T,
     payload: CommandPayload<T>,
   ): Promise<void> {
-    await this.commandQueue.add(eventType, payload);
+    await this.commandQueue.add(eventType, payload, {
+      jobId: payload.idempotencyKey,
+    });
   }
 
   async dispatchCommandsBulk<T extends CommandType>(
@@ -41,6 +43,7 @@ export class PaymentQueueService implements IPaymentQueueService {
       commands.map((cmd) => ({
         name: cmd.name,
         data: cmd.data,
+        opts: { jobId: cmd.data.idempotencyKey },
       })),
     );
   }
