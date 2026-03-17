@@ -19,7 +19,6 @@ import {
   PlanStatus,
 } from '@app/subscription';
 import { DataSource } from 'typeorm';
-import { randomUUID } from 'crypto';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -52,22 +51,29 @@ export class SubscriptionOfferService {
       );
     }
 
-    const savedOffers = await this.createDraftOffers(planId, createOffersDto);
+    const draftOffers = await this.buildDraftOffers(planId, createOffersDto);
 
-    const jobsToCreate = savedOffers.map((offer) => ({
-      name: 'command.syncOffer' as const,
-      data: {
-        id: offer.id,
-        price: offer.price,
-        durationMonths: offer.durationMonths,
-        subscriptionPlanId: planId,
-        idempotencyKey: `sync-offer-${offer.id}-${randomUUID()}`,
-      },
-    }));
+    await this.dataSource.transaction(async (manager) => {
+      const savedOffers = await manager.save(
+        SubscriptionOfferEntity,
+        draftOffers,
+      );
 
-    if (jobsToCreate.length > 0) {
-      await this.paymentQueueService.dispatchCommandsBulk(jobsToCreate);
-    }
+      const jobsToCreate = savedOffers.map((offer) => ({
+        name: 'command.syncOffer' as const,
+        data: {
+          id: offer.id,
+          price: offer.price,
+          durationMonths: offer.durationMonths,
+          subscriptionPlanId: planId,
+          idempotencyKey: `sync-offer-${offer.id}`,
+        },
+      }));
+
+      if (jobsToCreate.length > 0) {
+        await this.paymentQueueService.dispatchCommandsBulk(jobsToCreate);
+      }
+    });
   }
 
   async buildDraftOffers(
@@ -87,15 +93,6 @@ export class SubscriptionOfferService {
     await this.validateOffersUniqueness(planId, offers);
 
     return offers;
-  }
-
-  async createDraftOffers(
-    planId: string,
-    createOffersDto: CreateOfferDto[],
-  ): Promise<SubscriptionOfferEntity[]> {
-    const offers = await this.buildDraftOffers(planId, createOffersDto);
-
-    return this.subscriptionOfferRepository.save(offers);
   }
 
   private async validateOffersUniqueness(
@@ -148,11 +145,14 @@ export class SubscriptionOfferService {
           status: OfferStatus.DEACTIVATING,
         },
       );
-    });
 
-    await this.paymentQueueService.dispatchCommand('command.deactivateOffer', {
-      offerId,
-      idempotencyKey: `deactivate-offer-${offerId}-${randomUUID()}`,
+      await this.paymentQueueService.dispatchCommand(
+        'command.deactivateOffer',
+        {
+          offerId,
+          idempotencyKey: `deactivate-offer-${offerId}`,
+        },
+      );
     });
   }
 }

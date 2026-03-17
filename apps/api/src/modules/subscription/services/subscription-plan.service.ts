@@ -65,37 +65,27 @@ export class SubscriptionPlanService {
       );
     }
 
-    const plan = await this.dataSource.transaction(async (manager) => {
-      const saved = await manager.save(SubscriptionPlanEntity, {
+    await this.dataSource.transaction(async (manager) => {
+      const plan = await manager.save(SubscriptionPlanEntity, {
         name,
         description,
       });
 
-      if (!offers || offers.length === 0) return saved;
+      if (!offers || offers.length === 0) return;
 
       const draftOffers = await this.subscriptionOfferService.buildDraftOffers(
-        saved.id,
+        plan.id,
         offers,
       );
 
       await manager.save(SubscriptionOfferEntity, draftOffers);
 
-      await manager.update(
-        SubscriptionPlanEntity,
-        { id: saved.id },
-        { status: PlanStatus.ACTIVATING },
-      );
-
-      return saved;
-    });
-
-    if (!offers || offers.length === 0) return;
-
-    await this.paymentQueueService.dispatchCommand('command.syncPlan', {
-      id: plan.id,
-      name: plan.name,
-      description: plan.description,
-      idempotencyKey: `sync-plan-${plan.id}-${randomUUID()}`,
+      await this.paymentQueueService.dispatchCommand('command.syncPlan', {
+        id: plan.id,
+        name: plan.name,
+        description: plan.description,
+        idempotencyKey: `sync-plan-${plan.id}`,
+      });
     });
   }
 
@@ -134,15 +124,15 @@ export class SubscriptionPlanService {
       };
 
       await manager.update(SubscriptionPlanEntity, { id: plan.id }, updates);
-    });
 
-    await this.paymentQueueService.dispatchCommand('command.updatePlan', {
-      planId: id,
-      updates: {
-        name: dto.name,
-        description: dto.description,
-      },
-      idempotencyKey: `update-plan-${id}-${randomUUID()}`,
+      await this.paymentQueueService.dispatchCommand('command.updatePlan', {
+        planId: id,
+        updates: {
+          name: dto.name,
+          description: dto.description,
+        },
+        idempotencyKey: `update-plan-${id}-${randomUUID()}`,
+      });
     });
   }
 
@@ -172,11 +162,11 @@ export class SubscriptionPlanService {
           status: PlanStatus.ACTIVATING,
         },
       );
-    });
 
-    await this.paymentQueueService.dispatchCommand('command.activatePlan', {
-      planId: id,
-      idempotencyKey: `activate-plan-${id}-${randomUUID()}`,
+      await this.paymentQueueService.dispatchCommand('command.activatePlan', {
+        planId: id,
+        idempotencyKey: `activate-plan-${id}-${randomUUID()}`,
+      });
     });
   }
 
@@ -204,11 +194,11 @@ export class SubscriptionPlanService {
           status: PlanStatus.DEACTIVATING,
         },
       );
-    });
 
-    await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
-      planId: id,
-      idempotencyKey: `deactivate-plan-${id}-${randomUUID()}`,
+      await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
+        planId: id,
+        idempotencyKey: `deactivate-plan-${id}-${randomUUID()}`,
+      });
     });
   }
 }
