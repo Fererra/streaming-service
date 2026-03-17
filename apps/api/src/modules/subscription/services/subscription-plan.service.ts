@@ -12,6 +12,7 @@ import {
   type ISubscriptionPlanRepository,
   PlanStatus,
   SUBSCRIPTION_PLAN_REPOSITORY,
+  SubscriptionOfferEntity,
   SubscriptionPlanEntity,
 } from '@app/subscription';
 import { SubscriptionOfferService } from './subscription-offer.service';
@@ -64,16 +65,31 @@ export class SubscriptionPlanService {
       );
     }
 
-    const plan = await this.subscriptionPlanRepository.save({
-      name,
-      description,
+    const plan = await this.dataSource.transaction(async (manager) => {
+      const saved = await manager.save(SubscriptionPlanEntity, {
+        name,
+        description,
+      });
+
+      if (!offers || offers.length === 0) return saved;
+
+      const draftOffers = await this.subscriptionOfferService.buildDraftOffers(
+        saved.id,
+        offers,
+      );
+
+      await manager.save(SubscriptionOfferEntity, draftOffers);
+
+      await manager.update(
+        SubscriptionPlanEntity,
+        { id: saved.id },
+        { status: PlanStatus.ACTIVATING },
+      );
+
+      return saved;
     });
 
-    if (!offers || offers.length === 0) {
-      return;
-    }
-
-    await this.subscriptionOfferService.createDraftOffers(plan.id, offers);
+    if (!offers || offers.length === 0) return;
 
     await this.paymentQueueService.dispatchCommand('command.syncPlan', {
       id: plan.id,
