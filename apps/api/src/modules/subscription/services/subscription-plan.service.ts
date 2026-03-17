@@ -143,11 +143,10 @@ export class SubscriptionPlanService {
         throw new NotFoundException(`Subscription plan not found`);
       }
 
-      if (
-        plan.status === PlanStatus.ACTIVE ||
-        plan.status === PlanStatus.ACTIVATING
-      ) {
-        throw new ConflictException(`Plan already active or activating`);
+      if (plan.status !== PlanStatus.DEACTIVATED) {
+        throw new ConflictException(
+          `Plan can only be activated when deactivated`,
+        );
       }
 
       await manager.update(
@@ -178,13 +177,8 @@ export class SubscriptionPlanService {
         throw new NotFoundException(`Subscription plan not found`);
       }
 
-      if (
-        plan.status === PlanStatus.DEACTIVATED ||
-        plan.status === PlanStatus.DEACTIVATING
-      ) {
-        throw new ConflictException(
-          `Plan is already deactivated or being deactivated`,
-        );
+      if (plan.status !== PlanStatus.ACTIVE) {
+        throw new ConflictException(`Plan can only be deactivated when active`);
       }
 
       await manager.update(
