@@ -50,24 +50,26 @@ export class PriceCreatedHandler implements IPaymentEventHandler<'event.price.cr
       const offer = await manager.findOne(SubscriptionOfferEntity, {
         where: { id: offerId },
         relations: ['subscriptionPlan'],
+        select: { id: true, subscriptionPlan: { id: true, status: true } },
       });
 
-      if (!offer) return;
+      if (!offer || offer.subscriptionPlan.status !== PlanStatus.DRAFT) return;
 
-      const pendingOffersCount = await manager.count(SubscriptionOfferEntity, {
-        where: {
-          subscriptionPlan: { id: offer.subscriptionPlan.id },
-          status: OfferStatus.DRAFT,
-        },
-      });
-
-      if (pendingOffersCount === 0) {
-        await manager.update(
-          SubscriptionPlanEntity,
-          { id: offer.subscriptionPlan.id },
-          { status: PlanStatus.ACTIVE },
-        );
-      }
+      await manager
+        .createQueryBuilder()
+        .update(SubscriptionPlanEntity)
+        .set({ status: PlanStatus.ACTIVE })
+        .where('id = :planId', { planId: offer.subscriptionPlan.id })
+        .andWhere('status = :status', { status: PlanStatus.DRAFT })
+        .andWhere(
+          `NOT EXISTS (
+            SELECT 1 FROM subscription_offers o
+            WHERE o.subscription_plan_id = :planId
+            AND o.status = :draftStatus
+          )`,
+          { draftStatus: OfferStatus.DRAFT },
+        )
+        .execute();
     });
   }
 }
