@@ -126,12 +126,9 @@ export class SubscriptionOfferService {
         throw new NotFoundException(`Subscription offer not found`);
       }
 
-      if (
-        offer.status === OfferStatus.DEACTIVATED ||
-        offer.status === OfferStatus.DEACTIVATING
-      ) {
+      if (offer.status !== OfferStatus.ACTIVE) {
         throw new ConflictException(
-          `Offer is already deactivated or being deactivated`,
+          `Offer can only be deactivated when active`,
         );
       }
 
