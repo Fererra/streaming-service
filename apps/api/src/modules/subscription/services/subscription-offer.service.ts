@@ -70,10 +70,10 @@ export class SubscriptionOfferService {
     }
   }
 
-  async createDraftOffers(
+  async buildDraftOffers(
     planId: string,
     createOffersDto: CreateOfferDto[],
-  ): Promise<SubscriptionOfferEntity[]> {
+  ): Promise<Partial<SubscriptionOfferEntity>[]> {
     const normalizedOffers = createOffersDto.map((o) => ({
       ...o,
       price: Money.fromMajor(o.price).value,
@@ -85,6 +85,15 @@ export class SubscriptionOfferService {
     );
 
     await this.validateOffersUniqueness(planId, offers);
+
+    return offers;
+  }
+
+  async createDraftOffers(
+    planId: string,
+    createOffersDto: CreateOfferDto[],
+  ): Promise<SubscriptionOfferEntity[]> {
+    const offers = await this.buildDraftOffers(planId, createOffersDto);
 
     return this.subscriptionOfferRepository.save(offers);
   }
