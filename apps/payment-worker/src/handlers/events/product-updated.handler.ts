@@ -5,6 +5,7 @@ import {
   type ISubscriptionPlanRepository,
   PlanStatus,
   SUBSCRIPTION_PLAN_REPOSITORY,
+  SubscriptionPlanEntity,
 } from '@app/subscription';
 
 @Injectable()
@@ -17,11 +18,29 @@ export class ProductUpdatedHandler implements IPaymentEventHandler<'event.produc
   ) {}
 
   async handle(payload: ProductUpdatedPayload): Promise<void> {
-    const { planId, isActive } = payload;
+    const { planId, updates } = payload;
 
     if (!planId) return;
 
-    const newStatus = isActive ? PlanStatus.ACTIVE : PlanStatus.DEACTIVATED;
-    await this.subscriptionPlanRepository.updateStatus(planId, newStatus);
+    const updateData: Partial<SubscriptionPlanEntity> = {
+      ...(updates.name && { name: updates.name }),
+      ...(updates.description && {
+        description: updates.description,
+      }),
+      ...(updates.isActive && {
+        status: updates.isActive ? PlanStatus.ACTIVE : PlanStatus.DEACTIVATED,
+      }),
+    };
+
+    if (Object.keys(updateData).length === 0) return;
+
+    const affected = await this.subscriptionPlanRepository.update(
+      planId,
+      updateData,
+    );
+
+    if (affected === 0) {
+      console.warn(`Subscription plan ${planId} not found for update`);
+    }
   }
 }
