@@ -19,29 +19,26 @@ export class SubscriptionUpdatedHandler implements IPaymentEventHandler<'event.s
   async handle(payload: SubscriptionUpdatedPayload): Promise<void> {
     const { externalSubscriptionId, updates } = payload;
 
-    const updateData: Partial<UserSubscriptionEntity> = {};
+    const updateData: Partial<UserSubscriptionEntity> = {
+      ...(updates.status && { status: updates.status }),
+      ...(updates.cancellation && {
+        cancellationReason: updates.cancellation.reason,
+        canceledAt: updates.cancellation.canceledAt,
+      }),
+    };
 
-    if (updates.status) {
-      updateData.status = updates.status;
-    }
+    if (Object.keys(updateData).length === 0) return;
 
-    if (updates.cancellation) {
-      updateData.cancellationReason = updates.cancellation.reason;
-      updateData.canceledAt = updates.cancellation.canceledAt;
-    }
+    const affected =
+      await this.userSubscriptionRepository.updateByExternalSubscriptionId(
+        externalSubscriptionId,
+        updateData,
+      );
 
-    if (Object.keys(updateData).length > 0) {
-      const affected =
-        await this.userSubscriptionRepository.updateByExternalSubscriptionId(
-          externalSubscriptionId,
-          updateData,
-        );
-
-      if (affected === 0) {
-        console.warn(
-          `Subscription ${externalSubscriptionId} not found for update`,
-        );
-      }
+    if (affected === 0) {
+      console.warn(
+        `Subscription ${externalSubscriptionId} not found for update`,
+      );
     }
   }
 }
