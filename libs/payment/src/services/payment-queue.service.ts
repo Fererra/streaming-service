@@ -24,7 +24,9 @@ export class PaymentQueueService implements IPaymentQueueService {
     eventType: T,
     payload: EventPayload<T>,
   ): Promise<void> {
-    await this.eventQueue.add(eventType, payload);
+    await this.eventQueue.add(eventType, payload, {
+      jobId: payload.externalEventId,
+    });
   }
 
   async dispatchCommand<T extends CommandType>(
