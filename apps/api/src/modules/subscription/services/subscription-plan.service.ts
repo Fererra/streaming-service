@@ -7,7 +7,6 @@ import {
 import { CreateSubscriptionDto } from '../dto/create-subscription.dto';
 import { UpdateSubscriptionDto } from '../dto/update-subscription.dto';
 import { Money } from '../helper/money';
-import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
 import {
   type ISubscriptionPlanRepository,
   PlanStatus,
@@ -18,14 +17,13 @@ import {
 import { SubscriptionOfferService } from './subscription-offer.service';
 import { DataSource } from 'typeorm';
 import { randomUUID } from 'crypto';
+import { OutboxEntity } from '@app/outbox';
 
 @Injectable()
 export class SubscriptionPlanService {
   constructor(
     @Inject(SUBSCRIPTION_PLAN_REPOSITORY)
     private readonly subscriptionPlanRepository: ISubscriptionPlanRepository,
-    @Inject(PAYMENT_QUEUE_SERVICE)
-    private readonly paymentQueueService: IPaymentQueueService,
     private readonly subscriptionOfferService: SubscriptionOfferService,
     private readonly dataSource: DataSource,
   ) {}
@@ -80,11 +78,14 @@ export class SubscriptionPlanService {
 
       await manager.save(SubscriptionOfferEntity, draftOffers);
 
-      await this.paymentQueueService.dispatchCommand('command.syncPlan', {
-        id: plan.id,
-        name: plan.name,
-        description: plan.description,
-        idempotencyKey: `sync-plan-${plan.id}`,
+      await manager.insert(OutboxEntity, {
+        type: 'command.syncPlan' as const,
+        payload: {
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          idempotencyKey: `sync-plan-${plan.id}`,
+        },
       });
     });
   }
@@ -125,13 +126,13 @@ export class SubscriptionPlanService {
 
       await manager.update(SubscriptionPlanEntity, { id: plan.id }, updates);
 
-      await this.paymentQueueService.dispatchCommand('command.updatePlan', {
-        planId: id,
-        updates: {
-          name: dto.name,
-          description: dto.description,
+      await manager.insert(OutboxEntity, {
+        type: 'command.updatePlan' as const,
+        payload: {
+          planId: id,
+          updates,
+          idempotencyKey: `update-plan-${id}-${randomUUID()}`,
         },
-        idempotencyKey: `update-plan-${id}-${randomUUID()}`,
       });
     });
   }
@@ -163,9 +164,12 @@ export class SubscriptionPlanService {
         },
       );
 
-      await this.paymentQueueService.dispatchCommand('command.activatePlan', {
-        planId: id,
-        idempotencyKey: `activate-plan-${id}-${randomUUID()}`,
+      await manager.insert(OutboxEntity, {
+        type: 'command.activatePlan' as const,
+        payload: {
+          planId: id,
+          idempotencyKey: `activate-plan-${id}-${randomUUID()}`,
+        },
       });
     });
   }
@@ -195,9 +199,12 @@ export class SubscriptionPlanService {
         },
       );
 
-      await this.paymentQueueService.dispatchCommand('command.deactivatePlan', {
-        planId: id,
-        idempotencyKey: `deactivate-plan-${id}-${randomUUID()}`,
+      await manager.insert(OutboxEntity, {
+        type: 'command.deactivatePlan' as const,
+        payload: {
+          planId: id,
+          idempotencyKey: `deactivate-plan-${id}-${randomUUID()}`,
+        },
       });
     });
   }

@@ -3,12 +3,12 @@ import { SubscriptionPlanService } from './services/subscription-plan.service';
 import { SubscriptionOfferService } from './services/subscription-offer.service';
 import { OfferEntityFactory } from './factories/offer-entity.factory';
 import { SubscriptionController } from './subscription.controller';
-import { PaymentQueueModule } from '@app/payment';
 import { SubscriptionLibPersistenceModule } from '@app/subscription';
 import { UserSubscriptionApiService } from './services/user-subscription-api.service';
+import { OutboxPersistenceModule } from '@app/outbox';
 
 @Module({
-  imports: [SubscriptionLibPersistenceModule, PaymentQueueModule],
+  imports: [SubscriptionLibPersistenceModule, OutboxPersistenceModule],
   controllers: [SubscriptionController],
   providers: [
     SubscriptionPlanService,

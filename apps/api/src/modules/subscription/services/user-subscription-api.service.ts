@@ -1,6 +1,7 @@
 import {
   type IUserSubscriptionRepository,
   USER_SUBSCRIPTION_REPOSITORY,
+  UserSubscriptionEntity,
 } from '@app/subscription';
 import {
   Inject,
@@ -10,17 +11,16 @@ import {
 } from '@nestjs/common';
 import { PaginationOptions } from '../../../common/@types/pagination.types';
 import { buildPaginationResponse } from '../../../common/utils/pagination.util';
-import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
 import { CancellationInitiator, UserSubscriptionStatus } from '@app/shared';
-import { randomUUID } from 'crypto';
+import { DataSource } from 'typeorm';
+import { OutboxEntity } from '@app/outbox';
 
 @Injectable()
 export class UserSubscriptionApiService {
   constructor(
     @Inject(USER_SUBSCRIPTION_REPOSITORY)
     private readonly userSubscriptionRepository: IUserSubscriptionRepository,
-    @Inject(PAYMENT_QUEUE_SERVICE)
-    private readonly paymentCommandQueue: IPaymentQueueService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async getUserSubscriptions(userId: string, pagination: PaginationOptions) {
@@ -35,35 +35,45 @@ export class UserSubscriptionApiService {
     subscriptionId: string,
     initiator: CancellationInitiator = CancellationInitiator.USER,
   ) {
-    const subscription =
-      await this.userSubscriptionRepository.findByIdAndUserId(
-        subscriptionId,
-        userId,
-      );
-
-    if (!subscription) {
-      throw new NotFoundException('Subscription not found');
-    }
-
     const cancellableStatuses: UserSubscriptionStatus[] = [
       UserSubscriptionStatus.ACTIVE,
       UserSubscriptionStatus.PAST_DUE,
     ];
 
-    if (!cancellableStatuses.includes(subscription.status)) {
-      throw new BadRequestException(
-        `Subscription cannot be canceled in its current status: ${subscription.status}`,
-      );
-    }
+    await this.dataSource.transaction(async (manager) => {
+      const subscription = await manager
+        .createQueryBuilder(UserSubscriptionEntity, 'sub')
+        .setLock('pessimistic_write')
+        .setOnLocked('nowait')
+        .where('sub.id = :subscriptionId', { subscriptionId })
+        .andWhere('sub.userId = :userId', { userId })
+        .getOne();
 
-    await this.paymentCommandQueue.dispatchCommand(
-      'command.deactivateSubscription',
-      {
-        subscriptionId: subscription.externalSubscriptionId,
-        initiator,
-        idempotencyKey: `deactivate-subscription-${subscription.id}-${randomUUID()}`,
-      },
-    );
+      if (!subscription) throw new NotFoundException('Subscription not found');
+
+      if (!cancellableStatuses.includes(subscription.status)) {
+        throw new BadRequestException(
+          `Subscription cannot be canceled in its current status: ${subscription.status}`,
+        );
+      }
+
+      await manager.update(
+        UserSubscriptionEntity,
+        { id: subscriptionId },
+        {
+          status: UserSubscriptionStatus.CANCELING,
+        },
+      );
+
+      await manager.insert(OutboxEntity, {
+        type: 'command.deactivateSubscription' as const,
+        payload: {
+          subscriptionId: subscription.externalSubscriptionId,
+          initiator,
+          idempotencyKey: `deactivate-subscription-${subscription.id}`,
+        },
+      });
+    });
   }
 
   hasActiveSubscription(userId: string): Promise<boolean> {

@@ -8,7 +8,6 @@ import {
 import { CreateOfferDto } from '../dto/create-subscription.dto';
 import { OfferEntityFactory } from '../factories/offer-entity.factory';
 import { Money } from '../helper/money';
-import { type IPaymentQueueService, PAYMENT_QUEUE_SERVICE } from '@app/payment';
 import {
   SUBSCRIPTION_PLAN_REPOSITORY,
   type ISubscriptionPlanRepository,
@@ -19,6 +18,7 @@ import {
   PlanStatus,
 } from '@app/subscription';
 import { DataSource } from 'typeorm';
+import { OutboxEntity } from '@app/outbox';
 
 @Injectable()
 export class SubscriptionOfferService {
@@ -28,8 +28,6 @@ export class SubscriptionOfferService {
     @Inject(SUBSCRIPTION_OFFER_REPOSITORY)
     private readonly subscriptionOfferRepository: ISubscriptionOfferRepository,
     private readonly offerEntityFactory: OfferEntityFactory,
-    @Inject(PAYMENT_QUEUE_SERVICE)
-    private readonly paymentQueueService: IPaymentQueueService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -59,9 +57,9 @@ export class SubscriptionOfferService {
         draftOffers,
       );
 
-      const jobsToCreate = savedOffers.map((offer) => ({
-        name: 'command.syncOffer' as const,
-        data: {
+      const outboxRecords = savedOffers.map((offer) => ({
+        type: 'command.syncOffer' as const,
+        payload: {
           id: offer.id,
           price: offer.price,
           durationMonths: offer.durationMonths,
@@ -70,9 +68,7 @@ export class SubscriptionOfferService {
         },
       }));
 
-      if (jobsToCreate.length > 0) {
-        await this.paymentQueueService.dispatchCommandsBulk(jobsToCreate);
-      }
+      await manager.insert(OutboxEntity, outboxRecords);
     });
   }
 
@@ -146,13 +142,13 @@ export class SubscriptionOfferService {
         },
       );
 
-      await this.paymentQueueService.dispatchCommand(
-        'command.deactivateOffer',
-        {
+      await manager.insert(OutboxEntity, {
+        type: 'command.deactivateOffer' as const,
+        payload: {
           offerId,
           idempotencyKey: `deactivate-offer-${offerId}`,
         },
-      );
+      });
     });
   }
 }
