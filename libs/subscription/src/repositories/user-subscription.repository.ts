@@ -22,16 +22,6 @@ export class UserSubscriptionRepository implements IUserSubscriptionRepository {
     return result.affected ?? 0;
   }
 
-  findByIdAndUserId(
-    subscriptionId: string,
-    userId: string,
-  ): Promise<UserSubscriptionEntity | null> {
-    return this.repository.findOne({
-      where: { id: subscriptionId, userId },
-      select: ['id', 'externalSubscriptionId', 'status'],
-    });
-  }
-
   findByUserId(userId: string): Promise<[UserSubscriptionEntity[], number]> {
     return this.repository
       .createQueryBuilder('us')
