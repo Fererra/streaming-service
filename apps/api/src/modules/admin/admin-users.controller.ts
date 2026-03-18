@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Query,
+  UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import { Roles } from '../auth/roles.decorator';
@@ -22,6 +23,7 @@ import { PaymentService } from '../payment/payment.service';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserSubscriptionApiService } from '../subscription/services/user-subscription-api.service';
 import { CancellationInitiator } from '@app/shared';
+import { LockTimeoutFilter } from '../../common/filters/lock-timeout.filter';
 
 @Controller('users')
 @UseGuards(JwtGuard, RolesGuard)
@@ -53,6 +55,7 @@ export class AdminUsersController {
   }
 
   @Patch(':id/subscriptions/:subscriptionId/cancel')
+  @UseFilters(LockTimeoutFilter)
   async cancelSubscription(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,

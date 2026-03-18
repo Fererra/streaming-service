@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Query,
+  UseFilters,
   UseGuards,
 } from '@nestjs/common';
 import { CurrentUserId } from '../../common/decorators/current-user-id.decorator';
@@ -17,6 +18,7 @@ import { ConfirmAvatarDto } from './dto/confirm-avatar.dto';
 import { PaymentService } from '../payment/payment.service';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { UserSubscriptionApiService } from '../subscription/services/user-subscription-api.service';
+import { LockTimeoutFilter } from '../../common/filters/lock-timeout.filter';
 
 @Controller('users/me')
 @UseGuards(JwtGuard)
@@ -57,6 +59,7 @@ export class UsersController {
   }
 
   @Patch('subscriptions/:subscriptionId/cancel')
+  @UseFilters(LockTimeoutFilter)
   async cancelSubscription(
     @CurrentUserId() userId: string,
     @Param('subscriptionId', ParseUUIDPipe) subscriptionId: string,
