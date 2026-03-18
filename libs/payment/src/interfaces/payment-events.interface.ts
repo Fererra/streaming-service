@@ -1,6 +1,10 @@
 import { CancellationReason, UserSubscriptionStatus } from '@app/shared';
 
-export interface GatewayEntityCreatedBase {
+export interface BaseEventPayload {
+  externalEventId: string;
+}
+
+export interface GatewayEntityCreatedBase extends BaseEventPayload {
   externalId: string;
 }
 
@@ -9,7 +13,11 @@ export interface ProductCreatedPayload extends GatewayEntityCreatedBase {
 }
 
 export interface ProductUpdatedPayload extends ProductCreatedPayload {
-  isActive: boolean;
+  updates: {
+    name?: string;
+    description?: string;
+    isActive?: boolean;
+  };
 }
 
 export interface PriceCreatedPayload extends GatewayEntityCreatedBase {
@@ -26,7 +34,7 @@ export interface PaymentMetadata {
   offerId: string;
 }
 
-export interface BasePaymentPayload {
+export interface BasePaymentPayload extends BaseEventPayload {
   externalInvoiceId: string | null;
   metadata: PaymentMetadata;
 }
@@ -44,7 +52,7 @@ export interface InvoiceEventPayload extends BasePaymentPayload {
   currency: string;
 }
 
-export interface SubscriptionUpdatedPayload {
+export interface SubscriptionUpdatedPayload extends BaseEventPayload {
   externalSubscriptionId: string;
   updates: {
     status?: UserSubscriptionStatus;
@@ -55,7 +63,7 @@ export interface SubscriptionUpdatedPayload {
   };
 }
 
-export interface SubscriptionDeletedPayload {
+export interface SubscriptionDeletedPayload extends BaseEventPayload {
   type: 'event.subscription.deleted';
   externalSubscriptionId: string;
   status: UserSubscriptionStatus;

@@ -209,14 +209,6 @@ export class StripePaymentGateway implements PaymentGateway {
       throw new BadRequestException('Invalid webhook signature');
     }
 
-    const result = this.stripeEventParser.parse(event);
-
-    if (!result) {
-      throw new BadRequestException(
-        `Unhandled webhook event type: ${event.type}`,
-      );
-    }
-
-    return result;
+    return this.stripeEventParser.parse(event);
   }
 }

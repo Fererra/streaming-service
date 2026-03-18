@@ -1,8 +1,4 @@
-import {
-  PaymentMetadata,
-  SubscriptionUpdatedPayload,
-} from '@app/payment/interfaces/payment-events.interface';
-import { WebhookEventResult } from '@app/payment/interfaces/payment-gateway.interface';
+import { PaymentMetadata, WebhookEventResult } from '@app/payment';
 import {
   UserSubscriptionStatus,
   CancellationInitiator,
@@ -23,6 +19,7 @@ export class StripeEventParser {
         const product = event.data.object as Stripe.Product;
 
         return {
+          externalEventId: event.id,
           type: 'event.product.created',
           externalId: product.id,
           planId: product.metadata.planId,
@@ -33,19 +30,34 @@ export class StripeEventParser {
       'product.updated',
       (event) => {
         const product = event.data.object as Stripe.Product;
-        const previousAttributes = event.data
-          .previous_attributes as Partial<Stripe.Product>;
+        const prev = event.data.previous_attributes as Partial<Stripe.Product>;
 
-        if (previousAttributes && previousAttributes.active !== undefined) {
-          return {
-            type: 'event.product.updated',
-            externalId: product.id,
-            planId: product.metadata.planId,
-            isActive: product.active,
-          };
-        }
+        if (!prev) return null;
 
-        return null;
+        const updates = this.pickChanged(prev, product, {
+          name: {
+            prevKey: 'name',
+            get: (p) => p.name,
+          },
+          description: {
+            prevKey: 'description',
+            get: (p) => p.description ?? undefined,
+          },
+          isActive: {
+            prevKey: 'active',
+            get: (p) => p.active,
+          },
+        });
+
+        if (Object.keys(updates).length === 0) return null;
+
+        return {
+          externalEventId: event.id,
+          type: 'event.product.updated',
+          externalId: product.id,
+          planId: product.metadata.planId,
+          updates,
+        };
       },
     ],
     [
@@ -54,6 +66,8 @@ export class StripeEventParser {
         const price = event.data.object as Stripe.Price;
 
         return {
+          externalEventId: event.id,
+
           type: 'event.price.created',
           externalId: price.id,
           offerId: price.metadata.offerId,
@@ -69,6 +83,7 @@ export class StripeEventParser {
 
         if (previousAttributes && previousAttributes.active !== undefined) {
           return {
+            externalEventId: event.id,
             type: 'event.price.updated',
             externalId: price.id,
             offerId: price.metadata.offerId,
@@ -85,6 +100,7 @@ export class StripeEventParser {
         const session = event.data.object as Stripe.Checkout.Session;
 
         return {
+          externalEventId: event.id,
           type: 'event.checkout.completed',
           externalSessionId: session.id,
           externalInvoiceId: session.invoice as string,
@@ -97,6 +113,7 @@ export class StripeEventParser {
       (event) => {
         const session = event.data.object as Stripe.Checkout.Session;
         return {
+          externalEventId: event.id,
           type: 'event.checkout.expired',
           externalSessionId: session.id,
           externalInvoiceId: session.invoice as string,
@@ -110,6 +127,7 @@ export class StripeEventParser {
         const invoice = event.data.object as Stripe.Invoice;
 
         return {
+          externalEventId: event.id,
           type: 'event.invoice.paid',
           billingReason: invoice.billing_reason,
           externalSessionId: null,
@@ -131,6 +149,7 @@ export class StripeEventParser {
       (event) => {
         const invoice = event.data.object as Stripe.Invoice;
         return {
+          externalEventId: event.id,
           type: 'event.invoice.payment_failed',
           billingReason: invoice.billing_reason,
           externalSessionId: null,
@@ -151,35 +170,33 @@ export class StripeEventParser {
       'customer.subscription.updated',
       (event: Stripe.Event) => {
         const subscription = event.data.object as Stripe.Subscription;
-        const previousAttributes = event.data
+        const prev = event.data
           .previous_attributes as Partial<Stripe.Subscription>;
-        if (!previousAttributes) return null;
 
-        const updates: SubscriptionUpdatedPayload['updates'] = {};
+        if (!prev) return null;
 
-        if (previousAttributes.status !== undefined) {
-          updates.status =
-            subscription.status as unknown as UserSubscriptionStatus;
-        }
-
-        if (
-          previousAttributes.cancel_at_period_end !== undefined &&
-          subscription.cancel_at_period_end === true
-        ) {
-          const canceledByMeta = subscription.metadata
-            ?.canceled_by as CancellationInitiator;
-          updates.cancellation = {
-            reason: this.resolveCancellationReason(
-              canceledByMeta,
-              subscription.cancellation_details?.reason,
-            ),
-            canceledAt: this.fromStripeTs(subscription.canceled_at),
-          };
-        }
+        const updates = this.pickChanged(prev, subscription, {
+          status: {
+            prevKey: 'status',
+            get: (s) => s.status as unknown as UserSubscriptionStatus,
+          },
+          cancellation: {
+            prevKey: 'cancel_at_period_end',
+            condition: (_, s) => s.cancel_at_period_end === true,
+            get: (s) => ({
+              reason: this.resolveCancellationReason(
+                s.metadata?.canceled_by as CancellationInitiator,
+                s.cancellation_details?.reason,
+              ),
+              canceledAt: this.fromStripeTs(s.canceled_at),
+            }),
+          },
+        });
 
         if (Object.keys(updates).length === 0) return null;
 
         return {
+          externalEventId: event.id,
           type: 'event.subscription.updated',
           externalSubscriptionId: subscription.id,
           updates,
@@ -200,6 +217,7 @@ export class StripeEventParser {
         );
 
         return {
+          externalEventId: event.id,
           type: 'event.subscription.deleted',
           externalSubscriptionId: subscription.id,
           status: subscription.status as unknown as UserSubscriptionStatus,
@@ -213,6 +231,31 @@ export class StripeEventParser {
   parse(event: Stripe.Event): WebhookEventResult | null {
     const handler = this.parsers.get(event.type);
     return handler ? handler(event) : null;
+  }
+
+  private pickChanged<TPrev, TCurr, TResult>(
+    prev: TPrev,
+    curr: TCurr,
+    map: {
+      [K in keyof TResult]: {
+        prevKey: keyof TPrev;
+        get: (curr: TCurr) => TResult[K];
+        condition?: (prev: TPrev, curr: TCurr) => boolean;
+      };
+    },
+  ): Partial<TResult> {
+    const result: Partial<TResult> = {};
+
+    for (const key in map) {
+      const cfg = map[key];
+      if (prev[cfg.prevKey] === undefined) continue;
+
+      if (cfg.condition && !cfg.condition(prev, curr)) continue;
+
+      result[key] = cfg.get(curr);
+    }
+
+    return result;
   }
 
   private fromStripeTs = (ts?: number | null): Date | null =>
