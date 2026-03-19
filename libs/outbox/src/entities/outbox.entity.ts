@@ -3,6 +3,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { OutboxEventStatus } from '../enums/outbox-event-status.enum';
@@ -11,6 +12,13 @@ export type OutboxRecordType = CommandType;
 export type OutboxRecordPayload = CommandPayload<OutboxRecordType>;
 
 @Entity('outbox')
+@Entity('outbox')
+@Index('idx_outbox_pollable', ['createdAt'], {
+  where: `status IN ('pending', 'retrying')`,
+})
+@Index('idx_outbox_retry_at', ['nextRetryAt'], {
+  where: `status = 'retrying'`,
+})
 export class OutboxEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
