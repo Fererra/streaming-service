@@ -13,6 +13,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { PaymentApiModule } from './modules/payment/payment-api.module';
 import { queueConfig } from '@app/config';
 import { BullModule } from '@nestjs/bullmq';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { BullModule } from '@nestjs/bullmq';
     MoviesModule,
     SubscriptionModule,
     PaymentApiModule,
+    HealthModule,
     RouterModule.register([
       { path: 'admin', module: AdminModule },
       { path: 'payments', module: PaymentApiModule },
