@@ -21,11 +21,16 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:3000/health || exit 1']
+      interval: 5s
+      timeout: 2s
+      retries: 10
 
-  payment-worker:
+  outbox-worker:
     build:
       context: .
-      dockerfile: apps/payment-worker/Dockerfile
+      dockerfile: apps/outbox-worker/Dockerfile
       target: development
     volumes:
       - .:/usr/src/app
@@ -42,13 +47,38 @@ services:
       redis:
         condition: service_healthy
 
+  payment-worker:
+    build:
+      context: .
+      dockerfile: apps/payment-worker/Dockerfile
+      target: development
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      NODE_ENV: development
+    env_file:
+      - .env.development.local
+    networks:
+      - backend
+    depends_on:
+      api:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      stripe-cli:
+        condition: service_started
+
   stripe-cli:
     image: stripe/stripe-cli:latest
     command: listen --forward-to api:3000/payments/webhook/stripe --api-key ${STRIPE_SECRET_KEY}
     networks:
       - backend
     depends_on:
-      - api
+      api:
+        condition: service_healthy
 
   db:
     extends:
