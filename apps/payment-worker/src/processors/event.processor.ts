@@ -1,9 +1,17 @@
 import { EventType, PAYMENT_EVENT_QUEUE } from '@app/payment';
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
+import {
+  InjectQueue,
+  OnWorkerEvent,
+  Processor,
+  WorkerHost,
+} from '@nestjs/bullmq';
 import { IPaymentEventHandler } from '../interfaces/payment-event-handler.interface';
 import { Inject } from '@nestjs/common';
-import { PAYMENT_EVENT_HANDLERS } from '../constants/constant';
-import { Job } from 'bullmq';
+import {
+  PAYMENT_EVENT_DLQ,
+  PAYMENT_EVENT_HANDLERS,
+} from '../constants/constant';
+import { Job, Queue } from 'bullmq';
 
 @Processor(PAYMENT_EVENT_QUEUE)
 export class PaymentEventProcessor extends WorkerHost {
@@ -12,6 +20,7 @@ export class PaymentEventProcessor extends WorkerHost {
   constructor(
     @Inject(PAYMENT_EVENT_HANDLERS)
     private readonly handlers: IPaymentEventHandler<EventType>[],
+    @InjectQueue(PAYMENT_EVENT_DLQ) private readonly eventDlq: Queue,
   ) {
     super();
 
@@ -47,7 +56,21 @@ export class PaymentEventProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('failed')
-  onFailed(job: Job, error: Error) {
+  async onFailed(job: Job, error: Error) {
     console.error(`Failed job ${job.id} of type ${job.name}`, error);
+
+    if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
+      console.error(
+        `Job ${job.id} of type ${job.name} has reached max attempts. Moving to DLQ.`,
+      );
+
+      await this.eventDlq.add(job.name, {
+        originalJobId: job.id,
+        payload: job.data,
+        error: error.message,
+        stack: error.stack,
+        failedAt: new Date().toISOString(),
+      });
+    }
   }
 }

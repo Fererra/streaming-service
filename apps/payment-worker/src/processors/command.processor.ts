@@ -1,10 +1,18 @@
 import { CommandPayload, PAYMENT_COMMAND_QUEUE } from '@app/payment';
-import { OnWorkerEvent, Processor, WorkerHost } from '@nestjs/bullmq';
-import { Job } from 'bullmq';
+import {
+  InjectQueue,
+  OnWorkerEvent,
+  Processor,
+  WorkerHost,
+} from '@nestjs/bullmq';
+import { Job, Queue } from 'bullmq';
 import { CommandType } from '@app/payment';
 import { IPaymentCommandHandler } from '../interfaces/payment-command-handler.interface';
 import { Inject } from '@nestjs/common';
-import { PAYMENT_COMMAND_HANDLERS } from '../constants/constant';
+import {
+  PAYMENT_COMMAND_DLQ,
+  PAYMENT_COMMAND_HANDLERS,
+} from '../constants/constant';
 
 @Processor(PAYMENT_COMMAND_QUEUE, {
   limiter: {
@@ -22,6 +30,7 @@ export class PaymentCommandProcessor extends WorkerHost {
   constructor(
     @Inject(PAYMENT_COMMAND_HANDLERS)
     private readonly commandHandlers: IPaymentCommandHandler<CommandType>[],
+    @InjectQueue(PAYMENT_COMMAND_DLQ) private readonly commandDlq: Queue,
   ) {
     super();
 
@@ -70,7 +79,21 @@ export class PaymentCommandProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('failed')
-  onFailed(job: Job, error: Error) {
+  async onFailed(job: Job, error: Error) {
     console.error(`Failed job ${job.id} of type ${job.name}`, error);
+
+    if (job.attemptsMade >= (job.opts.attempts ?? 1)) {
+      console.error(
+        `Job ${job.id} of type ${job.name} has reached max attempts. Moving to DLQ.`,
+      );
+
+      await this.commandDlq.add(job.name, {
+        originalJobId: job.id,
+        payload: job.data,
+        error: error.message,
+        stack: error.stack,
+        failedAt: new Date().toISOString(),
+      });
+    }
   }
 }
