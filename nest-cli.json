@@ -28,6 +28,24 @@
         "tsConfigPath": "libs/config/tsconfig.lib.json"
       }
     },
+    "outbox": {
+      "type": "library",
+      "root": "libs/outbox",
+      "entryFile": "index",
+      "sourceRoot": "libs/outbox/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/outbox/tsconfig.lib.json"
+      }
+    },
+    "outbox-worker": {
+      "type": "application",
+      "root": "apps/outbox-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/outbox-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/outbox-worker/tsconfig.app.json"
+      }
+    },
     "payment": {
       "type": "library",
       "root": "libs/payment",
